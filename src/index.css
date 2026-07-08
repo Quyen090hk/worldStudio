@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 :root,
@@ -6,108 +6,131 @@
   color-scheme: light;
 
   --font-ui:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
   --font-display:
-    Newsreader, "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia,
-    serif;
+    "Cormorant Garamond", "Noto Serif SC", "Source Han Serif SC", "Songti SC",
+    Georgia, serif;
   --font-mono:
     "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", monospace;
 
-  /* Light theme: clearer, more editorial, higher contrast */
-  --bg: #f6f2ea;
-  --bg-subtle: #ede6da;
-  --bg-elevated: #fcfaf6;
+  /* Day: parchment paper, black ink */
+  --bg: #f3ebdc;
+  --bg-subtle: #e6d9c3;
+  --bg-elevated: #fff9ec;
 
-  --surface: rgba(255, 251, 245, 0.88);
-  --surface-solid: #fffaf3;
-  --surface-raised: #fffdf9;
-  --surface-muted: rgba(33, 27, 20, 0.04);
+  --surface: rgba(255, 249, 235, 0.86);
+  --surface-solid: #fff6e5;
+  --surface-raised: #fffaf0;
+  --surface-muted: rgba(30, 19, 8, 0.045);
 
-  --border: rgba(32, 25, 18, 0.1);
-  --border-strong: rgba(32, 25, 18, 0.18);
+  --paper-fiber: rgba(86, 56, 22, 0.075);
+  --paper-stain: rgba(134, 91, 38, 0.08);
 
-  --text: #171411;
-  --text-muted: #5f584f;
-  --text-faint: #8a8175;
-  --text-inverse: #fffaf4;
+  --border: rgba(35, 24, 12, 0.13);
+  --border-strong: rgba(35, 24, 12, 0.24);
 
-  --accent: #b1843f;
-  --accent-strong: #8f6830;
-  --accent-soft: rgba(177, 132, 63, 0.12);
-  --accent-softer: rgba(177, 132, 63, 0.07);
+  --text: #16110a;
+  --text-muted: #4d4130;
+  --text-faint: #766b5b;
+  --text-inverse: #fff8e8;
 
-  --shadow-soft: 0 20px 60px rgba(35, 25, 12, 0.08);
-  --shadow-raised: 0 28px 90px rgba(35, 25, 12, 0.12);
+  --accent: #7b5a2b;
+  --accent-strong: #4e3515;
+  --accent-soft: rgba(123, 90, 43, 0.105);
+  --accent-softer: rgba(123, 90, 43, 0.06);
 
-  --tone-character: #7d65a5;
-  --tone-character-soft: rgba(125, 101, 165, 0.12);
-  --tone-character-border: rgba(125, 101, 165, 0.22);
+  --foil: #8a6833;
+  --foil-bright: #b89658;
+  --foil-muted: #6d542e;
 
-  --tone-location: #6b7e5f;
-  --tone-location-soft: rgba(107, 126, 95, 0.12);
-  --tone-location-border: rgba(107, 126, 95, 0.22);
+  --button-primary-bg: #17110a;
+  --button-primary-text: #fff4df;
+  --button-primary-border: rgba(23, 17, 10, 0.86);
 
-  --tone-organization: #637d90;
-  --tone-organization-soft: rgba(99, 125, 144, 0.12);
-  --tone-organization-border: rgba(99, 125, 144, 0.22);
+  --shadow-soft: 0 20px 64px rgba(51, 33, 12, 0.1);
+  --shadow-raised: 0 28px 90px rgba(51, 33, 12, 0.14);
 
-  --tone-item: #a47b32;
-  --tone-item-soft: rgba(164, 123, 50, 0.12);
-  --tone-item-border: rgba(164, 123, 50, 0.22);
+  --tone-character: #5c4d72;
+  --tone-character-soft: rgba(92, 77, 114, 0.105);
+  --tone-character-border: rgba(92, 77, 114, 0.22);
 
-  --tone-event: #9b6358;
-  --tone-event-soft: rgba(155, 99, 88, 0.12);
-  --tone-event-border: rgba(155, 99, 88, 0.22);
+  --tone-location: #4f6043;
+  --tone-location-soft: rgba(79, 96, 67, 0.105);
+  --tone-location-border: rgba(79, 96, 67, 0.22);
+
+  --tone-organization: #455d67;
+  --tone-organization-soft: rgba(69, 93, 103, 0.105);
+  --tone-organization-border: rgba(69, 93, 103, 0.22);
+
+  --tone-item: #725724;
+  --tone-item-soft: rgba(114, 87, 36, 0.11);
+  --tone-item-border: rgba(114, 87, 36, 0.23);
+
+  --tone-event: #73483f;
+  --tone-event-soft: rgba(115, 72, 63, 0.105);
+  --tone-event-border: rgba(115, 72, 63, 0.22);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #09090b;
-  --bg-subtle: #0f1013;
-  --bg-elevated: #15171b;
+  /* Night: obsidian, ivory, restrained champagne */
+  --bg: #050505;
+  --bg-subtle: #080807;
+  --bg-elevated: #10100e;
 
-  --surface: rgba(18, 19, 23, 0.9);
-  --surface-solid: #111318;
-  --surface-raised: #171a1f;
-  --surface-muted: rgba(245, 235, 214, 0.045);
+  --surface: rgba(13, 13, 12, 0.92);
+  --surface-solid: #0b0b0a;
+  --surface-raised: #11110f;
+  --surface-muted: rgba(255, 246, 224, 0.04);
 
-  --border: rgba(233, 218, 184, 0.12);
-  --border-strong: rgba(233, 218, 184, 0.22);
+  --paper-fiber: rgba(255, 246, 224, 0.032);
+  --paper-stain: rgba(214, 190, 139, 0.032);
 
-  --text: #f5efe2;
-  --text-muted: #b8ab91;
-  --text-faint: #827866;
-  --text-inverse: #0d0d0f;
+  --border: rgba(214, 190, 139, 0.105);
+  --border-strong: rgba(214, 190, 139, 0.2);
 
-  --accent: #d4af5a;
-  --accent-strong: #e4c77a;
-  --accent-soft: rgba(212, 175, 90, 0.14);
-  --accent-softer: rgba(212, 175, 90, 0.08);
+  --text: #eee7d8;
+  --text-muted: #b5aa92;
+  --text-faint: #746c5b;
+  --text-inverse: #070706;
 
-  --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.34);
-  --shadow-raised: 0 32px 120px rgba(0, 0, 0, 0.48);
+  --accent: #b69a61;
+  --accent-strong: #d8c187;
+  --accent-soft: rgba(182, 154, 97, 0.095);
+  --accent-softer: rgba(182, 154, 97, 0.045);
 
-  --tone-character: #bba6dd;
-  --tone-character-soft: rgba(187, 166, 221, 0.14);
-  --tone-character-border: rgba(187, 166, 221, 0.24);
+  --foil: #b69a61;
+  --foil-bright: #dfcf9c;
+  --foil-muted: #806a3f;
 
-  --tone-location: #b2c69a;
-  --tone-location-soft: rgba(178, 198, 154, 0.14);
-  --tone-location-border: rgba(178, 198, 154, 0.24);
+  --button-primary-bg: #eee3c8;
+  --button-primary-text: #090806;
+  --button-primary-border: rgba(238, 227, 200, 0.78);
 
-  --tone-organization: #a8bfd0;
-  --tone-organization-soft: rgba(168, 191, 208, 0.14);
-  --tone-organization-border: rgba(168, 191, 208, 0.24);
+  --shadow-soft: 0 24px 88px rgba(0, 0, 0, 0.48);
+  --shadow-raised: 0 34px 120px rgba(0, 0, 0, 0.64);
 
-  --tone-item: #dfbf73;
-  --tone-item-soft: rgba(223, 191, 115, 0.14);
-  --tone-item-border: rgba(223, 191, 115, 0.24);
+  --tone-character: #a89abc;
+  --tone-character-soft: rgba(168, 154, 188, 0.105);
+  --tone-character-border: rgba(168, 154, 188, 0.2);
 
-  --tone-event: #d6a095;
-  --tone-event-soft: rgba(214, 160, 149, 0.14);
-  --tone-event-border: rgba(214, 160, 149, 0.24);
+  --tone-location: #9faa90;
+  --tone-location-soft: rgba(159, 170, 144, 0.105);
+  --tone-location-border: rgba(159, 170, 144, 0.2);
+
+  --tone-organization: #91a8b2;
+  --tone-organization-soft: rgba(145, 168, 178, 0.105);
+  --tone-organization-border: rgba(145, 168, 178, 0.2);
+
+  --tone-item: #c8ad72;
+  --tone-item-soft: rgba(200, 173, 114, 0.105);
+  --tone-item-border: rgba(200, 173, 114, 0.2);
+
+  --tone-event: #bc8d83;
+  --tone-event-soft: rgba(188, 141, 131, 0.105);
+  --tone-event-border: rgba(188, 141, 131, 0.2);
 }
 
 * {
@@ -129,14 +152,9 @@ body {
   color: var(--text);
   background:
     radial-gradient(
-      circle at 15% 0%,
-      color-mix(in srgb, var(--accent) 10%, transparent),
-      transparent 30rem
-    ),
-    radial-gradient(
-      circle at 90% 14%,
-      color-mix(in srgb, var(--tone-organization) 7%, transparent),
-      transparent 28rem
+      circle at 18% 0%,
+      color-mix(in srgb, var(--paper-stain) 70%, transparent),
+      transparent 32rem
     ),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-subtle) 100%);
   text-rendering: geometricPrecision;
@@ -144,25 +162,88 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-theme="dark"] body {
+  background:
+    radial-gradient(
+      circle at 50% -18%,
+      rgba(214, 190, 139, 0.045),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 85% 10%,
+      rgba(214, 190, 139, 0.025),
+      transparent 24rem
+    ),
+    linear-gradient(180deg, #050505 0%, #070706 48%, #030303 100%);
+}
+
 body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.85;
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--paper-fiber) 1px, transparent 0),
+    radial-gradient(circle at 14px 20px, var(--paper-fiber) 0.8px, transparent 0),
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      color-mix(in srgb, var(--paper-stain) 28%, transparent) 50%,
+      transparent 100%
+    );
+  background-size:
+    24px 24px,
+    42px 42px,
+    520px 520px;
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.45;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 246, 224, 0.035) 1px, transparent 0),
+    linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(214, 190, 139, 0.025) 50%,
+      transparent 100%
+    );
+  background-size:
+    34px 34px,
+    560px 560px;
+}
+
+body::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.36;
-  background-image:
-    linear-gradient(
-      color-mix(in srgb, var(--text) 4%, transparent) 1px,
-      transparent 1px
-    ),
+  background:
+    radial-gradient(circle at 50% 0%, transparent 0%, rgba(0, 0, 0, 0.035) 80%),
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--text) 3%, transparent) 1px,
-      transparent 1px
+      rgba(0, 0, 0, 0.07),
+      transparent 18%,
+      transparent 82%,
+      rgba(0, 0, 0, 0.07)
     );
-  background-size: 48px 48px;
-  mask-image: linear-gradient(to bottom, black, transparent 78%);
+  mix-blend-mode: multiply;
+}
+
+[data-theme="dark"] body::after {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(223, 207, 156, 0.055), transparent 26rem),
+    radial-gradient(circle at 50% 110%, rgba(0, 0, 0, 0.72), transparent 40rem),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.42),
+      transparent 24%,
+      transparent 76%,
+      rgba(0, 0, 0, 0.42)
+    );
+  mix-blend-mode: normal;
 }
 
 button,
@@ -181,7 +262,7 @@ input:disabled,
 textarea:disabled,
 select:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.58;
 }
 
 ::selection {
@@ -201,57 +282,132 @@ select:disabled {
 ::-webkit-scrollbar-thumb {
   border: 4px solid transparent;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 20%, transparent);
+  background: color-mix(in srgb, var(--text) 22%, transparent);
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--text) 32%, transparent);
+  background: color-mix(in srgb, var(--text) 34%, transparent);
   background-clip: padding-box;
 }
 
 .ws-display {
   font-family: var(--font-display);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
 }
 
 .ws-display-tight {
   font-family: var(--font-display);
-  letter-spacing: -0.065em;
+  letter-spacing: -0.045em;
 }
 
 .ws-eyebrow {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent);
 }
 
+[data-theme="dark"] .ws-eyebrow {
+  color: var(--text-faint);
+}
+
+.ws-foil-text {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ws-foil-text {
+  color: var(--accent-strong);
+  text-shadow: none;
+}
+
 .ws-surface {
+  position: relative;
   border: 1px solid var(--border);
   background:
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--surface-raised) 72%, transparent),
-      color-mix(in srgb, var(--surface) 88%, transparent)
+      color-mix(in srgb, var(--surface) 90%, transparent)
     ),
     var(--surface-solid);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px);
 }
 
+.ws-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.34;
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--paper-fiber) 1px, transparent 0),
+    linear-gradient(
+      135deg,
+      transparent,
+      color-mix(in srgb, var(--paper-stain) 22%, transparent),
+      transparent
+    );
+  background-size:
+    22px 22px,
+    360px 360px;
+  mix-blend-mode: multiply;
+}
+
+[data-theme="dark"] .ws-surface::before {
+  opacity: 0.18;
+  mix-blend-mode: screen;
+}
+
+.ws-surface > * {
+  position: relative;
+}
+
 .ws-surface-raised {
+  position: relative;
   border: 1px solid var(--border);
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-raised) 88%, transparent),
-      color-mix(in srgb, var(--surface-solid) 82%, transparent)
+      color-mix(in srgb, var(--surface-raised) 86%, transparent),
+      color-mix(in srgb, var(--surface-solid) 88%, transparent)
     ),
     var(--surface-raised);
   box-shadow: var(--shadow-raised);
   backdrop-filter: blur(22px);
+}
+
+.ws-surface-raised::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.3;
+  background-image:
+    radial-gradient(circle at 2px 2px, var(--paper-fiber) 1px, transparent 0),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      color-mix(in srgb, var(--paper-stain) 22%, transparent) 48%,
+      transparent 100%
+    );
+  background-size:
+    26px 26px,
+    460px 460px;
+  mix-blend-mode: multiply;
+}
+
+[data-theme="dark"] .ws-surface-raised::before {
+  opacity: 0.16;
+  mix-blend-mode: screen;
+}
+
+.ws-surface-raised > * {
+  position: relative;
 }
 
 .ws-surface-soft {
@@ -260,29 +416,33 @@ select:disabled {
 }
 
 .ws-button-primary {
-  border: 1px solid color-mix(in srgb, var(--accent-strong) 38%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--accent-strong) 0%,
-    var(--accent) 100%
-  );
-  color: var(--text-inverse);
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid var(--button-primary-border);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.18);
   transition:
     transform 180ms ease,
-    background 180ms ease,
+    filter 180ms ease,
     box-shadow 180ms ease,
-    filter 180ms ease;
+    border-color 180ms ease;
+}
+
+[data-theme="dark"] .ws-button-primary {
+  box-shadow:
+    0 0 0 1px rgba(223, 207, 156, 0.06) inset,
+    0 14px 38px rgba(238, 227, 200, 0.08);
 }
 
 .ws-button-primary:hover {
   filter: brightness(1.04);
-  box-shadow: 0 16px 42px color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(223, 207, 156, 0.08) inset,
+    0 18px 48px rgba(0, 0, 0, 0.22);
 }
 
 .ws-button-secondary {
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-solid) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 72%, transparent);
   color: var(--text);
   transition:
     transform 180ms ease,
@@ -292,12 +452,12 @@ select:disabled {
 
 .ws-button-secondary:hover {
   border-color: var(--border-strong);
-  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
 }
 
 .ws-input {
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 74%, transparent);
   color: var(--text);
   outline: none;
   transition:
@@ -310,9 +470,10 @@ select:disabled {
   color: var(--text-faint);
 }
 
+.ws-input:focus-within,
 .ws-input:focus {
-  border-color: color-mix(in srgb, var(--accent) 52%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 9%, transparent);
 }
 
 .ws-kbd {
@@ -334,44 +495,12 @@ select:disabled {
   );
 }
 
-.ws-glow-character {
-  background: radial-gradient(
-    circle at top left,
-    var(--tone-character-soft),
-    transparent 34rem
-  );
-}
-
-.ws-glow-location {
-  background: radial-gradient(
-    circle at top left,
-    var(--tone-location-soft),
-    transparent 34rem
-  );
-}
-
-.ws-glow-organization {
-  background: radial-gradient(
-    circle at top left,
-    var(--tone-organization-soft),
-    transparent 34rem
-  );
-}
-
-.ws-glow-item {
-  background: radial-gradient(
-    circle at top left,
-    var(--tone-item-soft),
-    transparent 34rem
-  );
-}
-
+.ws-glow-character,
+.ws-glow-location,
+.ws-glow-organization,
+.ws-glow-item,
 .ws-glow-event {
-  background: radial-gradient(
-    circle at top left,
-    var(--tone-event-soft),
-    transparent 34rem
-  );
+  background: none;
 }
 
 .rich-text-editor .ProseMirror {
@@ -381,26 +510,26 @@ select:disabled {
 
 .rich-text-editor .ProseMirror p {
   margin: 0.8rem 0;
-  line-height: 1.82;
+  line-height: 1.86;
 }
 
 .rich-text-editor .ProseMirror h1 {
   margin: 2rem 0 1rem;
   font-family: var(--font-display);
-  font-size: 2.35rem;
+  font-size: 2.45rem;
   line-height: 1.08;
-  font-weight: 650;
-  letter-spacing: -0.055em;
+  font-weight: 700;
+  letter-spacing: -0.04em;
   color: var(--text);
 }
 
 .rich-text-editor .ProseMirror h2 {
   margin: 1.7rem 0 0.8rem;
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.8rem;
   line-height: 1.18;
-  font-weight: 620;
-  letter-spacing: -0.04em;
+  font-weight: 650;
+  letter-spacing: -0.035em;
   color: var(--text);
 }
 
@@ -417,11 +546,11 @@ select:disabled {
 
 .rich-text-editor .ProseMirror blockquote {
   margin: 1.2rem 0;
-  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
   padding-left: 1rem;
   color: var(--text-muted);
   font-family: var(--font-display);
-  font-size: 1.08rem;
+  font-size: 1.1rem;
   letter-spacing: -0.02em;
 }
 
@@ -440,7 +569,7 @@ select:disabled {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 1.1rem;
-  background: color-mix(in srgb, var(--bg) 72%, black 10%);
+  background: color-mix(in srgb, var(--bg) 78%, black 8%);
   padding: 1rem;
 }
 

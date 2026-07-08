@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { BookOpen, GitBranch, Map, Plus, Sparkles, Timer } from "lucide-react";
+import { BookOpen, GitBranch, Map, Plus, Timer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
@@ -17,7 +17,6 @@ import { getEntryTypeMeta } from "../entries/utils/entryTypeMeta";
 export function DashboardPage() {
   const entries = useEntryStore((state) => state.entries);
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
-
   const navigate = useNavigate();
 
   const recentEntries = [...entries]
@@ -52,10 +51,8 @@ export function DashboardPage() {
 
   return (
     <MotionPage className="space-y-8">
-      <section className="ws-surface-raised relative overflow-hidden rounded-[2.25rem] p-8">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_84%_10%,var(--accent-soft),transparent_25rem)]" />
-
-        <div className="relative grid gap-8 xl:grid-cols-[1fr_22rem]">
+      <section className="ws-surface-raised overflow-hidden rounded-[2rem] p-8">
+        <div className="grid gap-8 xl:grid-cols-[1fr_20rem]">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -64,7 +61,7 @@ export function DashboardPage() {
           >
             <div className="ws-eyebrow mb-5">Worldbuilding Studio</div>
 
-            <h2 className="ws-display-tight text-5xl font-semibold leading-[0.98] text-[var(--text)] md:text-6xl">
+            <h2 className="ws-display-tight max-w-4xl text-5xl font-semibold leading-[0.98] text-[var(--text)] md:text-6xl">
               Build a private atlas for every world you imagine.
             </h2>
 
@@ -73,14 +70,14 @@ export function DashboardPage() {
               timelines inside a quiet local-first studio.
             </p>
 
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <motion.button
                 type="button"
                 whileTap={pressTap}
                 onClick={openCreateEntry}
                 className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
               >
-                <Plus size={17} strokeWidth={1.9} />
+                <Plus size={17} strokeWidth={1.8} />
                 Create Entry
               </motion.button>
 
@@ -94,33 +91,25 @@ export function DashboardPage() {
             </div>
           </motion.div>
 
-          <motion.div
+          <motion.aside
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            className="ws-surface-soft rounded-[1.75rem] p-5"
+            className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-muted)] p-5"
           >
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div>
-                <div className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
-                  Current World
-                </div>
+            <p className="text-[0.66rem] font-bold uppercase tracking-[0.24em] text-[var(--text-faint)]">
+              Current World
+            </p>
 
-                <div className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
-                  The Ashen Archive
-                </div>
-              </div>
+            <h3 className="ws-display mt-3 text-2xl font-semibold text-[var(--text)]">
+              The Ashen Archive
+            </h3>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                <Sparkles size={18} strokeWidth={1.7} />
-              </div>
-            </div>
-
-            <div className="space-y-3">
+            <div className="mt-5 space-y-3">
               {[
                 ["Mode", "Local-first"],
                 ["Structure", "Entries / Maps / Timeline"],
-                ["Aesthetic", "Black Gold Editorial"],
+                ["Aesthetic", "Obsidian Archive"],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -133,14 +122,14 @@ export function DashboardPage() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </motion.aside>
         </div>
 
         <motion.div
           variants={listContainer}
           initial="initial"
           animate="animate"
-          className="relative mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+          className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         >
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -151,10 +140,10 @@ export function DashboardPage() {
                 variants={listItem}
                 whileHover={cardHover}
                 whileTap={pressTap}
-                className="ws-surface-soft rounded-[1.5rem] p-5 will-change-transform"
+                className="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-muted)] p-5 will-change-transform"
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
-                  <Icon size={18} strokeWidth={1.7} />
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)]">
+                  <Icon size={18} strokeWidth={1.65} />
                 </div>
 
                 <div className="ws-display text-4xl font-semibold leading-none text-[var(--text)]">
@@ -195,8 +184,8 @@ export function DashboardPage() {
 
         {recentEntries.length === 0 ? (
           <div className="ws-surface rounded-[2rem] border-dashed p-10 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-              <BookOpen size={20} strokeWidth={1.7} />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)]">
+              <BookOpen size={20} strokeWidth={1.65} />
             </div>
 
             <h4 className="ws-display mt-5 text-2xl font-semibold text-[var(--text)]">
@@ -234,47 +223,38 @@ export function DashboardPage() {
                   whileTap={pressTap}
                   onClick={() => navigate(`/entries/${entry.id}`)}
                   className={[
-                    "ws-surface group relative cursor-pointer overflow-hidden rounded-[1.75rem] p-5 transition will-change-transform",
+                    "ws-surface group cursor-pointer overflow-hidden rounded-[1.5rem] p-5 transition will-change-transform",
                     typeMeta.borderClassName,
                   ].join(" ")}
                 >
-                  <div
-                    className={[
-                      "pointer-events-none absolute inset-0 opacity-60",
-                      typeMeta.glowClassName,
-                    ].join(" ")}
-                  />
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <EntryTypeBadge type={entry.type} />
 
-                  <div className="relative">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <EntryTypeBadge type={entry.type} />
-
-                      <span className="text-xs font-medium text-[var(--text-faint)]">
-                        {formatEntryDate(entry.updatedAt)}
-                      </span>
-                    </div>
-
-                    <h4 className="ws-display text-2xl font-semibold leading-tight text-[var(--text)]">
-                      {entry.title}
-                    </h4>
-
-                    <p className="mt-3 line-clamp-2 text-sm leading-7 text-[var(--text-muted)]">
-                      {entry.summary || "No summary yet."}
-                    </p>
-
-                    {entry.tags.length > 0 ? (
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {entry.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)]"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
+                    <span className="text-xs font-medium text-[var(--text-faint)]">
+                      {formatEntryDate(entry.updatedAt)}
+                    </span>
                   </div>
+
+                  <h4 className="ws-display text-2xl font-semibold leading-tight text-[var(--text)]">
+                    {entry.title}
+                  </h4>
+
+                  <p className="mt-3 line-clamp-2 text-sm leading-7 text-[var(--text-muted)]">
+                    {entry.summary || "No summary yet."}
+                  </p>
+
+                  {entry.tags.length > 0 ? (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {entry.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)]"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </motion.article>
               );
             })}

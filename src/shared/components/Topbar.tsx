@@ -17,12 +17,12 @@ const themeOptions: Array<{
   },
   {
     value: "light",
-    label: "Light",
+    label: "Paper",
     icon: Sun,
   },
   {
     value: "dark",
-    label: "Dark",
+    label: "Obsidian",
     icon: Moon,
   },
 ];
@@ -32,21 +32,25 @@ export function Topbar() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_72%,transparent)] px-8 py-4 backdrop-blur-2xl">
+    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] px-8 py-4 backdrop-blur-2xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5">
         <div>
-          <div className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--text-faint)]">
+          <div className="text-[0.66rem] font-bold uppercase tracking-[0.24em] text-[var(--text-faint)]">
             Workspace
           </div>
 
-          <h1 className="ws-display mt-1 text-2xl font-semibold leading-none text-[var(--text)]">
+          <h1 className="ws-display ws-foil-text mt-1 text-2xl font-semibold leading-none">
             The Ashen Archive
           </h1>
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
           <label className="ws-input hidden h-11 w-full max-w-md items-center gap-3 rounded-full px-4 lg:flex">
-            <Search size={17} strokeWidth={1.7} className="text-[var(--text-faint)]" />
+            <Search
+              size={17}
+              strokeWidth={1.7}
+              className="text-[var(--text-faint)]"
+            />
 
             <input
               type="search"
@@ -70,7 +74,7 @@ export function Topbar() {
                   className={[
                     "flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition",
                     isActive
-                      ? "bg-[var(--surface-raised)] text-[var(--text)] shadow-sm"
+                      ? "bg-[var(--surface-raised)] text-[var(--text)] ring-1 ring-[var(--border)]"
                       : "text-[var(--text-muted)] hover:text-[var(--text)]",
                   ].join(" ")}
                   aria-pressed={isActive}
@@ -88,7 +92,7 @@ export function Topbar() {
             onClick={openCreateEntry}
             className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold"
           >
-            <Plus size={17} strokeWidth={1.9} />
+            <Plus size={17} strokeWidth={1.8} />
             New Entry
           </motion.button>
         </div>
