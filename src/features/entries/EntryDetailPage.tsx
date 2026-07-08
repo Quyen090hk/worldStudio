@@ -9,10 +9,14 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { MotionPage } from "../../shared/components/MotionPage";
 import { RichTextEditor } from "./components/RichTextEditor";
 import { useEntryStore } from "./stores/useEntryStore";
-import { formatEntryDateTime, formatEntryRelative, } from "./utils/formatEntryDate";
+import {
+  formatEntryDateTime,
+  formatEntryRelative,
+} from "./utils/formatEntryDate";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
 
@@ -31,7 +35,6 @@ function getWritingStats(html: string) {
   const text = htmlToPlainText(html).trim();
 
   const cjkCount = text.match(/[\u4e00-\u9fff]/g)?.length ?? 0;
-
   const englishWordCount =
     text
       .replace(/[\u4e00-\u9fff]/g, " ")
@@ -119,18 +122,23 @@ export function EntryDetailPage() {
         <button
           type="button"
           onClick={() => navigate("/entries")}
-          className="flex items-center gap-2 text-sm text-stone-400 transition hover:text-white"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} strokeWidth={1.8} />
           Back to Entries
         </button>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-10 text-center">
-          <h2 className="text-2xl font-semibold">Entry not found</h2>
-          <p className="mt-3 text-sm text-stone-400">
+        <section className="ws-surface rounded-[2rem] p-8">
+          <p className="ws-eyebrow">Missing Record</p>
+
+          <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
+            Entry not found
+          </h2>
+
+          <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
             This entry may have been deleted.
           </p>
-        </div>
+        </section>
       </MotionPage>
     );
   }
@@ -139,60 +147,66 @@ export function EntryDetailPage() {
 
   return (
     <MotionPage className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => navigate("/entries")}
-          className="flex items-center gap-2 text-sm text-stone-400 transition hover:text-white"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} strokeWidth={1.8} />
           Back to Entries
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => openEditEntry(entry.id)}
-            className="flex h-10 items-center gap-2 rounded-2xl border border-white/10 px-4 text-sm text-stone-300 transition hover:bg-white/10 hover:text-white"
+            className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
           >
-            <Pencil size={15} />
+            <Pencil size={16} strokeWidth={1.75} />
             Quick Edit
           </button>
 
           <button
             type="button"
             onClick={handleDelete}
-            className="flex h-10 items-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 text-sm text-red-200 transition hover:bg-red-500/20"
+            className="flex h-10 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-4 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} strokeWidth={1.75} />
             Delete
           </button>
         </div>
       </div>
 
-      <article className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/20">
-        <header className="relative overflow-hidden border-b border-white/10 p-8">
-          <div
-            className={[
-              "pointer-events-none absolute inset-0",
-              typeMeta.glowClassName,
-            ].join(" ")}
-          />
-          <div className="relative">
+      <section
+        className={[
+          "ws-surface-raised relative overflow-hidden rounded-[2.25rem] p-7 md:p-8",
+          typeMeta.borderClassName,
+        ].join(" ")}
+      >
+        <div
+          className={[
+            "pointer-events-none absolute inset-0 opacity-70",
+            typeMeta.glowClassName,
+          ].join(" ")}
+        />
+
+        <div className="relative grid gap-8 xl:grid-cols-[1fr_20rem]">
+          <div>
             <div className="mb-5 flex flex-wrap items-center gap-3">
               <EntryTypeBadge type={entry.type} />
 
-              <span className="flex items-center gap-1.5 text-xs text-stone-500">
-                <Calendar size={14} />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]">
+                <Clock3 size={13} strokeWidth={1.8} />
                 Updated {formatEntryRelative(entry.updatedAt)}
               </span>
             </div>
 
-            <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-white">
+            <h1 className="ws-display-tight max-w-4xl text-5xl font-semibold leading-[0.98] text-[var(--text)] md:text-6xl">
               {entry.title}
             </h1>
 
-            <p className="mt-5 max-w-3xl text-base leading-7 text-stone-400">
+            <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
               {entry.summary || "No summary yet."}
             </p>
 
@@ -201,164 +215,174 @@ export function EntryDetailPage() {
                 entry.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-stone-400"
+                    className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]"
                   >
-                    {tag}
+                    #{tag}
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-stone-600">No tags</span>
+                <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-faint)]">
+                  No tags
+                </span>
               )}
             </div>
           </div>
-        </header>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-0">
-          <section className="min-h-[520px] border-r border-white/10 p-8">
-            <div className="mb-5 flex items-center justify-between">
+          <aside className="ws-surface-soft rounded-[1.75rem] p-5">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
+              Record Details
+            </p>
+
+            <div className="mt-5 space-y-4">
               <div>
-                <div className="flex items-center gap-2 text-sm font-medium text-stone-300">
-                  <FileText size={16} />
-                  Lore Notes
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                  Type
                 </div>
-
-                <div className="mt-1 text-xs text-stone-500">
-                  {writingStats.words} words · {writingStats.characters} characters
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {isEditingContent && (
-                  <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                    {saveStatus === "saving" ? (
-                      <>
-                        <Clock3 size={14} />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={14} />
-                        Saved locally · {formatEntryDateTime(entry.updatedAt)}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setIsEditingContent((value) => !value)}
-                  className="flex h-10 items-center gap-2 rounded-2xl border border-white/10 px-4 text-sm text-stone-300 transition hover:bg-white/10 hover:text-white"
-                >
-                  <Pencil size={15} />
-                  {isEditingContent ? "Done" : "Edit Notes"}
-                </button>
-              </div>
-            </div>
-
-            {isEditingContent ? (
-              <RichTextEditor
-                key={entry.id}
-                value={draftContent}
-                onChange={setDraftContent}
-                placeholder="Write character history, location details, faction rules, timeline notes..."
-              />
-            ) : entry.content ? (
-              <RichTextEditor
-                key={`${entry.id}-viewer-${entry.updatedAt}`}
-                value={entry.content}
-                editable={false}
-              />
-            ) : (
-              <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-8 text-center">
-                <h3 className="text-lg font-semibold">No content yet</h3>
-                <p className="mt-2 text-sm text-stone-400">
-                  Add detailed lore notes, background, rules, history, or
-                  references.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingContent(true)}
-                  className="mt-5 rounded-2xl bg-violet-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-400"
-                >
-                  Start Writing
-                </button>
-              </div>
-            )}
-          </section>
-
-          <aside className="space-y-5 p-6">
-            <div
-              className={[
-                "rounded-3xl border bg-black/20 p-5",
-                typeMeta.borderClassName,
-              ].join(" ")}
-            >
-              <div className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                Type
-              </div>
-
-              <div className="mt-3">
                 <EntryTypeBadge type={entry.type} />
+                <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                  {typeMeta.description}
+                </p>
               </div>
 
-              <p className="mt-3 text-xs leading-5 text-stone-500">
-                {typeMeta.description}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                Created
-              </div>
-              <div className="mt-2 text-sm text-stone-200">
-                {formatEntryDateTime(entry.createdAt)}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                Updated
-              </div>
-              <div className="mt-2 text-sm text-stone-200">
-                {formatEntryDateTime(entry.updatedAt)}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                Tags
+              <div className="border-t border-[var(--border)] pt-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                  <Calendar size={14} strokeWidth={1.7} />
+                  Created
+                </div>
+                <p className="text-sm text-[var(--text-muted)]">
+                  {formatEntryDateTime(entry.createdAt)}
+                </p>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {entry.tags.length > 0 ? (
-                  entry.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-stone-400"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-stone-600">No tags</span>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                Future Links
-              </div>
-              <div className="mt-3 space-y-2 text-sm text-stone-400">
-                <div>Map markers</div>
-                <div>Relations</div>
-                <div>Timeline events</div>
-                <div>Wiki preview</div>
+              <div className="border-t border-[var(--border)] pt-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                  <Clock3 size={14} strokeWidth={1.7} />
+                  Updated
+                </div>
+                <p className="text-sm text-[var(--text-muted)]">
+                  {formatEntryDateTime(entry.updatedAt)}
+                </p>
               </div>
             </div>
           </aside>
         </div>
-      </article>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+        <article className="ws-surface rounded-[2rem] p-5 md:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="ws-eyebrow">Lore Notes</p>
+
+              <h2 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
+                Main Text
+              </h2>
+
+              <p className="mt-1 text-sm text-[var(--text-muted)]">
+                {writingStats.words} words · {writingStats.characters} characters
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {isEditingContent ? (
+                <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--text-muted)]">
+                  {saveStatus === "saving" ? (
+                    <>
+                      <Clock3 size={15} strokeWidth={1.8} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={15} strokeWidth={1.8} />
+                      Saved locally
+                    </>
+                  )}
+                </span>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setIsEditingContent((value) => !value)}
+                className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
+              >
+                <FileText size={16} strokeWidth={1.75} />
+                {isEditingContent ? "Done" : "Edit Notes"}
+              </button>
+            </div>
+          </div>
+
+          {isEditingContent ? (
+            <RichTextEditor
+              value={draftContent}
+              onChange={setDraftContent}
+              editable
+              placeholder="Write history, rules, scenes, rumors, references..."
+            />
+          ) : entry.content ? (
+            <RichTextEditor value={entry.content} editable={false} />
+          ) : (
+            <div className="rounded-[1.5rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-6 py-12 text-center">
+              <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+                No content yet
+              </h3>
+
+              <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
+                Add detailed lore notes, background, rules, history, or
+                references.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setIsEditingContent(true)}
+                className="ws-button-primary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
+              >
+                Start Writing
+              </button>
+            </div>
+          )}
+        </article>
+
+        <aside className="space-y-6">
+          <section className="ws-surface rounded-[2rem] p-5">
+            <p className="ws-eyebrow">Tags</p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {entry.tags.length > 0 ? (
+                entry.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)]"
+                  >
+                    #{tag}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-[var(--text-muted)]">No tags</p>
+              )}
+            </div>
+          </section>
+
+          <section className="ws-surface rounded-[2rem] p-5">
+            <p className="ws-eyebrow">Future Links</p>
+
+            <div className="mt-4 space-y-2">
+              {["Map markers", "Relations", "Timeline events", "Wiki preview"].map(
+                (item) => (
+                  <div
+                    key={item}
+                    className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 text-sm"
+                  >
+                    <span className="text-[var(--text-muted)]">{item}</span>
+                    <span className="text-xs text-[var(--text-faint)]">
+                      Soon
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          </section>
+        </aside>
+      </section>
     </MotionPage>
   );
 }

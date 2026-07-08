@@ -15,54 +15,51 @@ export const entryTypeMetaMap: Record<EntryType, EntryTypeMeta> = {
     label: "Character",
     description: "People, heroes, rivals, witnesses, and named figures.",
     badgeClassName:
-      "border-violet-400/20 bg-violet-500/15 text-violet-200",
-    softBgClassName: "bg-violet-500/10",
-    borderClassName: "border-violet-400/20",
-    glowClassName:
-      "bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.24),transparent_34rem)]",
-    dotClassName: "bg-violet-300",
+      "border-[var(--tone-character-border)] bg-[var(--tone-character-soft)] text-[var(--tone-character)]",
+    softBgClassName: "bg-[var(--tone-character-soft)]",
+    borderClassName: "border-[var(--tone-character-border)]",
+    glowClassName: "ws-glow-character",
+    dotClassName: "bg-[var(--tone-character)]",
   },
   Location: {
     label: "Location",
     description: "Cities, ruins, regions, realms, landmarks, and maps.",
-    badgeClassName: "border-cyan-400/20 bg-cyan-500/15 text-cyan-200",
-    softBgClassName: "bg-cyan-500/10",
-    borderClassName: "border-cyan-400/20",
-    glowClassName:
-      "bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.20),transparent_34rem)]",
-    dotClassName: "bg-cyan-300",
+    badgeClassName:
+      "border-[var(--tone-location-border)] bg-[var(--tone-location-soft)] text-[var(--tone-location)]",
+    softBgClassName: "bg-[var(--tone-location-soft)]",
+    borderClassName: "border-[var(--tone-location-border)]",
+    glowClassName: "ws-glow-location",
+    dotClassName: "bg-[var(--tone-location)]",
   },
   Organization: {
     label: "Organization",
     description: "Factions, guilds, kingdoms, orders, and institutions.",
     badgeClassName:
-      "border-amber-400/20 bg-amber-500/15 text-amber-200",
-    softBgClassName: "bg-amber-500/10",
-    borderClassName: "border-amber-400/20",
-    glowClassName:
-      "bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.20),transparent_34rem)]",
-    dotClassName: "bg-amber-300",
+      "border-[var(--tone-organization-border)] bg-[var(--tone-organization-soft)] text-[var(--tone-organization)]",
+    softBgClassName: "bg-[var(--tone-organization-soft)]",
+    borderClassName: "border-[var(--tone-organization-border)]",
+    glowClassName: "ws-glow-organization",
+    dotClassName: "bg-[var(--tone-organization)]",
   },
   Item: {
     label: "Item",
     description: "Relics, tools, artifacts, weapons, books, and objects.",
     badgeClassName:
-      "border-emerald-400/20 bg-emerald-500/15 text-emerald-200",
-    softBgClassName: "bg-emerald-500/10",
-    borderClassName: "border-emerald-400/20",
-    glowClassName:
-      "bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.20),transparent_34rem)]",
-    dotClassName: "bg-emerald-300",
+      "border-[var(--tone-item-border)] bg-[var(--tone-item-soft)] text-[var(--tone-item)]",
+    softBgClassName: "bg-[var(--tone-item-soft)]",
+    borderClassName: "border-[var(--tone-item-border)]",
+    glowClassName: "ws-glow-item",
+    dotClassName: "bg-[var(--tone-item)]",
   },
   Event: {
     label: "Event",
     description: "Battles, disasters, rituals, meetings, and turning points.",
-    badgeClassName: "border-rose-400/20 bg-rose-500/15 text-rose-200",
-    softBgClassName: "bg-rose-500/10",
-    borderClassName: "border-rose-400/20",
-    glowClassName:
-      "bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.20),transparent_34rem)]",
-    dotClassName: "bg-rose-300",
+    badgeClassName:
+      "border-[var(--tone-event-border)] bg-[var(--tone-event-soft)] text-[var(--tone-event)]",
+    softBgClassName: "bg-[var(--tone-event-soft)]",
+    borderClassName: "border-[var(--tone-event-border)]",
+    glowClassName: "ws-glow-event",
+    dotClassName: "bg-[var(--tone-event)]",
   },
 };
 

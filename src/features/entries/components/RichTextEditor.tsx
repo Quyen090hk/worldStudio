@@ -1,3 +1,4 @@
+import { useEffect, type ReactNode } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -52,23 +53,26 @@ function ToolbarButton({
   disabled,
   onClick,
   children,
+  title,
 }: {
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
+  title: string;
 }) {
   return (
     <button
       type="button"
+      title={title}
       disabled={disabled}
       onClick={onClick}
       className={[
-        "flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 transition",
+        "flex h-9 w-9 items-center justify-center rounded-xl border text-[var(--text-muted)] transition",
         active
-          ? "bg-violet-500/20 text-violet-100"
-          : "hover:bg-white/10 hover:text-white",
-        disabled ? "cursor-not-allowed opacity-40" : "",
+          ? "border-[color-mix(in_srgb,var(--accent)_42%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+          : "border-transparent hover:border-[var(--border)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]",
+        disabled ? "opacity-40" : "",
       ].join(" ")}
     >
       {children}
@@ -98,7 +102,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[360px] max-w-none outline-none text-base leading-8 text-stone-300",
+          "min-h-[360px] max-w-none outline-none text-base leading-8 text-[var(--text)]",
       },
     },
     onUpdate({ editor }) {
@@ -106,99 +110,139 @@ export function RichTextEditor({
     },
   });
 
+  useEffect(() => {
+    if (!editor) return;
+
+    editor.setEditable(editable);
+  }, [editor, editable]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const nextContent = normalizeContent(value);
+    const currentContent = editor.getHTML();
+
+    if (nextContent && currentContent !== nextContent && !editor.isFocused) {
+      editor.commands.setContent(nextContent,{ emitUpdate: false });
+    }
+
+    if (!nextContent && currentContent !== "<p></p>" && !editor.isFocused) {
+      editor.commands.clearContent(false);
+    }
+  }, [editor, value]);
+
   if (!editor) {
     return null;
   }
 
   return (
-    <div className="rich-text-editor overflow-hidden rounded-3xl border border-white/10 bg-black/20">
-      {editable && (
-        <div className="flex flex-wrap items-center gap-1 border-b border-white/10 bg-white/[0.03] px-3 py-2">
+    <div className="rich-text-editor">
+      {editable ? (
+        <div className="mb-4 flex flex-wrap items-center gap-1 rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-muted)] p-1.5">
           <ToolbarButton
+            title="Heading 1"
             active={editor.isActive("heading", { level: 1 })}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 1 }).run()
             }
           >
-            <Heading1 size={16} />
+            <Heading1 size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Heading 2"
             active={editor.isActive("heading", { level: 2 })}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 2 }).run()
             }
           >
-            <Heading2 size={16} />
+            <Heading2 size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Bold"
             active={editor.isActive("bold")}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
-            <Bold size={16} />
+            <Bold size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Italic"
             active={editor.isActive("italic")}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
-            <Italic size={16} />
+            <Italic size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Bullet list"
             active={editor.isActive("bulletList")}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
           >
-            <List size={16} />
+            <List size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Ordered list"
             active={editor.isActive("orderedList")}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
           >
-            <ListOrdered size={16} />
+            <ListOrdered size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Quote"
             active={editor.isActive("blockquote")}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
           >
-            <Quote size={16} />
+            <Quote size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Code block"
             active={editor.isActive("codeBlock")}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           >
-            <Code size={16} />
+            <Code size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Horizontal rule"
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
           >
-            <SeparatorHorizontal size={16} />
+            <SeparatorHorizontal size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
-          <div className="mx-2 h-6 w-px bg-white/10" />
+          <div className="mx-1 h-6 w-px bg-[var(--border)]" />
 
           <ToolbarButton
+            title="Undo"
             disabled={!editor.can().undo()}
             onClick={() => editor.chain().focus().undo().run()}
           >
-            <Undo2 size={16} />
+            <Undo2 size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <ToolbarButton
+            title="Redo"
             disabled={!editor.can().redo()}
             onClick={() => editor.chain().focus().redo().run()}
           >
-            <Redo2 size={16} />
+            <Redo2 size={17} strokeWidth={1.75} />
           </ToolbarButton>
         </div>
-      )}
+      ) : null}
 
-      <EditorContent editor={editor} className="px-6 py-5" />
+      <EditorContent
+        editor={editor}
+        className={[
+          "rounded-[1.5rem] border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_72%,transparent)] px-6 py-5",
+          editable
+            ? "focus-within:border-[color-mix(in_srgb,var(--accent)_45%,transparent)] focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_10%,transparent)]"
+            : "",
+        ].join(" ")}
+      />
     </div>
   );
 }

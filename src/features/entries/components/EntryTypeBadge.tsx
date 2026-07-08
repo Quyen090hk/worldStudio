@@ -1,3 +1,5 @@
+import type { MouseEvent } from "react";
+
 import type { EntryType } from "../types";
 import { getEntryTypeMeta } from "../utils/entryTypeMeta";
 
@@ -10,21 +12,30 @@ export function EntryTypeBadge({ type, onClick }: EntryTypeBadgeProps) {
   const meta = getEntryTypeMeta(type);
 
   const className = [
-    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition",
+    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.18em] transition",
     meta.badgeClassName,
-    onClick ? "hover:brightness-125" : "",
+    onClick
+      ? "cursor-pointer hover:border-[var(--border-strong)] hover:brightness-105"
+      : "",
   ].join(" ");
+
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onClick?.();
+  }
 
   const content = (
     <>
-      <span className={["h-1.5 w-1.5 rounded-full", meta.dotClassName].join(" ")} />
+      <span
+        className={["h-1.5 w-1.5 rounded-full", meta.dotClassName].join(" ")}
+      />
       {meta.label}
     </>
   );
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={className}>
+      <button type="button" onClick={handleClick} className={className}>
         {content}
       </button>
     );

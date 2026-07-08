@@ -8,6 +8,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+
 import { MotionPage } from "../../shared/components/MotionPage";
 import {
   listContainer,
@@ -40,6 +41,7 @@ export function EntriesPage() {
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
   const openEditEntry = useEntryStore((state) => state.openEditEntry);
   const deleteEntry = useEntryStore((state) => state.deleteEntry);
+
   const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
@@ -48,7 +50,6 @@ export function EntriesPage() {
 
   const allTags = useMemo(() => {
     const tags = entries.flatMap((entry) => entry.tags);
-
     return Array.from(new Set(tags)).sort((a, b) => a.localeCompare(b));
   }, [entries]);
 
@@ -63,7 +64,6 @@ export function EntriesPage() {
       .filter((entry) => {
         const matchesType =
           selectedType === "All" ? true : entry.type === selectedType;
-
         const matchesTag =
           selectedTag === "All" ? true : entry.tags.includes(selectedTag);
 
@@ -104,105 +104,124 @@ export function EntriesPage() {
 
   return (
     <MotionPage className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-3xl font-semibold">Entries</h2>
-          <p className="mt-2 text-sm text-stone-400">
-            Manage characters, locations, organizations, items, and events.
-          </p>
-        </div>
+      <section className="space-y-2">
+        <p className="ws-eyebrow">Archive</p>
 
+        <h2 className="text-5xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+          Entries
+        </h2>
 
-      </div>
+        <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+          Manage characters, locations, organizations, items, and events.
+        </p>
+      </section>
 
-      <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex h-11 min-w-[320px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-stone-400 transition focus-within:border-violet-400/60 focus-within:bg-white/[0.06]">
-            <Search size={17} />
+      <section className="ws-surface rounded-[2rem] p-4 md:p-5">
+        <div className="grid gap-3 xl:grid-cols-[1fr_12rem_12rem_auto]">
+          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+            <Search
+              size={17}
+              strokeWidth={1.7}
+              className="text-[var(--text-faint)]"
+            />
 
             <input
+              type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search title, summary, content, tags..."
-              className="h-full flex-1 bg-transparent text-sm text-white outline-none placeholder:text-stone-600"
+              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
             />
 
-            {query.trim() !== "" && (
+            {query.trim() !== "" ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="rounded-lg p-1 text-stone-500 transition hover:bg-white/10 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+                aria-label="Clear search"
               >
-                <X size={14} />
+                <X size={15} strokeWidth={1.8} />
               </button>
-            )}
-          </div>
+            ) : null}
+          </label>
 
-          <div className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3">
-            <SlidersHorizontal size={16} className="text-stone-500" />
+          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+            <SlidersHorizontal
+              size={16}
+              strokeWidth={1.7}
+              className="text-[var(--text-faint)]"
+            />
 
             <select
               value={selectedType}
               onChange={(event) =>
                 setSelectedType(event.target.value as EntryTypeFilter)
               }
-              className="h-full bg-transparent text-sm text-stone-200 outline-none"
+              className="h-full min-w-0 flex-1 appearance-none bg-transparent text-sm text-[var(--text)] outline-none"
             >
               {entryTypes.map((type) => (
-                <option key={type} value={type} className="bg-[#101116]">
+                <option key={type} value={type}>
                   {type === "All" ? "All Types" : type}
                 </option>
               ))}
             </select>
-          </div>
+          </label>
 
-          <select
-            value={selectedTag}
-            onChange={(event) => setSelectedTag(event.target.value)}
-            className="h-11 rounded-2xl border border-white/10 bg-black/20 px-3 text-sm text-stone-200 outline-none transition hover:border-white/20"
-          >
-            <option value="All" className="bg-[#101116]">
-              All Tags
-            </option>
-
-            {allTags.map((tag) => (
-              <option key={tag} value={tag} className="bg-[#101116]">
-                {tag}
-              </option>
-            ))}
-          </select>
-
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-11 rounded-2xl border border-white/10 px-4 text-sm text-stone-300 transition hover:bg-white/10 hover:text-white"
+          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+            <select
+              value={selectedTag}
+              onChange={(event) => setSelectedTag(event.target.value)}
+              className="h-full min-w-0 flex-1 appearance-none bg-transparent text-sm text-[var(--text)] outline-none"
             >
-              Clear filters
-            </button>
-          )}
+              <option value="All">All Tags</option>
+
+              {allTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  #{tag}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex justify-end">
+            {hasFilters ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="ws-button-secondary h-12 rounded-[1.15rem] px-4 text-sm font-medium"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openCreateEntry}
+                className="ws-button-primary h-12 rounded-[1.15rem] px-4 text-sm font-semibold"
+              >
+                New Entry
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-          <div className="text-sm text-stone-400">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--border)] pt-4">
+          <span className="text-sm font-medium text-[var(--text-muted)]">
             Showing{" "}
-            <span className="font-medium text-white">
-              {filteredEntries.length}
-            </span>{" "}
-            of <span className="font-medium text-white">{entries.length}</span>{" "}
+            <span className="text-[var(--text)]">{filteredEntries.length}</span>{" "}
+            of <span className="text-[var(--text)]">{entries.length}</span>{" "}
             entries
-          </div>
+          </span>
 
-          {selectedTag !== "All" && (
-            <div className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-xs text-violet-200">
+          {selectedTag !== "All" ? (
+            <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]">
               Tag: #{selectedTag}
-            </div>
-          )}
+            </span>
+          ) : null}
         </div>
       </section>
 
-      <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
-        <div className="grid grid-cols-[1.4fr_0.8fr_1fr_0.7fr_auto] border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.2em] text-stone-500">
+      <section className="ws-surface overflow-hidden rounded-[2rem]">
+        <div className="hidden grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto] gap-4 border-b border-[var(--border)] px-5 py-4 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)] lg:grid">
           <div>Title</div>
           <div>Type</div>
           <div>Tags</div>
@@ -211,33 +230,37 @@ export function EntriesPage() {
         </div>
 
         {entries.length === 0 ? (
-          <div className="px-4 py-16 text-center">
-            <h3 className="text-lg font-semibold">No entries yet</h3>
-            <p className="mt-2 text-sm text-stone-400">
+          <div className="px-6 py-14 text-center">
+            <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+              No entries yet
+            </h3>
+
+            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
               Start by creating your first lore entry.
             </p>
 
-            <motion.button
+            <button
               type="button"
               onClick={openCreateEntry}
-              whileTap={pressTap}
-              whileHover={{ y: -1 }}
-              className="mt-5 rounded-2xl bg-violet-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-400"
+              className="ws-button-primary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
             >
               Create Entry
-            </motion.button>
+            </button>
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="px-4 py-16 text-center">
-            <h3 className="text-lg font-semibold">No matching entries</h3>
-            <p className="mt-2 text-sm text-stone-400">
+          <div className="px-6 py-14 text-center">
+            <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+              No matching entries
+            </h3>
+
+            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
               Try another keyword, type, or tag.
             </p>
 
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-5 rounded-2xl border border-white/10 px-4 py-2 text-sm font-medium text-stone-300 transition hover:bg-white/10 hover:text-white"
+              className="ws-button-secondary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
             >
               Clear filters
             </button>
@@ -247,96 +270,109 @@ export function EntriesPage() {
             variants={listContainer}
             initial="initial"
             animate="animate"
-            className="divide-y divide-white/10"
+            className="divide-y divide-[var(--border)]"
           >
             {filteredEntries.map((entry) => {
               const typeMeta = getEntryTypeMeta(entry.type);
 
               return (
-                <motion.div
+                <motion.article
                   key={entry.id}
                   variants={listItem}
-                  whileTap={pressTap}
                   onClick={() => navigate(`/entries/${entry.id}`)}
                   className={[
-                    "group relative grid cursor-pointer grid-cols-[1.4fr_0.8fr_1fr_0.7fr_auto] items-center px-4 py-4 transition-colors hover:bg-white/[0.04]",
-                    "before:absolute before:left-0 before:top-3 before:h-[calc(100%-1.5rem)] before:w-1 before:rounded-full before:opacity-0 before:transition-opacity group-hover:before:opacity-100",
-                    typeMeta.softBgClassName,
-                  ].join(" ")}                >
-                  <div>
-                    <div className="font-medium text-white transition-colors group-hover:text-violet-100">
-                      {entry.title}
-                    </div>
-
-                    <div className="mt-1 line-clamp-1 text-sm text-stone-400">
-                      {entry.summary || "No summary yet."}
-                    </div>
-                  </div>
-
+                    "group relative cursor-pointer px-5 py-4 transition-colors",
+                    "hover:bg-[var(--surface-muted)]",
+                  ].join(" ")}
+                >
                   <div
-                    onClick={(event) => {
-                      event.stopPropagation();
-                    }}
-                  >
-                    <EntryTypeBadge
-                      type={entry.type}
-                      onClick={() => setSelectedType(entry.type)}
-                    />
-                  </div>
+                    className={[
+                      "pointer-events-none absolute inset-y-3 left-0 w-1 rounded-r-full opacity-0 transition-opacity group-hover:opacity-100",
+                      typeMeta.dotClassName,
+                    ].join(" ")}
+                  />
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {entry.tags.slice(0, 3).map((tag) => (
-                      <button
-                        key={tag}
+                  <div className="grid gap-4 lg:grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto] lg:items-center">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-semibold text-[var(--text)]">
+                        {entry.title}
+                      </h3>
+
+                      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
+                        {entry.summary || "No summary yet."}
+                      </p>
+                    </div>
+
+                    <div>
+                      <EntryTypeBadge
+                        type={entry.type}
+                        onClick={(event?: never) => {
+                          void event;
+                          setSelectedType(entry.type);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {entry.tags.slice(0, 4).map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedTag(tag);
+                          }}
+                          className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+
+                      {entry.tags.length === 0 ? (
+                        <span className="text-xs text-[var(--text-faint)]">
+                          No tags
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="text-sm text-[var(--text-muted)]">
+                      {formatEntryDate(entry.updatedAt)}
+                    </div>
+
+                    <div className="flex items-center justify-start gap-2 lg:justify-end">
+                      <motion.button
                         type="button"
+                        whileTap={pressTap}
                         onClick={(event) => {
                           event.stopPropagation();
-                          setSelectedTag(tag);
+                          openEditEntry(entry.id);
                         }}
-                        className="rounded-full border border-white/10 px-2 py-1 text-xs text-stone-400 transition hover:border-violet-400/30 hover:bg-violet-500/10 hover:text-violet-100"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+                        aria-label={`Edit ${entry.title}`}
                       >
-                        {tag}
-                      </button>
-                    ))}
+                        <Pencil size={16} strokeWidth={1.75} />
+                      </motion.button>
 
-                    {entry.tags.length === 0 && (
-                      <span className="text-xs text-stone-600">No tags</span>
-                    )}
+                      <motion.button
+                        type="button"
+                        whileTap={pressTap}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDelete(entry.id, entry.title);
+                        }}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-300"
+                        aria-label={`Delete ${entry.title}`}
+                      >
+                        <Trash2 size={16} strokeWidth={1.75} />
+                      </motion.button>
+                    </div>
                   </div>
-
-                  <div className="text-sm text-stone-500">
-                    {formatEntryDate(entry.updatedAt)}
-                  </div>
-
-                  <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openEditEntry(entry.id);
-                      }}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 transition hover:bg-white/10 hover:text-white"
-                    >
-                      <Pencil size={15} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleDelete(entry.id, entry.title);
-                      }}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 transition hover:bg-red-500/15 hover:text-red-200"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </motion.div>
+                </motion.article>
               );
             })}
           </motion.div>
         )}
-      </div>
+      </section>
     </MotionPage>
   );
 }
