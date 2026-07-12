@@ -7,10 +7,11 @@ import { EntriesPage } from "../features/entries/EntriesPage";
 import { EntryDetailPage } from "../features/entries/EntryDetailPage";
 import { MapPage } from "../features/map/MapPage";
 
+
 const GraphPage = lazy(() =>
   import("../features/graph/GraphPage").then((module) => ({
     default: module.GraphPage,
-  }))
+  })),
 );
 
 function PlaceholderPage({ title }: { title: string }) {

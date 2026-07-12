@@ -2,10 +2,23 @@ export type RelationshipDirection = "directed" | "mutual";
 export type RelationshipStatus = "current" | "former" | "rumored" | "secret";
 
 export type RelationshipType =
-  | "Parent of" | "Sibling of" | "Loves" | "Rivals" | "Rules"
-  | "Member of" | "Allied with" | "At war with" | "Located in"
-  | "Born in" | "Participated in" | "Caused" | "Possesses"
-  | "Created by" | "Worships" | "Travels to" | "Custom";
+  | "Parent of"
+  | "Sibling of"
+  | "Loves"
+  | "Rivals"
+  | "Rules"
+  | "Member of"
+  | "Allied with"
+  | "At war with"
+  | "Located in"
+  | "Born in"
+  | "Participated in"
+  | "Caused"
+  | "Possesses"
+  | "Created by"
+  | "Worships"
+  | "Travels to"
+  | "Custom";
 
 export type EntryRelationship = {
   id: string;
@@ -23,4 +36,3 @@ export type EntryRelationship = {
 };
 
 export type RelationshipInput = Omit<EntryRelationship, "id">;
-
