@@ -1,9 +1,17 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "../shared/components/AppLayout";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { EntriesPage } from "../features/entries/EntriesPage";
 import { EntryDetailPage } from "../features/entries/EntryDetailPage";
+import { MapPage } from "../features/map/MapPage";
+
+const GraphPage = lazy(() =>
+  import("../features/graph/GraphPage").then((module) => ({
+    default: module.GraphPage,
+  }))
+);
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -31,8 +39,21 @@ export function AppRoutes() {
         <Route path="entries" element={<EntriesPage />} />
         <Route path="entries/:entryId" element={<EntryDetailPage />} />
 
-        <Route path="map" element={<PlaceholderPage title="Map" />} />
-        <Route path="graph" element={<PlaceholderPage title="Graph" />} />
+        <Route path="map" element={<MapPage />} />
+        <Route
+          path="graph"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
+                  Preparing knowledge graph…
+                </div>
+              }
+            >
+              <GraphPage />
+            </Suspense>
+          }
+        />
         <Route path="timeline" element={<PlaceholderPage title="Timeline" />} />
         <Route path="canvas" element={<PlaceholderPage title="Canvas" />} />
         <Route path="assets" element={<PlaceholderPage title="Assets" />} />
