@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { UndoToast } from "./UndoToast";
 
 export function AppLayout() {
   const { t } = useI18n();
@@ -60,6 +61,7 @@ export function AppLayout() {
       </div>
 
       <EntryDrawer />
+      <UndoToast />
     </div>
   );
 }

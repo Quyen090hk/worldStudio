@@ -12,11 +12,11 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
-import { RichTextEditor } from "./components/RichTextEditor";
+import { RichTextReadView } from "./components/RichTextReadView";
 import { deleteEntryCascade } from "./actions/deleteEntryCascade";
 import { useEntryStore } from "./stores/useEntryStore";
 import {
@@ -33,6 +33,12 @@ import { useCanvasStore } from "../canvas/stores/useCanvasStore";
 
 type SaveStatus = "idle" | "saving" | "saved";
 type PendingContentSave = { entryId: string; content: string };
+
+const RichTextEditor = lazy(() =>
+  import("./components/RichTextEditor").then((module) => ({
+    default: module.RichTextEditor,
+  })),
+);
 
 function htmlToPlainText(html: string) {
   if (!html) return "";
@@ -406,14 +412,20 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           </div>
 
           {isEditingContent ? (
-            <RichTextEditor
-              value={draftContent}
-              onChange={handleContentChange}
-              editable
-              placeholder={t("entry.writePlaceholder")}
-            />
+            <Suspense
+              fallback={
+                <div className="min-h-[24rem] animate-pulse rounded-[1.5rem] bg-[var(--surface-muted)]" />
+              }
+            >
+              <RichTextEditor
+                value={draftContent}
+                onChange={handleContentChange}
+                editable
+                placeholder={t("entry.writePlaceholder")}
+              />
+            </Suspense>
           ) : entry.content ? (
-            <RichTextEditor value={entry.content} editable={false} />
+            <RichTextReadView value={entry.content} />
           ) : (
             <div className="rounded-[1.5rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-6 py-12 text-center">
               <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">

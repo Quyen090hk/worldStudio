@@ -13,89 +13,34 @@ import {
   FileImage,
   ImageUp,
   Layers3,
-  Link2,
   MapPin,
   Minus,
   Plus,
-  Route,
   Search,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
 import { useI18n } from "../../shared/i18n";
-import { useEntryStore } from "../entries/stores/useEntryStore";
 import { useMapStore } from "./stores/useMapStore";
-import type { ConnectionType, MapScale, MarkerCategory } from "./types";
+import type { MapScale, MarkerCategory } from "./types";
+import {
+  CATEGORY_GLYPH as categoryGlyph,
+  MAP_CATEGORIES as categories,
+  MAP_COLORS as colors,
+  MAP_SCALES as scales,
+} from "./mapOptions";
 import {
   loadMapImage,
   removeMapImage,
   saveMapImage,
 } from "./utils/mapImageStorage";
-
-const categories: MarkerCategory[] = [
-  "Settlement",
-  "Capital",
-  "Kingdom",
-  "Landmark",
-  "Ruin",
-  "Dungeon",
-  "Event",
-  "Battle",
-  "Character",
-  "Faction",
-  "Quest",
-  "Religion",
-  "Resource",
-  "Transport",
-  "Geography",
-  "Custom",
-];
-const connectionTypes: ConnectionType[] = [
-  "Road",
-  "Trade route",
-  "River",
-  "Border",
-  "Migration",
-  "Campaign",
-  "Journey",
-  "Alliance",
-  "Custom",
-];
-const scales: MapScale[] = [
-  "World",
-  "Continent",
-  "Region",
-  "City",
-  "Dungeon",
-  "Other",
-];
-const colors = ["#986e36", "#725b87", "#627554", "#557783", "#925b52"];
-const categoryGlyph: Record<MarkerCategory, string> = {
-  Settlement: "●",
-  Capital: "★",
-  Kingdom: "♜",
-  Landmark: "◆",
-  Ruin: "⌁",
-  Dungeon: "⬟",
-  Event: "◈",
-  Battle: "⚔",
-  Character: "♟",
-  Faction: "⚑",
-  Quest: "!",
-  Religion: "✦",
-  Resource: "♦",
-  Transport: "↔",
-  Geography: "▲",
-  Custom: "•",
-};
+import { MapMarkerPanel } from "./components/MapMarkerPanel";
 
 export function MapPage() {
   const store = useMapStore();
-  const entries = useEntryStore((state) => state.entries);
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useI18n();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -141,8 +86,6 @@ export function MapPage() {
   const [imageError, setImageError] = useState("");
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [connectionTarget, setConnectionTarget] = useState("");
-  const [connectionType, setConnectionType] = useState<ConnectionType>("Road");
 
   useEffect(() => {
     let url: string | null = null;
@@ -169,8 +112,6 @@ export function MapPage() {
     };
   }, [activeMap.id, activeMap.name, deepLinkedMarkerId, t]);
 
-  const selected =
-    mapMarkers.find((marker) => marker.id === selectedId) ?? null;
   const visibleLayerIds = new Set(
     mapLayers.filter((layer) => layer.visible).map((layer) => layer.id),
   );
@@ -292,31 +233,6 @@ export function MapPage() {
     event.preventDefault();
     setZoomSafe(zoom + (event.deltaY < 0 ? 0.15 : -0.15));
   }
-  function toggleEntry(entryId: string) {
-    if (!selected) return;
-    store.updateMarker(selected.id, {
-      entryIds: selected.entryIds.includes(entryId)
-        ? selected.entryIds.filter((id) => id !== entryId)
-        : [...selected.entryIds, entryId],
-    });
-  }
-  function connectMarkers() {
-    if (!selected || !connectionTarget || connectionTarget === selected.id)
-      return;
-    store.addConnection({
-      mapId: activeMap.id,
-      fromMarkerId: selected.id,
-      toMarkerId: connectionTarget,
-      type: connectionType,
-      label: connectionType,
-      color: selected.color,
-      dashed: ["Border", "Migration", "Campaign", "Journey"].includes(
-        connectionType,
-      ),
-    });
-    setConnectionTarget("");
-  }
-
   return (
     <MotionPage className="space-y-5">
       <input
@@ -674,275 +590,10 @@ export function MapPage() {
           ) : null}
         </div>
 
-        <aside className="ws-surface overflow-y-auto rounded-[2rem] p-5">
-          {selected ? (
-            <div className="space-y-4">
-              <div>
-                <p className="ws-eyebrow">{t("map.loreMarker")}</p>
-                <input
-                  value={selected.title}
-                  onChange={(e) =>
-                    store.updateMarker(selected.id, { title: e.target.value })
-                  }
-                  className="ws-display mt-2 w-full bg-transparent text-3xl font-semibold outline-none"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <label>
-                  <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">
-                    {t("map.category")}
-                  </span>
-                  <select
-                    value={selected.category}
-                    onChange={(e) =>
-                      store.updateMarker(selected.id, {
-                        category: e.target.value as MarkerCategory,
-                      })
-                    }
-                    className="ws-input h-10 w-full rounded-xl px-2 text-xs"
-                  >
-                    {categories.map((c) => (
-                      <option key={c} value={c}>
-                        {t(`map.category.${c}`)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">
-                    {t("map.layer")}
-                  </span>
-                  <select
-                    value={selected.layerId}
-                    onChange={(e) =>
-                      store.updateMarker(selected.id, {
-                        layerId: e.target.value,
-                      })
-                    }
-                    className="ws-input h-10 w-full rounded-xl px-2 text-xs"
-                  >
-                    {mapLayers.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label>
-                <span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">
-                  {t("map.writerNote")}
-                </span>
-                <textarea
-                  value={selected.description}
-                  onChange={(e) =>
-                    store.updateMarker(selected.id, {
-                      description: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="ws-input w-full rounded-xl p-3 text-sm"
-                />
-              </label>
-              <div>
-                <span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">
-                  {t("map.visibleDuringEra")}
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="number"
-                    value={selected.startYear ?? ""}
-                    onChange={(e) =>
-                      store.updateMarker(selected.id, {
-                        startYear: e.target.value
-                          ? Number(e.target.value)
-                          : null,
-                      })
-                    }
-                    placeholder={t("map.fromYear")}
-                    className="ws-input h-10 rounded-xl px-2 text-xs"
-                  />
-                  <input
-                    type="number"
-                    value={selected.endYear ?? ""}
-                    onChange={(e) =>
-                      store.updateMarker(selected.id, {
-                        endYear: e.target.value ? Number(e.target.value) : null,
-                      })
-                    }
-                    placeholder={t("map.toYear")}
-                    className="ws-input h-10 rounded-xl px-2 text-xs"
-                  />
-                </div>
-              </div>
-              <details
-                className="rounded-xl border border-[var(--border)] p-3"
-                open
-              >
-                <summary className="cursor-pointer text-xs font-bold uppercase tracking-[.12em] text-[var(--text-faint)]">
-                  {t("map.linkedEntries", { count: selected.entryIds.length })}
-                </summary>
-                <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
-                  {entries.map((entry) => (
-                    <label
-                      key={entry.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-[var(--surface-muted)]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected.entryIds.includes(entry.id)}
-                        onChange={() => toggleEntry(entry.id)}
-                      />
-                      <span className="min-w-0 flex-1 truncate text-xs">
-                        <b>{entry.title}</b>
-                        <span className="ml-1 text-[var(--text-faint)]">
-                          {t(`type.${entry.type}`)}
-                        </span>
-                      </span>
-                      {selected.entryIds.includes(entry.id) ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/entries/${entry.id}`);
-                          }}
-                        >
-                          <ChevronRight size={14} />
-                        </button>
-                      ) : null}
-                    </label>
-                  ))}
-                </div>
-              </details>
-              <details className="rounded-xl border border-[var(--border)] p-3">
-                <summary className="cursor-pointer text-xs font-bold uppercase tracking-[.12em] text-[var(--text-faint)]">
-                  {t("map.connections", {
-                    count: mapConnections.filter(
-                      (c) =>
-                        c.fromMarkerId === selected.id ||
-                        c.toMarkerId === selected.id,
-                    ).length,
-                  })}
-                </summary>
-                <div className="mt-3 space-y-2">
-                  <select
-                    value={connectionTarget}
-                    onChange={(e) => setConnectionTarget(e.target.value)}
-                    className="ws-input h-10 w-full rounded-xl px-2 text-xs"
-                  >
-                    <option value="">{t("map.connectMarker")}</option>
-                    {mapMarkers
-                      .filter((m) => m.id !== selected.id)
-                      .map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.title}
-                        </option>
-                      ))}
-                  </select>
-                  <div className="flex gap-2">
-                    <select
-                      value={connectionType}
-                      onChange={(e) =>
-                        setConnectionType(e.target.value as ConnectionType)
-                      }
-                      className="ws-input h-10 min-w-0 flex-1 rounded-xl px-2 text-xs"
-                    >
-                      {connectionTypes.map((connectionTypeValue) => (
-                        <option key={connectionTypeValue} value={connectionTypeValue}>
-                          {t(`map.connection.${connectionTypeValue}`)}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={connectMarkers}
-                      disabled={!connectionTarget}
-                      className="ws-button-primary flex h-10 w-10 items-center justify-center rounded-xl"
-                    >
-                      <Link2 size={15} />
-                    </button>
-                  </div>
-                  {mapConnections
-                    .filter(
-                      (c) =>
-                        c.fromMarkerId === selected.id ||
-                        c.toMarkerId === selected.id,
-                    )
-                    .map((c) => {
-                      const otherId =
-                        c.fromMarkerId === selected.id
-                          ? c.toMarkerId
-                          : c.fromMarkerId;
-                      return (
-                        <div
-                          key={c.id}
-                          className="flex items-center gap-2 rounded-lg bg-[var(--surface-muted)] p-2 text-xs"
-                        >
-                          <Route size={14} />
-                          <span className="flex-1 truncate">
-                            {t(`map.connection.${c.type}`)} ·{" "}
-                            {mapMarkers.find((m) => m.id === otherId)?.title}
-                          </span>
-                          <button onClick={() => store.deleteConnection(c.id)}>
-                            <X size={13} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-              </details>
-              <div>
-                <span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">
-                  {t("map.style")}
-                </span>
-                <div className="flex items-center gap-2">
-                  {colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => store.updateMarker(selected.id, { color })}
-                      className={`h-7 w-7 rounded-full ${selected.color === color ? "ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--surface-solid)]" : ""}`}
-                      style={{ background: color }}
-                    />
-                  ))}
-                  <select
-                    value={selected.size}
-                    onChange={(e) =>
-                      store.updateMarker(selected.id, {
-                        size: e.target.value as "Small" | "Medium" | "Large",
-                      })
-                    }
-                    className="ws-input ml-auto h-9 rounded-xl px-2 text-xs"
-                  >
-                    <option value="Small">{t("map.small")}</option>
-                    <option value="Medium">{t("map.medium")}</option>
-                    <option value="Large">{t("map.large")}</option>
-                  </select>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  if (window.confirm(`Delete “${selected.title}”?`)) {
-                    store.deleteMarker(selected.id);
-                    setSelectedId(null);
-                  }
-                }}
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500/10 text-xs font-semibold text-red-500"
-              >
-                <Trash2 size={14} />
-                {t("map.deleteMarker")}
-              </button>
-            </div>
-          ) : (
-            <div className="flex min-h-64 flex-col items-center justify-center text-center">
-              <MapPin size={28} className="text-[var(--text-faint)]" />
-              <h3 className="ws-display mt-4 text-2xl font-semibold">
-                {t("map.selectMarker")}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                {t("map.selectMarkerHelp")}
-              </p>
-            </div>
-          )}
-        </aside>
+        <MapMarkerPanel
+          selectedId={selectedId}
+          clearSelection={() => setSelectedId(null)}
+        />
       </section>
     </MotionPage>
   );

@@ -32,6 +32,7 @@ import {
   restoreWorkspaceBackup,
   serializeWorkspaceBackup,
 } from "./workspaceBackup";
+import { DataHealthPanel } from "./components/DataHealthPanel";
 
 type BusyAction = "export" | "import" | null;
 type Notice = { tone: "success" | "error"; message: string };
@@ -264,6 +265,8 @@ export function SettingsPage() {
           </div>
         ))}
       </section>
+
+      <DataHealthPanel />
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
         <div className="ws-surface rounded-[2rem] p-6 md:p-7">

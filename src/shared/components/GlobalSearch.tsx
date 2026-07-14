@@ -10,7 +10,6 @@ import {
   Search,
   Settings,
   Timer,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -101,8 +100,7 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
@@ -160,13 +158,13 @@ export function GlobalSearch() {
 
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     inputRef.current?.focus();
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    function handleOutsidePointer(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node))
+        closeSearch({ restoreFocus: false });
+    }
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
   }, [open]);
 
   useEffect(() => {
@@ -177,14 +175,13 @@ export function GlobalSearch() {
   }, [items, listId, open, selectedIndex]);
 
   function openSearch() {
-    setQuery("");
-    setActiveIndex(0);
+    if (!open) setActiveIndex(0);
     setOpen(true);
   }
 
   function closeSearch({ restoreFocus = true } = {}) {
     setOpen(false);
-    if (restoreFocus) window.setTimeout(() => triggerRef.current?.focus(), 0);
+    if (restoreFocus) window.setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   function selectItem(item: SearchItem) {
@@ -196,23 +193,6 @@ export function GlobalSearch() {
     if (event.key === "Escape") {
       event.preventDefault();
       closeSearch();
-      return;
-    }
-
-    if (event.key === "Tab") {
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
       return;
     }
 
@@ -233,85 +213,54 @@ export function GlobalSearch() {
   }
 
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={openSearch}
-        className="ws-input flex h-10 w-10 shrink-0 items-center justify-center gap-3 rounded-full px-0 text-[var(--text-muted)] sm:h-11 sm:w-full sm:max-w-sm sm:justify-start sm:px-4"
-        aria-label={t("search.open")}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
+    <div
+      ref={rootRef}
+      onKeyDown={handleDialogKeyDown}
+      className="relative w-full max-w-sm"
+    >
+      <div className="ws-input flex h-10 min-w-0 items-center gap-2 rounded-full px-3 text-[var(--text-muted)] sm:h-11 sm:gap-3 sm:px-4">
         <Search size={17} strokeWidth={1.7} className="shrink-0" />
-        <span className="hidden min-w-0 flex-1 truncate text-left text-sm text-[var(--text-faint)] sm:block">
-          {t("topbar.search")}
-        </span>
-        <span className="ws-kbd hidden rounded-md px-1.5 py-0.5 lg:inline">
-          ⌘K
-        </span>
-      </button>
+        <input
+          ref={inputRef}
+          type="search"
+          role="combobox"
+          value={query}
+          onFocus={openSearch}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActiveIndex(0);
+            setOpen(true);
+          }}
+          placeholder={t("topbar.search")}
+          aria-label={t("search.placeholder")}
+          aria-controls={listId}
+          aria-expanded={open}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            open && items[selectedIndex]
+              ? `${listId}-option-${selectedIndex}`
+              : undefined
+          }
+          className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+        />
+        <span className="ws-kbd hidden shrink-0 rounded-md px-1.5 py-0.5 lg:inline">⌘K</span>
+      </div>
 
       {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-3 pt-[8vh] backdrop-blur-sm sm:px-6 sm:pt-[12vh]"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeSearch();
-          }}
-        >
+        <div className="fixed left-4 right-4 top-[4.5rem] z-50 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+.4rem)] sm:w-[min(34rem,calc(100vw-2rem))]">
           <div
-            ref={dialogRef}
-            role="dialog"
-            aria-modal="true"
+            role="search"
             aria-labelledby={`${listId}-title`}
-            onKeyDown={handleDialogKeyDown}
-            className="ws-surface-raised w-full max-w-2xl overflow-hidden rounded-[1.5rem] shadow-2xl sm:rounded-[2rem]"
+            className="ws-surface-raised w-full overflow-hidden rounded-[1.25rem] border border-[var(--border-strong)] shadow-2xl"
           >
             <h2 id={`${listId}-title`} className="sr-only">
               {t("search.title")}
             </h2>
-            <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3 sm:px-5">
-              <Search
-                size={19}
-                className="shrink-0 text-[var(--text-faint)]"
-                aria-hidden="true"
-              />
-              <input
-                ref={inputRef}
-                type="search"
-                role="combobox"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setActiveIndex(0);
-                }}
-                placeholder={t("search.placeholder")}
-                aria-label={t("search.placeholder")}
-                aria-controls={listId}
-                aria-expanded="true"
-                aria-autocomplete="list"
-                aria-activedescendant={
-                  items[selectedIndex]
-                    ? `${listId}-option-${selectedIndex}`
-                    : undefined
-                }
-                className="min-w-0 flex-1 border-0 bg-transparent py-2 text-base text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
-              />
-              <button
-                type="button"
-                onClick={() => closeSearch()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-                aria-label={t("common.close")}
-              >
-                <X size={17} />
-              </button>
-            </div>
-
             <div
               id={listId}
               role="listbox"
               aria-label={t("search.results")}
-              className="max-h-[62vh] overflow-y-auto p-2 sm:p-3"
+              className="max-h-[min(24rem,60vh)] overflow-y-auto p-2"
             >
               {items.length ? (
                 items.map((item, index) => {
@@ -331,14 +280,14 @@ export function GlobalSearch() {
                         onMouseEnter={() => setActiveIndex(index)}
                         onFocus={() => setActiveIndex(index)}
                         onClick={() => selectItem(item)}
-                        className={`flex w-full items-center gap-3 rounded-[1rem] px-3 py-3 text-left transition sm:px-4 ${
+                        className={`flex w-full items-center gap-3 rounded-[.9rem] px-3 py-2.5 text-left transition ${
                           index === selectedIndex
                             ? "bg-[var(--accent-soft)] text-[var(--text)]"
                             : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)]"
                         }`}
                       >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--accent)]">
-                          <Icon size={18} strokeWidth={1.7} />
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.75rem] border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--accent)]">
+                          <Icon size={16} strokeWidth={1.7} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-2">
@@ -388,6 +337,6 @@ export function GlobalSearch() {
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
