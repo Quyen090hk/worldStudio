@@ -23,7 +23,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
 import { useI18n } from "../../shared/i18n";
 import { useEntryStore } from "../entries/stores/useEntryStore";
@@ -96,6 +96,7 @@ export function MapPage() {
   const store = useMapStore();
   const entries = useEntryStore((state) => state.entries);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useI18n();
   const viewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,8 +106,14 @@ export function MapPage() {
     ox: number;
     oy: number;
   } | null>(null);
+  const requestedMap = store.maps.find(
+    (map) => map.id === searchParams.get("map"),
+  );
+  const requestedMarkerId = searchParams.get("marker");
   const activeMap =
-    store.maps.find((map) => map.id === store.activeMapId) ?? store.maps[0];
+    requestedMap ??
+    store.maps.find((map) => map.id === store.activeMapId) ??
+    store.maps[0];
   const mapLayers = store.layers.filter(
     (layer) => layer.mapId === activeMap.id,
   );
@@ -116,6 +123,11 @@ export function MapPage() {
   const mapConnections = store.connections.filter(
     (connection) => connection.mapId === activeMap.id,
   );
+  const deepLinkedMarkerId = mapMarkers.some(
+    (marker) => marker.id === requestedMarkerId,
+  )
+    ? requestedMarkerId
+    : null;
   const [panel, setPanel] = useState<"maps" | "layers">("maps");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -138,7 +150,7 @@ export function MapPage() {
       .then(() => {
         setImageUrl(null);
         setImageName("");
-        setSelectedId(null);
+        setSelectedId(deepLinkedMarkerId);
         setPlacing(false);
         setZoom(1);
         setOffset({ x: 0, y: 0 });
@@ -155,7 +167,7 @@ export function MapPage() {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [activeMap.id, activeMap.name, t]);
+  }, [activeMap.id, activeMap.name, deepLinkedMarkerId, t]);
 
   const selected =
     mapMarkers.find((marker) => marker.id === selectedId) ?? null;

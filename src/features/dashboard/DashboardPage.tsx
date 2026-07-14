@@ -11,6 +11,10 @@ import {
 } from "../../shared/motion/presets";
 import { EntryTypeBadge } from "../entries/components/EntryTypeBadge";
 import { useEntryStore } from "../entries/stores/useEntryStore";
+import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
+import { useMapStore } from "../map/stores/useMapStore";
+import { useTimelineStore } from "../timeline/stores/useTimelineStore";
+import { useWorldStore } from "../world/stores/useWorldStore";
 import { formatEntryDate } from "../entries/utils/formatEntryDate";
 import { getEntryTypeMeta } from "../entries/utils/entryTypeMeta";
 import { useI18n } from "../../shared/i18n";
@@ -18,6 +22,12 @@ import { useI18n } from "../../shared/i18n";
 export function DashboardPage() {
   const entries = useEntryStore((state) => state.entries);
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
+  const mapMarkerCount = useMapStore((state) => state.markers.length);
+  const relationshipCount = useRelationshipStore(
+    (state) => state.relationships.length,
+  );
+  const timelineEventCount = useTimelineStore((state) => state.items.length);
+  const profile = useWorldStore((state) => state.profile);
   const navigate = useNavigate();
   const { t, locale } = useI18n();
 
@@ -36,17 +46,17 @@ export function DashboardPage() {
     },
     {
       label: t("dashboard.mapMarkers"),
-      value: "0",
+      value: String(mapMarkerCount),
       icon: Map,
     },
     {
       label: t("dashboard.relations"),
-      value: "0",
+      value: String(relationshipCount),
       icon: GitBranch,
     },
     {
       label: t("dashboard.timelineEvents"),
-      value: "0",
+      value: String(timelineEventCount),
       icon: Timer,
     },
   ];
@@ -103,8 +113,14 @@ export function DashboardPage() {
             </p>
 
             <h3 className="ws-display mt-3 text-2xl font-semibold text-[var(--text)]">
-              {t("world.name")}
+              {profile.name}
             </h3>
+
+            {profile.description ? (
+              <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
+                {profile.description}
+              </p>
+            ) : null}
 
             <div className="mt-5 space-y-3">
               {[
@@ -166,7 +182,7 @@ export function DashboardPage() {
             <p className="ws-eyebrow">{t("dashboard.latestWork")}</p>
 
             <h3 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
-              Recently Updated
+              {t("dashboard.recentlyUpdated")}
             </h3>
 
             <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">

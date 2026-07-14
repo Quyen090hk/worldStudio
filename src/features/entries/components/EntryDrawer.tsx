@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Save, Trash2, X } from "lucide-react";
 
 import { useEntryStore } from "../stores/useEntryStore";
+import { deleteEntryCascade } from "../actions/deleteEntryCascade";
 import type { EntryType } from "../types";
 import { EntryTypeBadge } from "./EntryTypeBadge";
 import { useI18n } from "../../../shared/i18n";
@@ -15,6 +16,14 @@ const entryTypes: EntryType[] = [
   "Item",
   "Event",
 ];
+
+type EntryDrawerDraft = {
+  key: string;
+  title: string;
+  type: EntryType;
+  summary: string;
+  tagsText: string;
+};
 
 function parseTags(value: string) {
   const tags = value
@@ -28,13 +37,13 @@ function parseTags(value: string) {
 export function EntryDrawer() {
   const entries = useEntryStore((state) => state.entries);
   const drawerOpen = useEntryStore((state) => state.drawerOpen);
+  const drawerSession = useEntryStore((state) => state.drawerSession);
   const drawerMode = useEntryStore((state) => state.drawerMode);
   const editingEntryId = useEntryStore((state) => state.editingEntryId);
 
   const closeDrawer = useEntryStore((state) => state.closeDrawer);
   const createEntry = useEntryStore((state) => state.createEntry);
   const updateEntry = useEntryStore((state) => state.updateEntry);
-  const deleteEntry = useEntryStore((state) => state.deleteEntry);
   const { locale, t } = useI18n();
 
   const editingEntry = useMemo(
@@ -42,27 +51,23 @@ export function EntryDrawer() {
     [entries, editingEntryId]
   );
 
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<EntryType>("Character");
-  const [summary, setSummary] = useState("");
-  const [tagsText, setTagsText] = useState("");
+  const draftKey = `${drawerSession}:${drawerMode}:${editingEntryId ?? "new"}`;
+  const initialDraft: EntryDrawerDraft = {
+    key: draftKey,
+    title: drawerMode === "edit" ? (editingEntry?.title ?? "") : "",
+    type:
+      drawerMode === "edit" ? (editingEntry?.type ?? "Character") : "Character",
+    summary: drawerMode === "edit" ? (editingEntry?.summary ?? "") : "",
+    tagsText:
+      drawerMode === "edit" ? (editingEntry?.tags.join(", ") ?? "") : "",
+  };
+  const [draft, setDraft] = useState<EntryDrawerDraft>(initialDraft);
+  const activeDraft = draft.key === draftKey ? draft : initialDraft;
+  const { title, type, summary, tagsText } = activeDraft;
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-
-    if (drawerMode === "edit" && editingEntry) {
-      setTitle(editingEntry.title);
-      setType(editingEntry.type);
-      setSummary(editingEntry.summary);
-      setTagsText(editingEntry.tags.join(", "));
-      return;
-    }
-
-    setTitle("");
-    setType("Character");
-    setSummary("");
-    setTagsText("");
-  }, [drawerOpen, drawerMode, editingEntry]);
+  function updateDraft(patch: Partial<Omit<EntryDrawerDraft, "key">>) {
+    setDraft({ ...activeDraft, ...patch });
+  }
 
   function handleSubmit(event: SyntheticEvent) {
     event.preventDefault();
@@ -91,7 +96,7 @@ export function EntryDrawer() {
     );
 
     if (confirmed) {
-      deleteEntry(editingEntry.id);
+      deleteEntryCascade(editingEntry.id);
     }
   }
 
@@ -150,7 +155,7 @@ export function EntryDrawer() {
 
                   <input
                     value={title}
-                    onChange={(event) => setTitle(event.target.value)}
+                    onChange={(event) => updateDraft({ title: event.target.value })}
                     placeholder={t("entry.entryTitle")}
                     className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
                   />
@@ -169,7 +174,7 @@ export function EntryDrawer() {
                         <button
                           key={entryType}
                           type="button"
-                          onClick={() => setType(entryType)}
+                          onClick={() => updateDraft({ type: entryType })}
                           className={[
                             "rounded-[1.15rem] border px-3 py-3 text-left transition",
                             selected
@@ -195,7 +200,9 @@ export function EntryDrawer() {
 
                   <textarea
                     value={summary}
-                    onChange={(event) => setSummary(event.target.value)}
+                    onChange={(event) =>
+                      updateDraft({ summary: event.target.value })
+                    }
                     placeholder={t("entry.summaryPlaceholder")}
                     rows={4}
                     className="ws-input w-full resize-none rounded-[1.15rem] px-4 py-3 text-sm leading-6"
@@ -209,7 +216,9 @@ export function EntryDrawer() {
 
                   <input
                     value={tagsText}
-                    onChange={(event) => setTagsText(event.target.value)}
+                    onChange={(event) =>
+                      updateDraft({ tagsText: event.target.value })
+                    }
                     placeholder={t("entry.tagsPlaceholder")}
                     className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
                   />

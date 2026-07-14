@@ -74,15 +74,17 @@ export const useGraphSettingsStore = create<GraphSettingsStore>()(
     }),
     {
       name: "world-studio.graph-settings.v2",
-      partialize: ({
-        patch: _patch,
-        reset: _reset,
-        toggleType: _toggleType,
-        addGroup: _addGroup,
-        updateGroup: _updateGroup,
-        removeGroup: _removeGroup,
-        ...settings
-      }) => settings,
+      partialize: (state) => ({
+        visibleTypes: state.visibleTypes,
+        showSecrets: state.showSecrets,
+        showOrphans: state.showOrphans,
+        nodeRepulsion: state.nodeRepulsion,
+        linkDistance: state.linkDistance,
+        linkElasticity: state.linkElasticity,
+        centerGravity: state.centerGravity,
+        animationDuration: state.animationDuration,
+        groups: state.groups,
+      }),
     },
   ),
 );

@@ -9,6 +9,7 @@ type EntryStore = {
   entries: Entry[];
 
   drawerOpen: boolean;
+  drawerSession: number;
   drawerMode: EntryDrawerMode;
   editingEntryId: string | null;
 
@@ -18,6 +19,7 @@ type EntryStore = {
 
   createEntry: (input: EntryInput) => void;
   updateEntry: (entryId: string, input: EntryInput) => void;
+  updateEntryContent: (entryId: string, content: string) => void;
   deleteEntry: (entryId: string) => void;
 };
 
@@ -35,23 +37,26 @@ export const useEntryStore = create<EntryStore>()(
       entries: seedEntries,
 
       drawerOpen: false,
+      drawerSession: 0,
       drawerMode: "create",
       editingEntryId: null,
 
       openCreateEntry: () => {
-        set({
+        set((state) => ({
           drawerOpen: true,
+          drawerSession: state.drawerSession + 1,
           drawerMode: "create",
           editingEntryId: null,
-        });
+        }));
       },
 
       openEditEntry: (entryId) => {
-        set({
+        set((state) => ({
           drawerOpen: true,
+          drawerSession: state.drawerSession + 1,
           drawerMode: "edit",
           editingEntryId: entryId,
-        });
+        }));
       },
 
       closeDrawer: () => {
@@ -93,6 +98,22 @@ export const useEntryStore = create<EntryStore>()(
           ),
           drawerOpen: false,
           editingEntryId: null,
+        }));
+      },
+
+      updateEntryContent: (entryId, content) => {
+        const now = new Date().toISOString();
+
+        set((state) => ({
+          entries: state.entries.map((entry) =>
+            entry.id === entryId
+              ? {
+                  ...entry,
+                  content,
+                  updatedAt: now,
+                }
+              : entry,
+          ),
         }));
       },
 

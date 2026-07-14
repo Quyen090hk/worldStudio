@@ -1,40 +1,75 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "../shared/components/AppLayout";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { EntriesPage } from "../features/entries/EntriesPage";
-import { EntryDetailPage } from "../features/entries/EntryDetailPage";
-import { MapPage } from "../features/map/MapPage";
+import { NotFoundPage } from "../shared/components/NotFoundPage";
 import { useI18n } from "../shared/i18n";
 
+const DashboardPage = lazy(() =>
+  import("../features/dashboard/DashboardPage").then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
+const EntriesPage = lazy(() =>
+  import("../features/entries/EntriesPage").then((module) => ({
+    default: module.EntriesPage,
+  })),
+);
+const EntryDetailPage = lazy(() =>
+  import("../features/entries/EntryDetailPage").then((module) => ({
+    default: module.EntryDetailPage,
+  })),
+);
+const MapPage = lazy(() =>
+  import("../features/map/MapPage").then((module) => ({
+    default: module.MapPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("../features/settings/SettingsPage").then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
+const AssetsPage = lazy(() =>
+  import("../features/assets/AssetsPage").then((module) => ({
+    default: module.AssetsPage,
+  })),
+);
+const CanvasPage = lazy(() =>
+  import("../features/canvas/CanvasPage").then((module) => ({
+    default: module.CanvasPage,
+  })),
+);
 const GraphPage = lazy(() =>
   import("../features/graph/GraphPage").then((module) => ({
     default: module.GraphPage,
   })),
 );
+
+function RouteSuspense({
+  children,
+  message,
+}: {
+  children: ReactNode;
+  message: string;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
+          {message}
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 const TimelinePage = lazy(() =>
   import("../features/timeline/TimelinePage").then((module) => ({
     default: module.TimelinePage,
   })),
 );
-
-function PlaceholderPage({ title }: { title: string }) {
-  const { t } = useI18n();
-  return (
-    <div className="ws-surface rounded-[2rem] p-8">
-      <p className="ws-eyebrow">{t("common.comingSoon")}</p>
-
-      <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
-        {t(`nav.${title.toLowerCase()}`)}
-      </h2>
-
-      <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)]">
-        {t("common.comingSoon")}
-      </p>
-    </div>
-  );
-}
 
 export function AppRoutes() {
   const { t } = useI18n();
@@ -43,42 +78,80 @@ export function AppRoutes() {
       <Route path="/" element={<AppLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
 
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="entries" element={<EntriesPage />} />
-        <Route path="entries/:entryId" element={<EntryDetailPage />} />
+        <Route
+          path="dashboard"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <DashboardPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="entries"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <EntriesPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="entries/:entryId"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <EntryDetailPage />
+            </RouteSuspense>
+          }
+        />
 
-        <Route path="map" element={<MapPage />} />
+        <Route
+          path="map"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <MapPage />
+            </RouteSuspense>
+          }
+        />
         <Route
           path="graph"
           element={
-            <Suspense
-              fallback={
-                <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
-                  {t("common.preparingGraph")}
-                </div>
-              }
-            >
+            <RouteSuspense message={t("common.preparingGraph")}>
               <GraphPage />
-            </Suspense>
+            </RouteSuspense>
           }
         />
         <Route
           path="timeline"
           element={
-            <Suspense
-              fallback={
-                <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
-                  {t("common.preparingChronology")}
-                </div>
-              }
-            >
+            <RouteSuspense message={t("common.preparingChronology")}>
               <TimelinePage />
-            </Suspense>
+            </RouteSuspense>
           }
         />
-        <Route path="canvas" element={<PlaceholderPage title="Canvas" />} />
-        <Route path="assets" element={<PlaceholderPage title="Assets" />} />
-        <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+        <Route
+          path="canvas"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <CanvasPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="assets"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <AssetsPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <SettingsPage />
+            </RouteSuspense>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   );

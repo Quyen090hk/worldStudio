@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  TimelineCategory,
   TimelineEra,
   TimelineEraInput,
   TimelineItem,
   TimelineItemInput,
   TimelineViewport,
 } from "../types";
+import { TIMELINE_CATEGORIES } from "../timelineModel";
 
 type TimelineStore = {
   items: TimelineItem[];
@@ -26,6 +28,29 @@ function createId() {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? `timeline-${crypto.randomUUID()}`
     : `timeline-${Date.now()}`;
+}
+
+const LEGACY_TIMELINE_CATEGORIES: Record<string, TimelineCategory> = {
+  政治与权力: "Politics & Power",
+  冲突: "Conflict",
+  文化与信仰: "Culture & Faith",
+  探索: "Exploration",
+  灾变: "Catastrophe",
+  人生: "Lives",
+  其他: "Other",
+};
+
+function normalizeTimelineCategory(value: unknown) {
+  if (value === undefined) return undefined;
+  if (
+    typeof value === "string" &&
+    TIMELINE_CATEGORIES.includes(value as TimelineCategory)
+  )
+    return value as TimelineCategory;
+
+  return typeof value === "string"
+    ? (LEGACY_TIMELINE_CATEGORIES[value] ?? "Other")
+    : "Other";
 }
 
 export const useTimelineStore = create<TimelineStore>()(
@@ -70,6 +95,19 @@ export const useTimelineStore = create<TimelineStore>()(
         })),
       setViewport: (viewport) => set({ viewport }),
     }),
-    { name: "world-studio.timeline.v1" },
+    {
+      name: "world-studio.timeline.v1",
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<TimelineStore>;
+        return {
+          ...state,
+          items: (state.items ?? []).map((item) => ({
+            ...item,
+            category: normalizeTimelineCategory(item.category),
+          })),
+        } as TimelineStore;
+      },
+    },
   ),
 );

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { inverseFor, normalizeRelationshipType } from "../relationshipMeta";
 import type { EntryRelationship, RelationshipInput } from "../types";
 
 type RelationshipStore = {
@@ -96,6 +97,23 @@ export const useRelationshipStore = create<RelationshipStore>()(
           ),
         })),
     }),
-    { name: "world-studio.relationships.v1" },
+    {
+      name: "world-studio.relationships.v1",
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<RelationshipStore>;
+        return {
+          ...state,
+          relationships: (state.relationships ?? []).map((relationship) => {
+            const type = normalizeRelationshipType(relationship.type);
+            return {
+              ...relationship,
+              type,
+              inverseLabel: inverseFor(type),
+            };
+          }),
+        } as RelationshipStore;
+      },
+    },
   ),
 );

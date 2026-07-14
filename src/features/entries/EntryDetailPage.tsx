@@ -1,17 +1,23 @@
 import {
   ArrowLeft,
   Calendar,
+  CalendarRange,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   FileText,
+  GitBranch,
+  LayoutDashboard,
+  MapPin,
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
 import { RichTextEditor } from "./components/RichTextEditor";
+import { deleteEntryCascade } from "./actions/deleteEntryCascade";
 import { useEntryStore } from "./stores/useEntryStore";
 import {
   formatEntryDateTime,
@@ -20,8 +26,13 @@ import {
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
 import { useI18n } from "../../shared/i18n";
+import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
+import { useMapStore } from "../map/stores/useMapStore";
+import { useTimelineStore } from "../timeline/stores/useTimelineStore";
+import { useCanvasStore } from "../canvas/stores/useCanvasStore";
 
 type SaveStatus = "idle" | "saving" | "saved";
+type PendingContentSave = { entryId: string; content: string };
 
 function htmlToPlainText(html: string) {
   if (!html) return "";
@@ -49,73 +60,148 @@ function getWritingStats(html: string) {
 
 export function EntryDetailPage() {
   const { entryId } = useParams();
+  return (
+    <EntryDetailPageContent
+      key={entryId ?? "missing-entry"}
+      entryId={entryId}
+    />
+  );
+}
+
+function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   const navigate = useNavigate();
   const { locale, t } = useI18n();
 
   const entries = useEntryStore((state) => state.entries);
   const openEditEntry = useEntryStore((state) => state.openEditEntry);
-  const updateEntry = useEntryStore((state) => state.updateEntry);
-  const deleteEntry = useEntryStore((state) => state.deleteEntry);
-
-  const [isEditingContent, setIsEditingContent] = useState(false);
-  const [draftContent, setDraftContent] = useState("");
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const updateEntryContent = useEntryStore(
+    (state) => state.updateEntryContent,
+  );
+  const relationships = useRelationshipStore((state) => state.relationships);
+  const maps = useMapStore((state) => state.maps);
+  const markers = useMapStore((state) => state.markers);
+  const timelineItems = useTimelineStore((state) => state.items);
+  const canvasCards = useCanvasStore((state) => state.cards);
 
   const entry = useMemo(
     () => entries.find((item) => item.id === entryId),
     [entries, entryId]
   );
+  const linkedRelationships = useMemo(
+    () =>
+      relationships.filter(
+        (item) =>
+          item.sourceEntryId === entryId || item.targetEntryId === entryId,
+      ),
+    [entryId, relationships],
+  );
+  const linkedMarkers = useMemo(
+    () => markers.filter((marker) => entryId && marker.entryIds.includes(entryId)),
+    [entryId, markers],
+  );
+  const linkedTimelineItems = useMemo(
+    () => timelineItems.filter((item) => item.entryId === entryId),
+    [entryId, timelineItems],
+  );
+  const linkedCanvasCards = useMemo(
+    () =>
+      canvasCards.filter(
+        (card) => card.kind === "entry" && card.entryId === entryId,
+      ),
+    [canvasCards, entryId],
+  );
+
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [draftContent, setDraftContent] = useState(entry?.content ?? "");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>(
+    entry ? "saved" : "idle",
+  );
+  const pendingContentSaveRef = useRef<PendingContentSave | null>(null);
 
   const writingStats = useMemo(
     () => getWritingStats(isEditingContent ? draftContent : entry?.content ?? ""),
     [draftContent, entry?.content, isEditingContent]
   );
+  const currentEntryId = entry?.id;
+  const savedContent = entry?.content;
 
   useEffect(() => {
-    if (entry) {
-      setDraftContent(entry.content);
-      setIsEditingContent(false);
-      setSaveStatus("saved");
-    }
-  }, [entry?.id]);
-
-  useEffect(() => {
-    if (!entry) return;
+    if (!currentEntryId) return;
     if (!isEditingContent) return;
-
-    if (draftContent === entry.content) {
-      setSaveStatus("saved");
-      return;
-    }
-
-    setSaveStatus("saving");
+    if (draftContent === savedContent) return;
 
     const timer = window.setTimeout(() => {
-      updateEntry(entry.id, {
-        title: entry.title,
-        type: entry.type,
-        summary: entry.summary,
-        tags: entry.tags,
-        content: draftContent,
-      });
+      const pending = pendingContentSaveRef.current;
+      if (
+        !pending ||
+        pending.entryId !== currentEntryId ||
+        pending.content !== draftContent
+      )
+        return;
 
+      updateEntryContent(pending.entryId, pending.content);
+      pendingContentSaveRef.current = null;
       setSaveStatus("saved");
     }, 800);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [draftContent, entry, isEditingContent, updateEntry]);
+  }, [
+    currentEntryId,
+    draftContent,
+    isEditingContent,
+    savedContent,
+    updateEntryContent,
+  ]);
+
+  useEffect(
+    () => () => {
+      const pending = pendingContentSaveRef.current;
+      if (!pending) return;
+
+      useEntryStore
+        .getState()
+        .updateEntryContent(pending.entryId, pending.content);
+      pendingContentSaveRef.current = null;
+    },
+    [],
+  );
+
+  function handleContentChange(content: string) {
+    setDraftContent(content);
+
+    if (!entry || content === entry.content) {
+      pendingContentSaveRef.current = null;
+      setSaveStatus("saved");
+      return;
+    }
+
+    pendingContentSaveRef.current = { entryId: entry.id, content };
+    setSaveStatus("saving");
+  }
+
+  function finishEditingContent() {
+    const pending = pendingContentSaveRef.current;
+    if (pending) {
+      updateEntryContent(pending.entryId, pending.content);
+      pendingContentSaveRef.current = null;
+    }
+
+    setSaveStatus("saved");
+    setIsEditingContent(false);
+  }
 
   function handleDelete() {
     if (!entry) return;
 
     const confirmed = window.confirm(
-      locale === "zh-CN" ? `确定删除“${entry.title}”吗？` : `Delete "${entry.title}"?`,
+      t("entry.deleteConfirm", { title: entry.title }),
     );
 
     if (confirmed) {
-      deleteEntry(entry.id);
+      pendingContentSaveRef.current = null;
+      deleteEntryCascade(entry.id);
       navigate("/entries");
     }
   }
@@ -168,7 +254,7 @@ export function EntryDetailPage() {
             className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
           >
             <Pencil size={16} strokeWidth={1.75} />
-            Quick Edit
+            {t("entry.quickEdit")}
           </button>
 
           <button
@@ -177,7 +263,7 @@ export function EntryDetailPage() {
             className="flex h-10 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-4 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
           >
             <Trash2 size={16} strokeWidth={1.75} />
-            Delete
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -306,7 +392,11 @@ export function EntryDetailPage() {
 
               <button
                 type="button"
-                onClick={() => setIsEditingContent((value) => !value)}
+                onClick={() =>
+                  isEditingContent
+                    ? finishEditingContent()
+                    : setIsEditingContent(true)
+                }
                 className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
               >
                 <FileText size={16} strokeWidth={1.75} />
@@ -318,7 +408,7 @@ export function EntryDetailPage() {
           {isEditingContent ? (
             <RichTextEditor
               value={draftContent}
-              onChange={setDraftContent}
+              onChange={handleContentChange}
               editable
               placeholder={t("entry.writePlaceholder")}
             />
@@ -366,23 +456,73 @@ export function EntryDetailPage() {
           </section>
 
           <section className="ws-surface rounded-[2rem] p-5">
-            <p className="ws-eyebrow">{t("entry.futureLinks")}</p>
+            <p className="ws-eyebrow">{t("entry.linkedRecords")}</p>
 
             <div className="mt-4 space-y-2">
-              {[t("entry.mapMarkers"), t("dashboard.relations"), t("entry.timelineEvents"), t("entry.wikiPreview")].map(
-                (item) => (
-                  <div
-                    key={item}
-                    className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 text-sm"
-                  >
-                    <span className="text-[var(--text-muted)]">{item}</span>
-                    <span className="text-xs text-[var(--text-faint)]">
-                      {t("common.soon")}
-                    </span>
-                  </div>
-                )
-              )}
+              {[
+                {
+                  key: "relationships",
+                  label: t("dashboard.relations"),
+                  count: linkedRelationships.length,
+                  icon: GitBranch,
+                  target: `/graph?mode=local&focus=${entry.id}`,
+                },
+                {
+                  key: "markers",
+                  label: t("entry.mapMarkers"),
+                  count: linkedMarkers.length,
+                  icon: MapPin,
+                  target: linkedMarkers[0]
+                    ? `/map?map=${linkedMarkers[0].mapId}&marker=${linkedMarkers[0].id}`
+                    : "/map",
+                },
+                {
+                  key: "timeline",
+                  label: t("entry.timelineEvents"),
+                  count: linkedTimelineItems.length,
+                  icon: CalendarRange,
+                  target: `/timeline?entry=${entry.id}`,
+                },
+                {
+                  key: "canvas",
+                  label: t("entry.canvasCards"),
+                  count: linkedCanvasCards.length,
+                  icon: LayoutDashboard,
+                  target: `/canvas?entry=${entry.id}`,
+                },
+              ].map(({ key, label, count, icon: Icon, target }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => navigate(target)}
+                  className="flex w-full items-center gap-3 rounded-[1rem] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 text-left text-sm transition hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
+                >
+                  <Icon size={16} className="text-[var(--accent)]" />
+                  <span className="min-w-0 flex-1 text-[var(--text-muted)]">
+                    {label}
+                  </span>
+                  <span className="rounded-full bg-[var(--surface-solid)] px-2 py-0.5 text-xs font-semibold text-[var(--text)]">
+                    {count}
+                  </span>
+                  <ChevronRight size={15} className="text-[var(--text-faint)]" />
+                </button>
+              ))}
             </div>
+
+            {linkedMarkers.length > 0 ? (
+              <p className="mt-4 text-xs leading-5 text-[var(--text-faint)]">
+                {t("entry.firstMapMarker", {
+                  marker: linkedMarkers[0].title,
+                  map:
+                    maps.find((map) => map.id === linkedMarkers[0].mapId)?.name ??
+                    t("entry.unknownMap"),
+                })}
+              </p>
+            ) : (
+              <p className="mt-4 text-xs leading-5 text-[var(--text-faint)]">
+                {t("entry.noLinkedRecords")}
+              </p>
+            )}
           </section>
         </aside>
       </section>

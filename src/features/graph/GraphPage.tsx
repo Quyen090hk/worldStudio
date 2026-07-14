@@ -30,7 +30,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
 import { useI18n } from "../../shared/i18n";
-import { useTheme, type ResolvedTheme } from "../../shared/theme/ThemeProvider";
+import { useTheme, type ResolvedTheme } from "../../shared/theme/ThemeContext";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type { Entry } from "../entries/types";
 import {
@@ -45,6 +45,7 @@ import {
   type GraphPhysicsOptions,
 } from "./graphPhysics";
 import { createGraphSync, type GraphSyncController } from "./graphSync";
+import { inverseFor, RELATIONSHIP_TYPES } from "./relationshipMeta";
 import {
   useGraphSettingsStore,
   type GraphSettingsStore,
@@ -57,43 +58,7 @@ import type {
   RelationshipType,
 } from "./types";
 
-const relationshipTypes: RelationshipType[] = [
-  "Parent of",
-  "Sibling of",
-  "Loves",
-  "Rivals",
-  "Rules",
-  "Member of",
-  "Allied with",
-  "At war with",
-  "Located in",
-  "Born in",
-  "Participated in",
-  "Caused",
-  "Possesses",
-  "Created by",
-  "Worships",
-  "Travels to",
-  "Custom",
-];
 cytoscape.use(fcose);
-
-function inverseFor(type: RelationshipType) {
-  const values: Partial<Record<RelationshipType, string>> = {
-    "Parent of": "Child of",
-    Rules: "Ruled by",
-    "Member of": "Has member",
-    "Located in": "Contains",
-    "Born in": "Birthplace of",
-    "Participated in": "Included",
-    Caused: "Caused by",
-    Possesses: "Possessed by",
-    "Created by": "Created",
-    Worships: "Worshipped by",
-    "Travels to": "Visited by",
-  };
-  return values[type] ?? type;
-}
 
 function createGraphStyles(theme: ResolvedTheme): StylesheetJson {
   const dark = theme === "dark";
@@ -245,8 +210,18 @@ export function GraphPage() {
   const graphSyncRef = useRef<GraphSyncController | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<"global" | "local">("global");
-  const [focusId, setFocusId] = useState<string | null>(entries[0]?.id ?? null);
+  const requestedFocusId = searchParams.get("focus");
+  const requestedMode = searchParams.get("mode");
+  const initialFocusId =
+    requestedFocusId && entries.some((entry) => entry.id === requestedFocusId)
+      ? requestedFocusId
+      : (entries[0]?.id ?? null);
+  const [mode, setMode] = useState<"global" | "local">(
+    requestedMode === "local" && initialFocusId === requestedFocusId
+      ? "local"
+      : "global",
+  );
+  const [focusId, setFocusId] = useState<string | null>(initialFocusId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedRelationshipId, setSelectedRelationshipId] = useState<
     string | null
@@ -260,8 +235,6 @@ export function GraphPage() {
     useState<RelationshipType>("Allied with");
   const [direction, setDirection] = useState<RelationshipDirection>("mutual");
   const [status, setStatus] = useState<RelationshipStatus>("current");
-  const requestedFocusId = searchParams.get("focus");
-  const requestedMode = searchParams.get("mode");
 
   const graphSettings = useGraphSettingsStore();
   const {
@@ -281,16 +254,12 @@ export function GraphPage() {
     linkForce: linkElasticity,
     linkDistance,
   });
-  physicsOptionsRef.current = {
-    centerForce: centerGravity,
-    repelForce: nodeRepulsion,
-    linkForce: linkElasticity,
-    linkDistance,
-  };
   const themeRef = useRef(resolvedTheme);
   const animationDurationRef = useRef(animationDuration);
-  themeRef.current = resolvedTheme;
-  animationDurationRef.current = animationDuration;
+
+  useEffect(() => {
+    animationDurationRef.current = animationDuration;
+  }, [animationDuration]);
 
   const year = eraYear === "" ? null : Number(eraYear);
   const projection = useMemo(
@@ -324,8 +293,6 @@ export function GraphPage() {
   const visibleRelationships = projection.relationships;
   const projectionRef = useRef(projection);
   const modeRef = useRef(mode);
-  projectionRef.current = projection;
-  modeRef.current = mode;
   const selected = entries.find((entry) => entry.id === selectedId) ?? null;
   const selectedRelationship =
     relationships.find(
@@ -338,16 +305,6 @@ export function GraphPage() {
           relationship.targetEntryId === selected.id,
       )
     : [];
-
-  useEffect(() => {
-    if (
-      !requestedFocusId ||
-      !entries.some((entry) => entry.id === requestedFocusId)
-    )
-      return;
-    setFocusId(requestedFocusId);
-    if (requestedMode === "local") setMode("local");
-  }, [entries, requestedFocusId, requestedMode]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -471,6 +428,12 @@ export function GraphPage() {
   useEffect(() => {
     // Force changes update the running simulation in place. No renderer, graph,
     // layout, or node position is recreated here.
+    physicsOptionsRef.current = {
+      centerForce: centerGravity,
+      repelForce: nodeRepulsion,
+      linkForce: linkElasticity,
+      linkDistance,
+    };
     physicsControllerRef.current?.wake();
   }, [nodeRepulsion, linkDistance, linkElasticity, centerGravity]);
 
@@ -1192,8 +1155,10 @@ function NodePanel(props: NodePanelProps) {
             }
             className="ws-input h-9 w-full rounded-md px-2 text-xs"
           >
-            {relationshipTypes.map((type) => (
-              <option key={type}>{t(`relation.${type}`)}</option>
+            {RELATIONSHIP_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`relation.${type}`)}
+              </option>
             ))}
           </select>
           <div className="grid grid-cols-2 gap-2">

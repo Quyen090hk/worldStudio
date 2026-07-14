@@ -16,6 +16,7 @@ import {
   pressTap,
 } from "../../shared/motion/presets";
 import { useEntryStore } from "./stores/useEntryStore";
+import { deleteEntryCascade } from "./actions/deleteEntryCascade";
 import { formatEntryDate } from "./utils/formatEntryDate";
 import type { EntryType } from "./types";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
@@ -41,7 +42,6 @@ export function EntriesPage() {
   const entries = useEntryStore((state) => state.entries);
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
   const openEditEntry = useEntryStore((state) => state.openEditEntry);
-  const deleteEntry = useEntryStore((state) => state.deleteEntry);
 
   const navigate = useNavigate();
   const { locale, t } = useI18n();
@@ -102,7 +102,7 @@ export function EntriesPage() {
     );
 
     if (confirmed) {
-      deleteEntry(entryId);
+      deleteEntryCascade(entryId);
     }
   }
 

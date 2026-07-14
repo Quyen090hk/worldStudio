@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
 import { useI18n } from "../../shared/i18n";
 import { useEntryStore } from "../entries/stores/useEntryStore";
@@ -62,6 +62,7 @@ function assignTracks(items: ResolvedTimelineItem[], minimumSpan: number) {
 
 export function TimelinePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { locale, t } = useI18n();
   const entries = useEntryStore((state) => state.entries);
   const relationships = useRelationshipStore((state) => state.relationships);
@@ -73,7 +74,20 @@ export function TimelinePage() {
   const createEra = useTimelineStore((state) => state.createEra);
   const deleteEra = useTimelineStore((state) => state.deleteEra);
   const persistViewport = useTimelineStore((state) => state.setViewport);
-  const [viewport, setViewport] = useState(savedViewport);
+  const requestedItem = storedItems.find(
+    (item) => item.entryId === searchParams.get("entry"),
+  );
+  const [viewport, setViewport] = useState(() =>
+    requestedItem
+      ? {
+          ...savedViewport,
+          centerYear:
+            (requestedItem.startYear +
+              (requestedItem.endYear ?? requestedItem.startYear)) /
+            2,
+        }
+      : savedViewport,
+  );
   const [query, setQuery] = useState("");
   const [visibleCategories, setVisibleCategories] =
     useState<TimelineCategory[]>(TIMELINE_CATEGORIES);
@@ -81,7 +95,9 @@ export function TimelinePage() {
   const [showUncertain, setShowUncertain] = useState(true);
   const [minimumImportance, setMinimumImportance] = useState(1);
   const [controlsOpen, setControlsOpen] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    requestedItem?.id ?? null,
+  );
   const [composerOpen, setComposerOpen] = useState(false);
   const [eraComposerOpen, setEraComposerOpen] = useState(false);
   const [width, setWidth] = useState(900);
@@ -805,11 +821,13 @@ function TimelineComposer({
               setCategory(event.target.value as TimelineCategory)
             }
             className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
-          >
-            {TIMELINE_CATEGORIES.map((value) => (
-              <option key={value}>{t(`timeline.category.${value}`)}</option>
-            ))}
-          </select>
+            >
+              {TIMELINE_CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {t(`timeline.category.${value}`)}
+              </option>
+              ))}
+            </select>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">

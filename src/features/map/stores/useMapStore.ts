@@ -17,6 +17,7 @@ type MapStore = {
   addMarker: (marker: Omit<MapMarker, "id">) => string;
   updateMarker: (id: string, patch: Partial<Omit<MapMarker, "id">>) => void;
   deleteMarker: (id: string) => void;
+  removeEntryReferences: (entryId: string) => void;
   addConnection: (connection: Omit<MapConnection, "id">) => string;
   deleteConnection: (id: string) => void;
 };
@@ -80,6 +81,16 @@ export const useMapStore = create<MapStore>()(
       },
       updateMarker: (id, patch) => set((state) => ({ markers: state.markers.map((marker) => marker.id === id ? { ...marker, ...patch } : marker) })),
       deleteMarker: (id) => set((state) => ({ markers: state.markers.filter((marker) => marker.id !== id), connections: state.connections.filter((connection) => connection.fromMarkerId !== id && connection.toMarkerId !== id) })),
+      removeEntryReferences: (entryId) => set((state) => ({
+        markers: state.markers.map((marker) =>
+          marker.entryIds.includes(entryId)
+            ? {
+                ...marker,
+                entryIds: marker.entryIds.filter((id) => id !== entryId),
+              }
+            : marker,
+        ),
+      })),
       addConnection: (connection) => {
         const id = createId("connection");
         set((state) => ({ connections: [...state.connections, { ...connection, id }] }));
@@ -90,4 +101,3 @@ export const useMapStore = create<MapStore>()(
     { name: "world-studio.map.v2", version: 2 },
   ),
 );
-

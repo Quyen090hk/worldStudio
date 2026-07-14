@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { pageTransition } from "../motion/presets";
 
 type MotionPageProps = {
@@ -8,11 +8,13 @@ type MotionPageProps = {
 };
 
 export function MotionPage({ children, className = "" }: MotionPageProps) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={pageTransition.initial}
+      initial={reduceMotion ? false : pageTransition.initial}
       animate={pageTransition.animate}
-      transition={pageTransition.transition}
+      transition={reduceMotion ? { duration: 0 } : pageTransition.transition}
       className={className}
     >
       {children}

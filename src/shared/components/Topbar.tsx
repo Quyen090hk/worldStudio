@@ -1,46 +1,55 @@
 import { motion } from "motion/react";
-import { Moon, Plus, Search, Sun } from "lucide-react";
+import { Menu, Moon, Plus, Sun } from "lucide-react";
 
 import { pressTap } from "../motion/presets";
-import { useTheme } from "../theme/ThemeProvider";
+import { useTheme } from "../theme/ThemeContext";
 import { useEntryStore } from "../../features/entries/stores/useEntryStore";
+import { useWorldStore } from "../../features/world/stores/useWorldStore";
 import { useI18n, type Locale } from "../i18n";
+import { GlobalSearch } from "./GlobalSearch";
 
-export function Topbar() {
+export function Topbar({
+  navigationOpen,
+  onOpenNavigation,
+}: {
+  navigationOpen: boolean;
+  onOpenNavigation: () => void;
+}) {
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
+  const worldName = useWorldStore((state) => state.profile.name);
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
   const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] px-8 py-4 backdrop-blur-2xl">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-5">
-        <div>
+    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] px-4 py-3 backdrop-blur-2xl sm:py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-3 lg:gap-5">
+        <button
+          id="mobile-navigation-trigger"
+          type="button"
+          onClick={onOpenNavigation}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--text-muted)] transition-colors hover:text-[var(--text)] lg:hidden"
+          aria-label={t("navigation.open")}
+          aria-controls="mobile-navigation"
+          aria-expanded={navigationOpen}
+        >
+          <Menu size={19} />
+        </button>
+
+        <div className="hidden min-w-0 shrink-0 md:block">
           <div className="text-[0.66rem] font-bold uppercase tracking-[0.24em] text-[var(--text-faint)]">
             {t("topbar.workspace")}
           </div>
 
           <h1 className="ws-display ws-foil-text mt-1 text-2xl font-semibold leading-none">
-            {t("world.name")}
+            {worldName}
           </h1>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
-          <label className="ws-input hidden h-11 w-full max-w-md items-center gap-3 rounded-full px-4 lg:flex">
-            <Search
-              size={17}
-              strokeWidth={1.7}
-              className="text-[var(--text-faint)]"
-            />
-
-            <input
-              type="search"
-              placeholder={t("topbar.search")}
-              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
-            />
-
-            <span className="ws-kbd rounded-md px-1.5 py-0.5">⌘K</span>
-          </label>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1 sm:flex sm:justify-end">
+            <GlobalSearch />
+          </div>
 
           <motion.button
             type="button"
@@ -82,10 +91,11 @@ export function Topbar() {
             type="button"
             whileTap={pressTap}
             onClick={openCreateEntry}
-            className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold"
+            className="ws-button-primary flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold sm:h-11 sm:w-auto sm:px-4"
+            aria-label={t("topbar.newEntry")}
           >
             <Plus size={17} strokeWidth={1.8} />
-            {t("topbar.newEntry")}
+            <span className="hidden sm:inline">{t("topbar.newEntry")}</span>
           </motion.button>
         </div>
       </div>
