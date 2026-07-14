@@ -6,31 +6,38 @@ import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { EntriesPage } from "../features/entries/EntriesPage";
 import { EntryDetailPage } from "../features/entries/EntryDetailPage";
 import { MapPage } from "../features/map/MapPage";
-
+import { useI18n } from "../shared/i18n";
 
 const GraphPage = lazy(() =>
   import("../features/graph/GraphPage").then((module) => ({
     default: module.GraphPage,
   })),
 );
+const TimelinePage = lazy(() =>
+  import("../features/timeline/TimelinePage").then((module) => ({
+    default: module.TimelinePage,
+  })),
+);
 
 function PlaceholderPage({ title }: { title: string }) {
+  const { t } = useI18n();
   return (
     <div className="ws-surface rounded-[2rem] p-8">
-      <p className="ws-eyebrow">Coming Soon</p>
+      <p className="ws-eyebrow">{t("common.comingSoon")}</p>
 
       <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
-        {title}
+        {t(`nav.${title.toLowerCase()}`)}
       </h2>
 
       <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)]">
-        这个模块后面我们会继续实现。当前阶段先统一整体美学、日夜模式和核心信息架构。
+        {t("common.comingSoon")}
       </p>
     </div>
   );
 }
 
 export function AppRoutes() {
+  const { t } = useI18n();
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
@@ -47,7 +54,7 @@ export function AppRoutes() {
             <Suspense
               fallback={
                 <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
-                  Preparing knowledge graph…
+                  {t("common.preparingGraph")}
                 </div>
               }
             >
@@ -55,7 +62,20 @@ export function AppRoutes() {
             </Suspense>
           }
         />
-        <Route path="timeline" element={<PlaceholderPage title="Timeline" />} />
+        <Route
+          path="timeline"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex min-h-[36rem] items-center justify-center text-sm text-[var(--text-faint)]">
+                  {t("common.preparingChronology")}
+                </div>
+              }
+            >
+              <TimelinePage />
+            </Suspense>
+          }
+        />
         <Route path="canvas" element={<PlaceholderPage title="Canvas" />} />
         <Route path="assets" element={<PlaceholderPage title="Assets" />} />
         <Route path="settings" element={<PlaceholderPage title="Settings" />} />

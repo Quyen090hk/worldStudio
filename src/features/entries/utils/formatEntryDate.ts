@@ -1,32 +1,31 @@
-function pad2(value: number) {
-  return String(value).padStart(2, "0");
+import type { Locale } from "../../../shared/i18n";
+
+export function formatEntryDate(value: string, locale: Locale = "en-US") {
+  return formatEntryDateTime(value, locale);
 }
 
-export function formatEntryDate(value: string) {
-  return formatEntryDateTime(value);
-}
-
-export function formatEntryDateTime(value: string) {
+export function formatEntryDateTime(value: string, locale: Locale = "en-US") {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Invalid date";
+    return locale === "zh-CN" ? "无效日期" : "Invalid date";
   }
 
-  const year = date.getFullYear();
-  const month = pad2(date.getMonth() + 1);
-  const day = pad2(date.getDate());
-  const hour = pad2(date.getHours());
-  const minute = pad2(date.getMinutes());
-
-  return `${year}/${month}/${day} ${hour}:${minute}`;
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
-export function formatEntryRelative(value: string) {
+export function formatEntryRelative(value: string, locale: Locale = "en-US") {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Invalid date";
+    return locale === "zh-CN" ? "无效日期" : "Invalid date";
   }
 
   const diff = Date.now() - date.getTime();
@@ -35,9 +34,18 @@ export function formatEntryRelative(value: string) {
   const hour = 60 * minute;
   const day = 24 * hour;
 
-  if (diff < minute) return "Just now";
-  if (diff < hour) return `${Math.floor(diff / minute)} min ago`;
-  if (diff < day) return `${Math.floor(diff / hour)}h ${Math.floor((diff % hour) / minute)}m ago`;
+  if (diff < minute) return locale === "zh-CN" ? "刚刚" : "Just now";
+  if (diff < hour) {
+    const count = Math.floor(diff / minute);
+    return locale === "zh-CN" ? `${count} 分钟前` : `${count} min ago`;
+  }
+  if (diff < day) {
+    const hours = Math.floor(diff / hour);
+    const minutes = Math.floor((diff % hour) / minute);
+    return locale === "zh-CN"
+      ? `${hours} 小时 ${minutes} 分钟前`
+      : `${hours}h ${minutes}m ago`;
+  }
 
-  return formatEntryDateTime(value);
+  return formatEntryDateTime(value, locale);
 }

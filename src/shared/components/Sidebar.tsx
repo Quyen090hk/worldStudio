@@ -10,46 +10,49 @@ import {
   Timer,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useI18n } from "../i18n";
 
 const navItems = [
   {
-    label: "Dashboard",
+    label: "nav.dashboard",
     path: "/dashboard",
     icon: Home,
   },
   {
-    label: "Entries",
+    label: "nav.entries",
     path: "/entries",
     icon: BookOpen,
   },
   {
-    label: "Map",
+    label: "nav.map",
     path: "/map",
     icon: Map,
   },
   {
-    label: "Graph",
+    label: "nav.graph",
     path: "/graph",
     icon: GitBranch,
   },
   {
-    label: "Timeline",
+    label: "nav.timeline",
     path: "/timeline",
     icon: Timer,
   },
   {
-    label: "Canvas",
+    label: "nav.canvas",
     path: "/canvas",
     icon: Boxes,
   },
   {
-    label: "Assets",
+    label: "nav.assets",
     path: "/assets",
     icon: Image,
   },
 ];
 
 export function Sidebar() {
+  const { t } = useI18n();
+
   return (
     <aside className="sticky top-0 flex h-screen w-72 shrink-0 flex-col border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_78%,transparent)] px-4 py-5 backdrop-blur-2xl">
       <div className="mb-8 px-2">
@@ -106,7 +109,7 @@ export function Sidebar() {
                     className={isActive ? "text-[var(--accent)]" : ""}
                   />
 
-                  <span>{item.label}</span>
+              <span>{t(item.label)}</span>
                 </>
               )}
             </NavLink>
@@ -118,18 +121,18 @@ export function Sidebar() {
         <div className="ws-surface-soft rounded-[1.5rem] p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
-              Current World
+              {t("common.currentWorld")}
             </div>
 
             <div className="h-2 w-2 rounded-full bg-[var(--accent)]" />
           </div>
 
           <div className="ws-display ws-foil-text text-lg font-bold leading-tight">
-            The Ashen Archive
+            {t("world.name")}
           </div>
 
           <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
-            Local-first lore, maps, timelines, and world references.
+            {t("world.description")}
           </p>
         </div>
 
@@ -145,7 +148,7 @@ export function Sidebar() {
           }
         >
           <Settings size={18} strokeWidth={1.65} />
-          <span>Settings</span>
+          <span>{t("nav.settings")}</span>
         </NavLink>
       </div>
     </aside>

@@ -6,6 +6,7 @@ import { Save, Trash2, X } from "lucide-react";
 import { useEntryStore } from "../stores/useEntryStore";
 import type { EntryType } from "../types";
 import { EntryTypeBadge } from "./EntryTypeBadge";
+import { useI18n } from "../../../shared/i18n";
 
 const entryTypes: EntryType[] = [
   "Character",
@@ -34,6 +35,7 @@ export function EntryDrawer() {
   const createEntry = useEntryStore((state) => state.createEntry);
   const updateEntry = useEntryStore((state) => state.updateEntry);
   const deleteEntry = useEntryStore((state) => state.deleteEntry);
+  const { locale, t } = useI18n();
 
   const editingEntry = useMemo(
     () => entries.find((entry) => entry.id === editingEntryId),
@@ -66,7 +68,7 @@ export function EntryDrawer() {
     event.preventDefault();
 
     const input = {
-      title: title.trim() || "Untitled Entry",
+      title: title.trim() || t("entry.untitled"),
       type,
       summary: summary.trim(),
       content: drawerMode === "edit" && editingEntry ? editingEntry.content : "",
@@ -84,7 +86,9 @@ export function EntryDrawer() {
   function handleDelete() {
     if (!editingEntry) return;
 
-    const confirmed = window.confirm(`Delete "${editingEntry.title}"?`);
+    const confirmed = window.confirm(
+      locale === "zh-CN" ? `确定删除“${editingEntry.title}”吗？` : `Delete "${editingEntry.title}"?`,
+    );
 
     if (confirmed) {
       deleteEntry(editingEntry.id);
@@ -117,13 +121,13 @@ export function EntryDrawer() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="ws-eyebrow">
-                      {drawerMode === "edit" ? "Edit Entry" : "New Entry"}
+                      {drawerMode === "edit" ? t("entry.editEntry") : t("entry.newEntry")}
                     </p>
 
                     <h2 className="ws-display mt-2 text-3xl font-semibold leading-tight text-[var(--text)]">
                       {drawerMode === "edit"
                         ? editingEntry?.title ?? "Entry"
-                        : "Create lore entry"}
+                        : t("entry.createLore")}
                     </h2>
                   </div>
 
@@ -131,7 +135,7 @@ export function EntryDrawer() {
                     type="button"
                     onClick={closeDrawer}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-                    aria-label="Close drawer"
+                    aria-label={t("entry.closeDrawer")}
                   >
                     <X size={18} strokeWidth={1.8} />
                   </button>
@@ -141,20 +145,20 @@ export function EntryDrawer() {
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
                 <label className="block">
                   <div className="mb-2 text-sm font-semibold text-[var(--text)]">
-                    Title
+                    {t("common.title")}
                   </div>
 
                   <input
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    placeholder="Entry title"
+                    placeholder={t("entry.entryTitle")}
                     className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
                   />
                 </label>
 
                 <div>
                   <div className="mb-2 text-sm font-semibold text-[var(--text)]">
-                    Type
+                    {t("common.type")}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -176,12 +180,7 @@ export function EntryDrawer() {
                           <EntryTypeBadge type={entryType} />
 
                           <div className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
-                            {entryType === "Character" && "People and figures."}
-                            {entryType === "Location" && "Places and regions."}
-                            {entryType === "Organization" &&
-                              "Factions and groups."}
-                            {entryType === "Item" && "Relics and objects."}
-                            {entryType === "Event" && "Moments and history."}
+                            {t(`entry.type${entryType}`)}
                           </div>
                         </button>
                       );
@@ -191,13 +190,13 @@ export function EntryDrawer() {
 
                 <label className="block">
                   <div className="mb-2 text-sm font-semibold text-[var(--text)]">
-                    Summary
+                    {t("entry.summary")}
                   </div>
 
                   <textarea
                     value={summary}
                     onChange={(event) => setSummary(event.target.value)}
-                    placeholder="Short description for lists, cards, and wiki previews."
+                    placeholder={t("entry.summaryPlaceholder")}
                     rows={4}
                     className="ws-input w-full resize-none rounded-[1.15rem] px-4 py-3 text-sm leading-6"
                   />
@@ -205,18 +204,18 @@ export function EntryDrawer() {
 
                 <label className="block">
                   <div className="mb-2 text-sm font-semibold text-[var(--text)]">
-                    Tags
+                    {t("common.tags")}
                   </div>
 
                   <input
                     value={tagsText}
                     onChange={(event) => setTagsText(event.target.value)}
-                    placeholder="city, north ridge, map marker"
+                    placeholder={t("entry.tagsPlaceholder")}
                     className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
                   />
 
                   <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
-                    Use commas to separate tags.
+                    {t("entry.tagsHelp")}
                   </p>
                 </label>
               </div>
@@ -229,7 +228,7 @@ export function EntryDrawer() {
                     className="flex h-11 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-4 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
                   >
                     <Trash2 size={16} strokeWidth={1.75} />
-                    Delete
+                    {t("common.delete")}
                   </button>
                 ) : (
                   <div />
@@ -241,7 +240,7 @@ export function EntryDrawer() {
                     onClick={closeDrawer}
                     className="ws-button-secondary h-11 rounded-full px-4 text-sm font-semibold"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
 
                   <button
@@ -249,7 +248,7 @@ export function EntryDrawer() {
                     className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold"
                   >
                     <Save size={16} strokeWidth={1.75} />
-                    {drawerMode === "edit" ? "Save Changes" : "Create Entry"}
+                    {drawerMode === "edit" ? t("common.saveChanges") : t("common.createEntry")}
                   </button>
                 </div>
               </footer>

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useI18n } from "../../shared/i18n";
 import { useTheme, type ResolvedTheme } from "../../shared/theme/ThemeProvider";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type { Entry } from "../entries/types";
@@ -229,6 +230,7 @@ function updateLabelVisibility(graph: Core) {
 
 export function GraphPage() {
   const { resolvedTheme } = useTheme();
+  const { t } = useI18n();
   const entries = useEntryStore((state) => state.entries);
   const relationships = useRelationshipStore((state) => state.relationships);
   const createRelationship = useRelationshipStore(
@@ -563,15 +565,15 @@ export function GraphPage() {
     <MotionPage className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="ws-eyebrow">Knowledge Graph</p>
+          <p className="ws-eyebrow">{t("graph.eyebrow")}</p>
           <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em]">
-            Graph
+          {t("nav.graph")}
           </h2>
         </div>
         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <span>{visibleEntries.length} notes</span>
+          <span>{visibleEntries.length} {t("graph.notes")}</span>
           <span>·</span>
-          <span>{visibleRelationships.length} links</span>
+          <span>{visibleRelationships.length} {t("graph.links")}</span>
         </div>
       </header>
       <section className="relative h-[calc(100vh-12.5rem)] min-h-[680px] overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[var(--shadow-raised)]">
@@ -587,7 +589,7 @@ export function GraphPage() {
           ref={containerRef}
           tabIndex={0}
           onKeyDown={handleGraphKeyDown}
-          aria-label="Knowledge graph. Use arrow keys to pan and plus or minus to zoom."
+          aria-label={t("graph.aria")}
           className="absolute inset-0 h-full w-full outline-none"
         />
 
@@ -596,7 +598,7 @@ export function GraphPage() {
             type="button"
             onClick={() => setPanelOpen(!panelOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] text-[var(--text-muted)] shadow-lg backdrop-blur hover:bg-[var(--surface-raised)]"
-            aria-label="Toggle graph controls"
+            aria-label={t("graph.toggleControls")}
           >
             <Settings2 size={16} />
           </button>
@@ -605,7 +607,7 @@ export function GraphPage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search files..."
+              placeholder={t("graph.search")}
               className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[var(--text-faint)]"
             />
             {query ? (
@@ -680,7 +682,7 @@ export function GraphPage() {
             className="flex h-9 items-center gap-2 px-3 text-xs hover:bg-[var(--surface-muted)]"
           >
             <Maximize2 size={14} />
-            Fit
+            {t("graph.fit")}
           </button>
           <button
             type="button"
@@ -688,7 +690,7 @@ export function GraphPage() {
             className="flex h-9 items-center gap-2 border-l border-[var(--border)] px-3 text-xs hover:bg-[var(--surface-muted)]"
           >
             <RefreshCw size={14} />
-            Stabilize
+            {t("graph.stabilize")}
           </button>
         </div>
       </section>
@@ -712,22 +714,23 @@ type ControlsProps = {
 };
 function GraphControls(props: ControlsProps) {
   const settings = props.settings;
+  const { t } = useI18n();
   return (
     <aside className="absolute left-3 top-14 z-20 max-h-[calc(100%-4.5rem)] w-72 overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] text-[var(--text)] shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
-        <span className="text-xs font-semibold">Graph settings</span>
+        <span className="text-xs font-semibold">{t("graph.settings")}</span>
         <button
           type="button"
           onClick={settings.reset}
           className="text-[10px] text-[var(--text-faint)] hover:text-[var(--text)]"
         >
-          Restore defaults
+          {t("graph.restore")}
         </button>
       </div>
       <details open className="border-b border-[var(--border)]">
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-semibold">
           <ChevronDown size={13} />
-          Filters
+          {t("graph.filters")}
         </summary>
         <div className="space-y-3 px-4 pb-4">
           <div className="grid grid-cols-2 rounded-lg bg-[var(--surface-muted)] p-1">
@@ -737,7 +740,7 @@ function GraphControls(props: ControlsProps) {
               className={`flex items-center justify-center gap-2 rounded-md py-2 text-xs ${props.mode === "global" ? "bg-[var(--surface-raised)] text-[var(--text)] shadow" : "text-[var(--text-faint)]"}`}
             >
               <Network size={13} />
-              Global
+              {t("graph.global")}
             </button>
             <button
               type="button"
@@ -745,7 +748,7 @@ function GraphControls(props: ControlsProps) {
               className={`flex items-center justify-center gap-2 rounded-md py-2 text-xs ${props.mode === "local" ? "bg-[var(--surface-raised)] text-[var(--text)] shadow" : "text-[var(--text-faint)]"}`}
             >
               <Focus size={13} />
-              Local
+              {t("graph.local")}
             </button>
           </div>
           {props.mode === "local" ? (
@@ -762,7 +765,7 @@ function GraphControls(props: ControlsProps) {
                 ))}
               </select>
               <Range
-                label="Depth"
+                label={t("graph.depth")}
                 value={props.depth}
                 min={1}
                 max={3}
@@ -772,23 +775,23 @@ function GraphControls(props: ControlsProps) {
           ) : null}
           <label className="block">
             <span className="mb-1 block text-[10px] text-[var(--text-faint)]">
-              Historical year
+              {t("graph.historicalYear")}
             </span>
             <input
               type="number"
               value={props.eraYear}
               onChange={(event) => props.setEraYear(event.target.value)}
-              placeholder="Any era"
+              placeholder={t("graph.anyEra")}
               className="ws-input h-9 w-full rounded-md px-2 text-xs outline-none"
             />
           </label>
           <Toggle
-            label="Orphans"
+            label={t("graph.orphans")}
             value={settings.showOrphans}
             setValue={(showOrphans) => settings.patch({ showOrphans })}
           />
           <Toggle
-            label="Author secrets"
+            label={t("graph.authorSecrets")}
             value={settings.showSecrets}
             setValue={(showSecrets) => settings.patch({ showSecrets })}
           />
@@ -805,7 +808,7 @@ function GraphControls(props: ControlsProps) {
                 ) : (
                   <EyeOff size={13} className="text-[var(--text-faint)]" />
                 )}
-                <span>{type}</span>
+                <span>{t(`type.${type}`)}</span>
               </button>
             ))}
           </div>
@@ -814,7 +817,7 @@ function GraphControls(props: ControlsProps) {
       <details open className="border-b border-[var(--border)]">
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-semibold">
           <ChevronDown size={13} />
-          Groups
+          {t("graph.groups")}
         </summary>
         <div className="space-y-2 px-3 pb-3">
           {settings.groups.map((group) => (
@@ -831,18 +834,18 @@ function GraphControls(props: ControlsProps) {
             className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-[var(--border-strong)] py-2 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-muted)]"
           >
             <Plus size={13} />
-            New group
+            {t("graph.newGroup")}
           </button>
         </div>
       </details>
       <details open>
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-semibold">
           <ChevronDown size={13} />
-          Forces
+          {t("graph.forces")}
         </summary>
         <div className="space-y-4 px-4 pb-4">
           <DeferredRange
-            label="Center force"
+            label={t("graph.centerForce")}
             value={settings.centerGravity}
             min={0}
             max={2}
@@ -854,7 +857,7 @@ function GraphControls(props: ControlsProps) {
             setValue={(centerGravity) => settings.patch({ centerGravity })}
           />
           <DeferredRange
-            label="Repel force"
+            label={t("graph.repelForce")}
             value={settings.nodeRepulsion}
             min={0}
             max={100000}
@@ -863,7 +866,7 @@ function GraphControls(props: ControlsProps) {
             setValue={(nodeRepulsion) => settings.patch({ nodeRepulsion })}
           />
           <DeferredRange
-            label="Link force"
+            label={t("graph.linkForce")}
             value={settings.linkElasticity}
             min={0.01}
             max={4}
@@ -873,7 +876,7 @@ function GraphControls(props: ControlsProps) {
             setValue={(linkElasticity) => settings.patch({ linkElasticity })}
           />
           <DeferredRange
-            label="Link distance"
+            label={t("graph.linkDistance")}
             value={settings.linkDistance}
             min={10}
             max={600}
@@ -884,7 +887,7 @@ function GraphControls(props: ControlsProps) {
             setValue={(linkDistance) => settings.patch({ linkDistance })}
           />
           <DeferredRange
-            label="Animation duration"
+            label={t("graph.animationDuration")}
             value={settings.animationDuration}
             min={50}
             max={5000}
@@ -909,6 +912,7 @@ function GroupEditor({
   update: (patch: Partial<GraphGroup>) => void;
   remove: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2 rounded-md bg-[var(--surface-muted)] p-2">
       <input
@@ -916,19 +920,19 @@ function GroupEditor({
         value={group.color}
         onChange={(event) => update({ color: event.target.value })}
         className="h-6 w-6 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
-        aria-label="Group color"
+        aria-label={t("graph.groupColor")}
       />
       <input
         value={group.query}
         onChange={(event) => update({ query: event.target.value })}
-        placeholder="tag:#work or type:Location"
+        placeholder={t("graph.groupPlaceholder")}
         className="min-w-0 flex-1 bg-transparent text-xs outline-none"
       />
       <button
         type="button"
         onClick={remove}
         className="text-[var(--text-faint)] hover:text-red-500"
-        aria-label="Delete group"
+        aria-label={t("graph.deleteGroup")}
       >
         <Trash2 size={13} />
       </button>
@@ -1087,6 +1091,7 @@ type NodePanelProps = {
   open: () => void;
 };
 function NodePanel(props: NodePanelProps) {
+  const { t } = useI18n();
   return (
     <aside className="absolute bottom-3 right-3 top-3 z-20 w-80 overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl">
       <div className="flex items-start gap-3">
@@ -1096,7 +1101,7 @@ function NodePanel(props: NodePanelProps) {
         />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-            {props.entry.type}
+            {t(`type.${props.entry.type}`)}
           </p>
           <h3 className="mt-1 truncate text-lg font-semibold text-[var(--text)]">
             {props.entry.title}
@@ -1111,7 +1116,7 @@ function NodePanel(props: NodePanelProps) {
         </button>
       </div>
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">
-        {props.entry.summary || "No summary yet."}
+        {props.entry.summary || t("common.noSummary")}
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
@@ -1119,18 +1124,18 @@ function NodePanel(props: NodePanelProps) {
           onClick={props.focus}
           className="ws-button-secondary h-9 rounded-md text-xs"
         >
-          Focus
+          {t("graph.focus")}
         </button>
         <button
           type="button"
           onClick={props.open}
           className="ws-button-secondary h-9 rounded-md text-xs"
         >
-          Open note
+          {t("graph.openNote")}
         </button>
       </div>
       <p className="mt-5 text-[10px] font-semibold uppercase tracking-[.14em] text-[var(--text-faint)]">
-        Links · {props.relationships.length}
+        {t("graph.linksCount", { count: props.relationships.length })}
       </p>
       <div className="mt-2 space-y-1">
         {props.relationships.map((relationship) => {
@@ -1146,7 +1151,7 @@ function NodePanel(props: NodePanelProps) {
               <GitBranch size={13} className="text-[var(--text-faint)]" />
               <span className="min-w-0 flex-1 truncate">
                 <b>
-                  {outgoing ? relationship.type : relationship.inverseLabel}
+                  {t(`relation.${outgoing ? relationship.type : relationship.inverseLabel}`)}
                 </b>{" "}
                 · {props.entries.find((entry) => entry.id === otherId)?.title}
               </span>
@@ -1163,7 +1168,7 @@ function NodePanel(props: NodePanelProps) {
       </div>
       <details className="mt-4 rounded-lg border border-[var(--border)] p-3">
         <summary className="cursor-pointer text-xs font-semibold">
-          Add link
+          {t("graph.addLink")}
         </summary>
         <div className="mt-3 space-y-2">
           <select
@@ -1171,7 +1176,7 @@ function NodePanel(props: NodePanelProps) {
             onChange={(event) => props.setTargetId(event.target.value)}
             className="ws-input h-9 w-full rounded-md px-2 text-xs"
           >
-            <option value="">Choose a note…</option>
+            <option value="">{t("graph.chooseNote")}</option>
             {props.entries
               .filter((entry) => entry.id !== props.entry.id)
               .map((entry) => (
@@ -1188,7 +1193,7 @@ function NodePanel(props: NodePanelProps) {
             className="ws-input h-9 w-full rounded-md px-2 text-xs"
           >
             {relationshipTypes.map((type) => (
-              <option key={type}>{type}</option>
+              <option key={type}>{t(`relation.${type}`)}</option>
             ))}
           </select>
           <div className="grid grid-cols-2 gap-2">
@@ -1199,8 +1204,8 @@ function NodePanel(props: NodePanelProps) {
               }
               className="ws-input h-9 rounded-md px-2 text-xs"
             >
-              <option value="directed">Directed</option>
-              <option value="mutual">Mutual</option>
+              <option value="directed">{t("graph.directed")}</option>
+              <option value="mutual">{t("graph.mutual")}</option>
             </select>
             <select
               value={props.status}
@@ -1209,10 +1214,10 @@ function NodePanel(props: NodePanelProps) {
               }
               className="ws-input h-9 rounded-md px-2 text-xs"
             >
-              <option value="current">Current</option>
-              <option value="former">Former</option>
-              <option value="rumored">Rumored</option>
-              <option value="secret">Secret</option>
+              <option value="current">{t("graph.current")}</option>
+              <option value="former">{t("graph.former")}</option>
+              <option value="rumored">{t("graph.rumored")}</option>
+              <option value="secret">{t("graph.secret")}</option>
             </select>
           </div>
           <button
@@ -1222,7 +1227,7 @@ function NodePanel(props: NodePanelProps) {
             className="ws-button-primary flex h-9 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"
           >
             <Plus size={13} />
-            Add relationship
+            {t("graph.addRelationship")}
           </button>
         </div>
       </details>
@@ -1241,6 +1246,7 @@ function RelationshipPanel({
   close: () => void;
   remove: () => void;
 }) {
+  const { t } = useI18n();
   const source = entries.find(
     (entry) => entry.id === relationship.sourceEntryId,
   );
@@ -1251,7 +1257,7 @@ function RelationshipPanel({
     <aside className="absolute right-3 top-3 z-20 w-72 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-          Relationship
+          {t("graph.relationship")}
         </p>
         <button type="button" onClick={close}>
           <X size={15} />
@@ -1261,7 +1267,7 @@ function RelationshipPanel({
         <b className="block text-sm text-[var(--text)]">{source?.title}</b>
         <div className="my-3 text-[var(--text-faint)]">↓</div>
         <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs">
-          {relationship.type}
+          {t(`relation.${relationship.type}`)}
         </span>
         <b className="mt-3 block text-sm text-[var(--text)]">{target?.title}</b>
       </div>
@@ -1271,7 +1277,7 @@ function RelationshipPanel({
         className="mt-5 flex h-9 w-full items-center justify-center gap-2 rounded-md bg-red-500/10 text-xs text-red-500"
       >
         <Trash2 size={13} />
-        Delete relationship
+        {t("graph.deleteRelationship")}
       </button>
     </aside>
   );

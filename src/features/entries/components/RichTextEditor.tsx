@@ -16,6 +16,7 @@ import {
   SeparatorHorizontal,
   Undo2,
 } from "lucide-react";
+import { useI18n } from "../../../shared/i18n";
 
 type RichTextEditorProps = {
   value: string;
@@ -86,12 +87,15 @@ export function RichTextEditor({
   editable = true,
   placeholder = "Write your lore notes...",
 }: RichTextEditorProps) {
+  const { t } = useI18n();
+  const resolvedPlaceholder =
+    placeholder === "Write your lore notes..." ? t("editor.placeholder") : placeholder;
   const editor = useEditor({
     editable,
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder,
+        placeholder: resolvedPlaceholder,
       }),
       Link.configure({
         openOnClick: false,
@@ -140,7 +144,7 @@ export function RichTextEditor({
       {editable ? (
         <div className="mb-4 flex flex-wrap items-center gap-1 rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-muted)] p-1.5">
           <ToolbarButton
-            title="Heading 1"
+            title={t("editor.heading1")}
             active={editor.isActive("heading", { level: 1 })}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 1 }).run()
@@ -150,7 +154,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Heading 2"
+            title={t("editor.heading2")}
             active={editor.isActive("heading", { level: 2 })}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 2 }).run()
@@ -160,7 +164,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Bold"
+            title={t("editor.bold")}
             active={editor.isActive("bold")}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
@@ -168,7 +172,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Italic"
+            title={t("editor.italic")}
             active={editor.isActive("italic")}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
@@ -176,7 +180,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Bullet list"
+            title={t("editor.bulletList")}
             active={editor.isActive("bulletList")}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
           >
@@ -184,7 +188,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Ordered list"
+            title={t("editor.orderedList")}
             active={editor.isActive("orderedList")}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
           >
@@ -192,7 +196,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Quote"
+            title={t("editor.quote")}
             active={editor.isActive("blockquote")}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
           >
@@ -200,7 +204,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Code block"
+            title={t("editor.codeBlock")}
             active={editor.isActive("codeBlock")}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           >
@@ -208,7 +212,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Horizontal rule"
+            title={t("editor.horizontalRule")}
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
           >
             <SeparatorHorizontal size={17} strokeWidth={1.75} />
@@ -217,7 +221,7 @@ export function RichTextEditor({
           <div className="mx-1 h-6 w-px bg-[var(--border)]" />
 
           <ToolbarButton
-            title="Undo"
+            title={t("editor.undo")}
             disabled={!editor.can().undo()}
             onClick={() => editor.chain().focus().undo().run()}
           >
@@ -225,7 +229,7 @@ export function RichTextEditor({
           </ToolbarButton>
 
           <ToolbarButton
-            title="Redo"
+            title={t("editor.redo")}
             disabled={!editor.can().redo()}
             onClick={() => editor.chain().focus().redo().run()}
           >

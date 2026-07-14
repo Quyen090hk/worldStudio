@@ -20,6 +20,7 @@ import { formatEntryDate } from "./utils/formatEntryDate";
 import type { EntryType } from "./types";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
+import { useI18n } from "../../shared/i18n";
 
 type EntryTypeFilter = EntryType | "All";
 
@@ -43,6 +44,7 @@ export function EntriesPage() {
   const deleteEntry = useEntryStore((state) => state.deleteEntry);
 
   const navigate = useNavigate();
+  const { locale, t } = useI18n();
 
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<EntryTypeFilter>("All");
@@ -95,7 +97,9 @@ export function EntriesPage() {
   }
 
   function handleDelete(entryId: string, entryTitle: string) {
-    const confirmed = window.confirm(`Delete "${entryTitle}"?`);
+    const confirmed = window.confirm(
+      locale === "zh-CN" ? `确定删除“${entryTitle}”吗？` : `Delete "${entryTitle}"?`,
+    );
 
     if (confirmed) {
       deleteEntry(entryId);
@@ -105,14 +109,14 @@ export function EntriesPage() {
   return (
     <MotionPage className="space-y-6">
       <section className="space-y-2">
-        <p className="ws-eyebrow">Archive</p>
+        <p className="ws-eyebrow">{t("common.archive")}</p>
 
         <h2 className="text-5xl font-semibold tracking-[-0.04em] text-[var(--text)]">
-          Entries
+          {t("nav.entries")}
         </h2>
 
         <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-          Manage characters, locations, organizations, items, and events.
+          {t("entries.description")}
         </p>
       </section>
 
@@ -129,7 +133,7 @@ export function EntriesPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search title, summary, content, tags..."
+              placeholder={t("entries.search")}
               className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
             />
 
@@ -138,7 +142,7 @@ export function EntriesPage() {
                 type="button"
                 onClick={() => setQuery("")}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-                aria-label="Clear search"
+                aria-label={t("entries.clearSearch")}
               >
                 <X size={15} strokeWidth={1.8} />
               </button>
@@ -161,7 +165,7 @@ export function EntriesPage() {
             >
               {entryTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type === "All" ? "All Types" : type}
+                  {type === "All" ? t("entries.allTypes") : t(`type.${type}`)}
                 </option>
               ))}
             </select>
@@ -173,7 +177,7 @@ export function EntriesPage() {
               onChange={(event) => setSelectedTag(event.target.value)}
               className="h-full min-w-0 flex-1 appearance-none bg-transparent text-sm text-[var(--text)] outline-none"
             >
-              <option value="All">All Tags</option>
+              <option value="All">{t("entries.allTags")}</option>
 
               {allTags.map((tag) => (
                 <option key={tag} value={tag}>
@@ -190,7 +194,7 @@ export function EntriesPage() {
                 onClick={clearFilters}
                 className="ws-button-secondary h-12 rounded-[1.15rem] px-4 text-sm font-medium"
               >
-                Clear filters
+                {t("common.clearFilters")}
               </button>
             ) : (
               <button
@@ -206,15 +210,15 @@ export function EntriesPage() {
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--border)] pt-4">
           <span className="text-sm font-medium text-[var(--text-muted)]">
-            Showing{" "}
-            <span className="text-[var(--text)]">{filteredEntries.length}</span>{" "}
-            of <span className="text-[var(--text)]">{entries.length}</span>{" "}
-            entries
+            {t("entries.showing", {
+              shown: filteredEntries.length,
+              total: entries.length,
+            })}
           </span>
 
           {selectedTag !== "All" ? (
             <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]">
-              Tag: #{selectedTag}
+              {t("entries.tag", { tag: selectedTag })}
             </span>
           ) : null}
         </div>
@@ -222,21 +226,21 @@ export function EntriesPage() {
 
       <section className="ws-surface overflow-hidden rounded-[2rem]">
         <div className="hidden grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto] gap-4 border-b border-[var(--border)] px-5 py-4 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)] lg:grid">
-          <div>Title</div>
-          <div>Type</div>
-          <div>Tags</div>
-          <div>Updated</div>
-          <div className="text-right">Actions</div>
+          <div>{t("common.title")}</div>
+          <div>{t("common.type")}</div>
+          <div>{t("common.tags")}</div>
+          <div>{t("common.updated")}</div>
+          <div className="text-right">{t("common.actions")}</div>
         </div>
 
         {entries.length === 0 ? (
           <div className="px-6 py-14 text-center">
             <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
-              No entries yet
+              {t("dashboard.noEntries")}
             </h3>
 
             <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-              Start by creating your first lore entry.
+              {t("dashboard.startFirst")}
             </p>
 
             <button
@@ -244,17 +248,17 @@ export function EntriesPage() {
               onClick={openCreateEntry}
               className="ws-button-primary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
             >
-              Create Entry
+              {t("common.createEntry")}
             </button>
           </div>
         ) : filteredEntries.length === 0 ? (
           <div className="px-6 py-14 text-center">
             <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
-              No matching entries
+              {t("entries.noMatching")}
             </h3>
 
             <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-              Try another keyword, type, or tag.
+              {t("entries.tryAnother")}
             </p>
 
             <button
@@ -262,7 +266,7 @@ export function EntriesPage() {
               onClick={clearFilters}
               className="ws-button-secondary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
             >
-              Clear filters
+              {t("common.clearFilters")}
             </button>
           </div>
         ) : (
@@ -299,7 +303,7 @@ export function EntriesPage() {
                       </h3>
 
                       <p className="mt-1 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
-                        {entry.summary || "No summary yet."}
+                        {entry.summary || t("common.noSummary")}
                       </p>
                     </div>
 
@@ -330,13 +334,13 @@ export function EntriesPage() {
 
                       {entry.tags.length === 0 ? (
                         <span className="text-xs text-[var(--text-faint)]">
-                          No tags
+                          {t("common.noTags")}
                         </span>
                       ) : null}
                     </div>
 
                     <div className="text-sm text-[var(--text-muted)]">
-                      {formatEntryDate(entry.updatedAt)}
+                      {formatEntryDate(entry.updatedAt, locale)}
                     </div>
 
                     <div className="flex items-center justify-start gap-2 lg:justify-end">
@@ -348,7 +352,7 @@ export function EntriesPage() {
                           openEditEntry(entry.id);
                         }}
                         className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-                        aria-label={`Edit ${entry.title}`}
+                        aria-label={t("entries.editAria", { title: entry.title })}
                       >
                         <Pencil size={16} strokeWidth={1.75} />
                       </motion.button>
@@ -361,7 +365,7 @@ export function EntriesPage() {
                           handleDelete(entry.id, entry.title);
                         }}
                         className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--text-muted)] transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-300"
-                        aria-label={`Delete ${entry.title}`}
+                        aria-label={t("entries.deleteAria", { title: entry.title })}
                       >
                         <Trash2 size={16} strokeWidth={1.75} />
                       </motion.button>

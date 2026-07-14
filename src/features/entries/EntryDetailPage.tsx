@@ -19,6 +19,7 @@ import {
 } from "./utils/formatEntryDate";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
+import { useI18n } from "../../shared/i18n";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -49,6 +50,7 @@ function getWritingStats(html: string) {
 export function EntryDetailPage() {
   const { entryId } = useParams();
   const navigate = useNavigate();
+  const { locale, t } = useI18n();
 
   const entries = useEntryStore((state) => state.entries);
   const openEditEntry = useEntryStore((state) => state.openEditEntry);
@@ -108,7 +110,9 @@ export function EntryDetailPage() {
   function handleDelete() {
     if (!entry) return;
 
-    const confirmed = window.confirm(`Delete "${entry.title}"?`);
+    const confirmed = window.confirm(
+      locale === "zh-CN" ? `确定删除“${entry.title}”吗？` : `Delete "${entry.title}"?`,
+    );
 
     if (confirmed) {
       deleteEntry(entry.id);
@@ -125,18 +129,18 @@ export function EntryDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
         >
           <ArrowLeft size={16} strokeWidth={1.8} />
-          Back to Entries
+          {t("entry.back")}
         </button>
 
         <section className="ws-surface rounded-[2rem] p-8">
-          <p className="ws-eyebrow">Missing Record</p>
+          <p className="ws-eyebrow">{t("entry.missingRecord")}</p>
 
           <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
-            Entry not found
+            {t("entry.notFound")}
           </h2>
 
           <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-            This entry may have been deleted.
+            {t("entry.deleted")}
           </p>
         </section>
       </MotionPage>
@@ -154,7 +158,7 @@ export function EntryDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
         >
           <ArrowLeft size={16} strokeWidth={1.8} />
-          Back to Entries
+          {t("entry.back")}
         </button>
 
         <div className="flex items-center gap-2">
@@ -198,7 +202,7 @@ export function EntryDetailPage() {
 
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]">
                 <Clock3 size={13} strokeWidth={1.8} />
-                Updated {formatEntryRelative(entry.updatedAt)}
+                {t("common.updated")} {formatEntryRelative(entry.updatedAt, locale)}
               </span>
             </div>
 
@@ -207,7 +211,7 @@ export function EntryDetailPage() {
             </h1>
 
             <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
-              {entry.summary || "No summary yet."}
+              {entry.summary || t("common.noSummary")}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -222,7 +226,7 @@ export function EntryDetailPage() {
                 ))
               ) : (
                 <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-faint)]">
-                  No tags
+                  {t("common.noTags")}
                 </span>
               )}
             </div>
@@ -230,37 +234,37 @@ export function EntryDetailPage() {
 
           <aside className="ws-surface-soft rounded-[1.75rem] p-5">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
-              Record Details
+              {t("entry.recordDetails")}
             </p>
 
             <div className="mt-5 space-y-4">
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                  Type
+                  {t("common.type")}
                 </div>
                 <EntryTypeBadge type={entry.type} />
                 <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
-                  {typeMeta.description}
+                  {t(`type.${entry.type}.description`)}
                 </p>
               </div>
 
               <div className="border-t border-[var(--border)] pt-4">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
                   <Calendar size={14} strokeWidth={1.7} />
-                  Created
+                  {t("common.created")}
                 </div>
                 <p className="text-sm text-[var(--text-muted)]">
-                  {formatEntryDateTime(entry.createdAt)}
+                  {formatEntryDateTime(entry.createdAt, locale)}
                 </p>
               </div>
 
               <div className="border-t border-[var(--border)] pt-4">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
                   <Clock3 size={14} strokeWidth={1.7} />
-                  Updated
+                  {t("common.updated")}
                 </div>
                 <p className="text-sm text-[var(--text-muted)]">
-                  {formatEntryDateTime(entry.updatedAt)}
+                  {formatEntryDateTime(entry.updatedAt, locale)}
                 </p>
               </div>
             </div>
@@ -272,14 +276,14 @@ export function EntryDetailPage() {
         <article className="ws-surface rounded-[2rem] p-5 md:p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="ws-eyebrow">Lore Notes</p>
+              <p className="ws-eyebrow">{t("entry.loreNotes")}</p>
 
               <h2 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
-                Main Text
+                {t("entry.mainText")}
               </h2>
 
               <p className="mt-1 text-sm text-[var(--text-muted)]">
-                {writingStats.words} words · {writingStats.characters} characters
+                {t("entry.wordsCharacters", writingStats)}
               </p>
             </div>
 
@@ -289,12 +293,12 @@ export function EntryDetailPage() {
                   {saveStatus === "saving" ? (
                     <>
                       <Clock3 size={15} strokeWidth={1.8} />
-                      Saving...
+                      {t("entry.saving")}
                     </>
                   ) : (
                     <>
                       <CheckCircle2 size={15} strokeWidth={1.8} />
-                      Saved locally
+                      {t("entry.savedLocally")}
                     </>
                   )}
                 </span>
@@ -306,7 +310,7 @@ export function EntryDetailPage() {
                 className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
               >
                 <FileText size={16} strokeWidth={1.75} />
-                {isEditingContent ? "Done" : "Edit Notes"}
+                {isEditingContent ? t("entry.done") : t("entry.editNotes")}
               </button>
             </div>
           </div>
@@ -316,19 +320,18 @@ export function EntryDetailPage() {
               value={draftContent}
               onChange={setDraftContent}
               editable
-              placeholder="Write history, rules, scenes, rumors, references..."
+              placeholder={t("entry.writePlaceholder")}
             />
           ) : entry.content ? (
             <RichTextEditor value={entry.content} editable={false} />
           ) : (
             <div className="rounded-[1.5rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-6 py-12 text-center">
               <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
-                No content yet
+                {t("common.noContent")}
               </h3>
 
               <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-                Add detailed lore notes, background, rules, history, or
-                references.
+                {t("entry.addNotes")}
               </p>
 
               <button
@@ -336,7 +339,7 @@ export function EntryDetailPage() {
                 onClick={() => setIsEditingContent(true)}
                 className="ws-button-primary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
               >
-                Start Writing
+                {t("entry.startWriting")}
               </button>
             </div>
           )}
@@ -344,7 +347,7 @@ export function EntryDetailPage() {
 
         <aside className="space-y-6">
           <section className="ws-surface rounded-[2rem] p-5">
-            <p className="ws-eyebrow">Tags</p>
+            <p className="ws-eyebrow">{t("common.tags")}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {entry.tags.length > 0 ? (
@@ -357,16 +360,16 @@ export function EntryDetailPage() {
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-[var(--text-muted)]">No tags</p>
+                <p className="text-sm text-[var(--text-muted)]">{t("common.noTags")}</p>
               )}
             </div>
           </section>
 
           <section className="ws-surface rounded-[2rem] p-5">
-            <p className="ws-eyebrow">Future Links</p>
+            <p className="ws-eyebrow">{t("entry.futureLinks")}</p>
 
             <div className="mt-4 space-y-2">
-              {["Map markers", "Relations", "Timeline events", "Wiki preview"].map(
+              {[t("entry.mapMarkers"), t("dashboard.relations"), t("entry.timelineEvents"), t("entry.wikiPreview")].map(
                 (item) => (
                   <div
                     key={item}
@@ -374,7 +377,7 @@ export function EntryDetailPage() {
                   >
                     <span className="text-[var(--text-muted)]">{item}</span>
                     <span className="text-xs text-[var(--text-faint)]">
-                      Soon
+                      {t("common.soon")}
                     </span>
                   </div>
                 )

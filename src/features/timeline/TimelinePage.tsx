@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useI18n } from "../../shared/i18n";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type { EntryType } from "../entries/types";
 import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
@@ -61,6 +62,7 @@ function assignTracks(items: ResolvedTimelineItem[], minimumSpan: number) {
 
 export function TimelinePage() {
   const navigate = useNavigate();
+  const { locale, t } = useI18n();
   const entries = useEntryStore((state) => state.entries);
   const relationships = useRelationshipStore((state) => state.relationships);
   const storedItems = useTimelineStore((state) => state.items);
@@ -285,18 +287,18 @@ export function TimelinePage() {
     <MotionPage className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="ws-eyebrow">World chronology</p>
+          <p className="ws-eyebrow">{t("timeline.eyebrow")}</p>
           <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em]">
-            Timeline
+            {t("nav.timeline")}
           </h2>
         </div>
         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
           <span>
-            {filteredItems.length} records · {eras.length} eras
+            {filteredItems.length} {t("timeline.records")} · {eras.length} {t("timeline.eras")}
           </span>
           <span>·</span>
           <span>
-            {formatWorldYear(windowStart)}–{formatWorldYear(windowEnd)}
+            {formatWorldYear(windowStart, locale)}–{formatWorldYear(windowEnd, locale)}
           </span>
         </div>
       </header>
@@ -307,7 +309,7 @@ export function TimelinePage() {
             type="button"
             onClick={() => setControlsOpen((open) => !open)}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] text-[var(--text-muted)] shadow-lg"
-            aria-label="Toggle timeline controls"
+            aria-label={t("timeline.controls")}
           >
             <CalendarRange size={15} />
           </button>
@@ -316,7 +318,7 @@ export function TimelinePage() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search the chronicle..."
+              placeholder={t("timeline.search")}
               className="min-w-0 flex-1 bg-transparent text-xs outline-none"
             />
             {query ? (
@@ -334,7 +336,7 @@ export function TimelinePage() {
             className="ws-button-primary flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
           >
             <Plus size={14} />
-            Record event
+            {t("timeline.recordEvent")}
           </button>
           <button
             type="button"
@@ -345,7 +347,7 @@ export function TimelinePage() {
             className="ws-button-secondary flex h-9 items-center gap-2 rounded-lg px-3 text-xs shadow-lg"
           >
             <Plus size={14} />
-            Define era
+            {t("timeline.defineEra")}
           </button>
         </div>
 
@@ -379,7 +381,7 @@ export function TimelinePage() {
           >
             <div className="sticky top-0 z-20 h-12 border-y border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_92%,transparent)] backdrop-blur">
               <div className="absolute inset-y-0 left-0 flex w-[118px] items-center px-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
-                World year
+                {t("timeline.worldYear")}
               </div>
               {ticks.map((tick) => (
                 <div
@@ -388,7 +390,7 @@ export function TimelinePage() {
                   style={{ left: yearToX(tick) }}
                 >
                   <span className="absolute left-2 top-3 whitespace-nowrap text-[10px] text-[var(--text-faint)]">
-                    {formatWorldYear(tick)}
+                    {formatWorldYear(tick, locale)}
                   </span>
                 </div>
               ))}
@@ -396,7 +398,7 @@ export function TimelinePage() {
 
             <div className="relative h-10 border-b border-[var(--border)] bg-[var(--surface-muted)]/40">
               <div className="absolute inset-y-0 left-0 z-10 flex w-[118px] items-center border-r border-[var(--border)] bg-[var(--surface-solid)]/90 px-3 text-[9px] font-semibold uppercase tracking-[.14em] text-[var(--text-faint)]">
-                Historical eras
+                {t("timeline.historicalEras")}
               </div>
               {eras
                 .filter(
@@ -417,7 +419,7 @@ export function TimelinePage() {
                         background: `color-mix(in srgb, ${era.color} 25%, transparent)`,
                         borderLeft: `2px solid ${era.color}`,
                       }}
-                      title={`${era.name}: ${formatWorldYear(era.startYear)}–${formatWorldYear(era.endYear)}`}
+                      title={`${era.name}: ${formatWorldYear(era.startYear, locale)}–${formatWorldYear(era.endYear, locale)}`}
                     >
                       <span className="truncate">{era.name}</span>
                     </div>
@@ -479,7 +481,7 @@ export function TimelinePage() {
                         opacity: item.certainty === "legendary" ? 0.72 : 1,
                         color: "var(--text)",
                       }}
-                      title={`${item.title} · ${formatWorldYear(item.startYear)}`}
+                      title={`${item.title} · ${formatWorldYear(item.startYear, locale)}`}
                     >
                       <span className="truncate">{item.title}</span>
                     </button>
@@ -492,19 +494,17 @@ export function TimelinePage() {
               <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
                 <CalendarRange className="text-[var(--text-faint)]" size={28} />
                 <p className="mt-4 text-sm font-semibold">
-                  The chronicle is unwritten
+                  {t("timeline.unwritten")}
                 </p>
                 <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--text-muted)]">
-                  Record a historical event from an existing entry, define its
-                  significance and certainty, or establish the eras that shaped
-                  your world.
+                  {t("timeline.unwrittenHelp")}
                 </p>
                 <button
                   type="button"
                   onClick={() => setComposerOpen(true)}
                   className="ws-button-primary mt-4 rounded-md px-4 py-2 text-xs"
                 >
-                  Record the first event
+                  {t("timeline.recordFirst")}
                 </button>
               </div>
             ) : null}
@@ -518,7 +518,7 @@ export function TimelinePage() {
             className="flex h-9 items-center gap-2 px-3 text-xs hover:bg-[var(--surface-muted)]"
           >
             <Maximize2 size={14} />
-            Fit chronicle
+            {t("timeline.fit")}
           </button>
         </div>
 
@@ -584,12 +584,13 @@ function TimelineControls({
   eras: Array<{ id: string; name: string; color: string }>;
   deleteEra: (id: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <aside className="absolute left-3 top-14 z-30 w-64 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-2 shadow-2xl backdrop-blur">
       <details open>
         <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold">
           <ChevronDown size={13} />
-          Historical threads
+          {t("timeline.threads")}
         </summary>
         <div className="space-y-1">
           {TIMELINE_CATEGORIES.map((category) => (
@@ -608,7 +609,7 @@ function TimelineControls({
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ background: TIMELINE_CATEGORY_COLORS[category] }}
               />
-              {category}
+              {t(`timeline.category.${category}`)}
             </button>
           ))}
           <button
@@ -622,26 +623,26 @@ function TimelineControls({
               <EyeOff size={13} className="text-[var(--text-faint)]" />
             )}
             <span className="h-2.5 w-2.5 rounded-full bg-[#777780]" />
-            Relationships
+            {t("timeline.relationships")}
           </button>
         </div>
       </details>
       <details open className="mt-2 border-t border-[var(--border)] pt-2">
         <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold">
           <ChevronDown size={13} />
-          Historical lens
+          {t("timeline.lens")}
         </summary>
         <button
           type="button"
           onClick={() => setShowUncertain(!showUncertain)}
           className="flex w-full items-center justify-between rounded-md px-2 py-2 text-xs hover:bg-[var(--surface-muted)]"
         >
-          <span>Rumors & legends</span>
+          <span>{t("timeline.rumorsLegends")}</span>
           {showUncertain ? <Eye size={13} /> : <EyeOff size={13} />}
         </button>
         <label className="block px-2 py-2 text-[10px] text-[var(--text-faint)]">
           <span className="flex justify-between">
-            <span>Minimum significance</span>
+            <span>{t("timeline.minimumSignificance")}</span>
             <span>{minimumImportance}/5</span>
           </span>
           <input
@@ -661,7 +662,7 @@ function TimelineControls({
         <details className="mt-2 border-t border-[var(--border)] pt-2">
           <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold">
             <ChevronDown size={13} />
-            Eras
+            {t("timeline.eras")}
           </summary>
           <div className="space-y-1">
             {eras.map((era) => (
@@ -678,7 +679,7 @@ function TimelineControls({
                   type="button"
                   onClick={() => deleteEra(era.id)}
                   className="text-[var(--text-faint)] opacity-0 hover:text-red-500 group-hover:opacity-100"
-                  aria-label={`Delete ${era.name}`}
+                  aria-label={t("timeline.deleteEra", { name: era.name })}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -711,6 +712,7 @@ function TimelineComposer({
   close: () => void;
   created: (id: string, year: number) => void;
 }) {
+  const { t } = useI18n();
   const [entryId, setEntryId] = useState(
     entries.find((entry) => entry.type === "Event")?.id ?? entries[0]?.id ?? "",
   );
@@ -746,10 +748,10 @@ function TimelineComposer({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-            World chronology
+            {t("timeline.eyebrow")}
           </p>
           <h3 className="mt-1 text-lg font-semibold">
-            Record historical event
+            {t("timeline.recordHistoricalEvent")}
           </h3>
         </div>
         <button type="button" onClick={close}>
@@ -757,12 +759,11 @@ function TimelineComposer({
         </button>
       </div>
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">
-        Link chronology to an existing entry so changes stay synchronized across
-        Entries, Graph, and Timeline.
+        {t("timeline.composerHelp")}
       </p>
       <div className="mt-5 space-y-3">
         <label className="block text-[10px] text-[var(--text-faint)]">
-          Entry
+          {t("common.entries")}
           <select
             value={entryId}
             onChange={(event) => setEntryId(event.target.value)}
@@ -770,14 +771,14 @@ function TimelineComposer({
           >
             {entries.map((entry) => (
               <option key={entry.id} value={entry.id}>
-                {entry.title} · {entry.type}
+                {entry.title} · {t(`type.${entry.type}`)}
               </option>
             ))}
           </select>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">
-            Start year
+            {t("timeline.startYear")}
             <input
               type="number"
               value={startYear}
@@ -786,18 +787,18 @@ function TimelineComposer({
             />
           </label>
           <label className="block text-[10px] text-[var(--text-faint)]">
-            End year
+            {t("timeline.endYear")}
             <input
               type="number"
               value={endYear}
               onChange={(event) => setEndYear(event.target.value)}
-              placeholder="Point"
+              placeholder={t("timeline.point")}
               className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
             />
           </label>
         </div>
         <label className="block text-[10px] text-[var(--text-faint)]">
-          Historical thread
+          {t("timeline.threads")}
           <select
             value={category}
             onChange={(event) =>
@@ -806,13 +807,13 @@ function TimelineComposer({
             className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
           >
             {TIMELINE_CATEGORIES.map((value) => (
-              <option key={value}>{value}</option>
+              <option key={value}>{t(`timeline.category.${value}`)}</option>
             ))}
           </select>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">
-            Significance
+            {t("timeline.significance")}
             <select
               value={importance}
               onChange={(event) =>
@@ -820,15 +821,15 @@ function TimelineComposer({
               }
               className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
             >
-              <option value={1}>1 · Footnote</option>
-              <option value={2}>2 · Minor</option>
-              <option value={3}>3 · Notable</option>
-              <option value={4}>4 · Major</option>
-              <option value={5}>5 · World-shaping</option>
+              <option value={1}>1 · {t("timeline.footnote")}</option>
+              <option value={2}>2 · {t("timeline.minor")}</option>
+              <option value={3}>3 · {t("timeline.notable")}</option>
+              <option value={4}>4 · {t("timeline.major")}</option>
+              <option value={5}>5 · {t("timeline.worldShaping")}</option>
             </select>
           </label>
           <label className="block text-[10px] text-[var(--text-faint)]">
-            Historical status
+            {t("timeline.status")}
             <select
               value={certainty}
               onChange={(event) =>
@@ -836,20 +837,20 @@ function TimelineComposer({
               }
               className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
             >
-              <option value="canon">Canon</option>
-              <option value="rumored">Rumored</option>
-              <option value="legendary">Legendary</option>
+              <option value="canon">{t("timeline.canon")}</option>
+              <option value="rumored">{t("timeline.rumored")}</option>
+              <option value="legendary">{t("timeline.legendary")}</option>
             </select>
           </label>
         </div>
         <label className="block text-[10px] text-[var(--text-faint)]">
-          Timeline note
+          {t("timeline.note")}
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={4}
             className="ws-input mt-1 w-full rounded-md p-2 text-xs"
-            placeholder="Optional chronology-specific context"
+            placeholder={t("timeline.contextPlaceholder")}
           />
         </label>
         <button
@@ -859,7 +860,7 @@ function TimelineComposer({
           className="ws-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"
         >
           <Plus size={14} />
-          Add to chronicle
+          {t("timeline.addToChronicle")}
         </button>
       </div>
     </aside>
@@ -873,6 +874,7 @@ function EraComposer({
   createEra: (input: TimelineEraInput) => string;
   close: () => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [startYear, setStartYear] = useState("0");
   const [endYear, setEndYear] = useState("100");
@@ -899,31 +901,30 @@ function EraComposer({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-            Historical structure
+            {t("timeline.structure")}
           </p>
-          <h3 className="mt-1 text-lg font-semibold">Define an era</h3>
+          <h3 className="mt-1 text-lg font-semibold">{t("timeline.defineAnEra")}</h3>
         </div>
         <button type="button" onClick={close}>
           <X size={16} />
         </button>
       </div>
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">
-        Eras create named historical context across every thread without
-        becoming isolated calendar events.
+        {t("timeline.eraComposerHelp")}
       </p>
       <div className="mt-5 space-y-3">
         <label className="block text-[10px] text-[var(--text-faint)]">
-          Era name
+          {t("timeline.eraNameLabel")}
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Age of Ash"
+            placeholder={t("timeline.eraName")}
             className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs"
           />
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">
-            Begins
+            {t("timeline.begins")}
             <input
               type="number"
               value={startYear}
@@ -932,7 +933,7 @@ function EraComposer({
             />
           </label>
           <label className="block text-[10px] text-[var(--text-faint)]">
-            Ends
+            {t("timeline.ends")}
             <input
               type="number"
               value={endYear}
@@ -942,7 +943,7 @@ function EraComposer({
           </label>
         </div>
         <label className="flex items-center justify-between text-[10px] text-[var(--text-faint)]">
-          Era color
+          {t("timeline.eraColor")}
           <input
             type="color"
             value={color}
@@ -951,12 +952,12 @@ function EraComposer({
           />
         </label>
         <label className="block text-[10px] text-[var(--text-faint)]">
-          Historical character
+          {t("timeline.eraCharacter")}
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={4}
-            placeholder="What defines this era?"
+            placeholder={t("timeline.eraDescription")}
             className="ws-input mt-1 w-full rounded-md p-2 text-xs"
           />
         </label>
@@ -967,7 +968,7 @@ function EraComposer({
           className="ws-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"
         >
           <Plus size={14} />
-          Establish era
+          {t("timeline.establishEra")}
         </button>
       </div>
     </aside>
@@ -995,6 +996,7 @@ function TimelineDetails({
   openEntry: () => void;
   openGraph: () => void;
 }) {
+  const { locale, t } = useI18n();
   const related = item.focusEntryId
     ? relationships.filter(
         (relationship) =>
@@ -1011,7 +1013,11 @@ function TimelineDetails({
         />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-            {item.source === "relationship" ? "Graph relationship" : item.lane}
+            {item.source === "relationship"
+              ? t("timeline.graphRelationship")
+              : item.lane === "Relationships"
+                ? t("timeline.relationships")
+                : t(`timeline.category.${item.lane}`)}
           </p>
           <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
         </div>
@@ -1020,12 +1026,12 @@ function TimelineDetails({
         </button>
       </div>
       <p className="mt-4 text-sm font-semibold">
-        {formatWorldYear(item.startYear)}
-        {item.endYear !== null ? ` — ${formatWorldYear(item.endYear)}` : ""}
+        {formatWorldYear(item.startYear, locale)}
+        {item.endYear !== null ? ` — ${formatWorldYear(item.endYear, locale)}` : ""}
       </p>
       <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
         <div className="rounded-md bg-[var(--surface-muted)] px-3 py-2">
-          <span className="block text-[var(--text-faint)]">Significance</span>
+          <span className="block text-[var(--text-faint)]">{t("timeline.significance")}</span>
           <b className="mt-1 block tracking-[.12em]">
             {"★".repeat(item.importance)}
             {"☆".repeat(5 - item.importance)}
@@ -1033,18 +1039,18 @@ function TimelineDetails({
         </div>
         <div className="rounded-md bg-[var(--surface-muted)] px-3 py-2">
           <span className="block text-[var(--text-faint)]">
-            Historical status
+            {t("timeline.status")}
           </span>
           <b className="mt-1 block capitalize">{item.certainty}</b>
         </div>
       </div>
       {item.entryType ? (
         <p className="mt-2 text-[10px] text-[var(--text-faint)]">
-          Canonical source: {item.entryType} entry
+          {t("timeline.canonicalSource", { type: item.entryType ? t(`type.${item.entryType}`) : "" })}
         </p>
       ) : null}
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">
-        {item.summary || "No chronology note."}
+        {item.summary || t("timeline.noNote")}
       </p>
       {item.tags.length ? (
         <div className="mt-3 flex flex-wrap gap-1">
@@ -1065,7 +1071,7 @@ function TimelineDetails({
             onClick={openEntry}
             className="ws-button-secondary h-9 rounded-md text-xs"
           >
-            Open entry
+            {t("timeline.openEntry")}
           </button>
         ) : null}
         <button
@@ -1074,11 +1080,11 @@ function TimelineDetails({
           className="ws-button-secondary flex h-9 items-center justify-center gap-2 rounded-md text-xs"
         >
           <Focus size={13} />
-          Local graph
+          {t("timeline.localGraph")}
         </button>
       </div>
       <p className="mt-6 text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
-        Connected knowledge · {related.length}
+        {t("timeline.connectedKnowledge", { count: related.length })}
       </p>
       <div className="mt-2 space-y-1">
         {related.slice(0, 8).map((relationship) => (
@@ -1102,12 +1108,11 @@ function TimelineDetails({
           className="mt-6 flex h-9 w-full items-center justify-center gap-2 rounded-md bg-red-500/10 text-xs text-red-500"
         >
           <Trash2 size={13} />
-          Remove from chronicle
+          {t("timeline.removeFromChronicle")}
         </button>
       ) : (
         <p className="mt-6 text-[10px] leading-4 text-[var(--text-faint)]">
-          This range is generated from relationship dates. Edit the relationship
-          to change it everywhere.
+          {t("timeline.generatedRelationshipHelp")}
         </p>
       )}
     </aside>

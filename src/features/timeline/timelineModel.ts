@@ -5,6 +5,7 @@ import type {
   TimelineCertainty,
   TimelineItem,
 } from "./types";
+import type { Locale } from "../../shared/i18n";
 
 export const TIMELINE_TYPE_COLORS: Record<EntryType, string> = {
   Character: "#9b8ac4",
@@ -141,11 +142,15 @@ export function niceYearStep(yearsPerScreen: number) {
   return multiple * power;
 }
 
-export function formatWorldYear(year: number) {
+export function formatWorldYear(year: number, locale: Locale = "en-US") {
   if (Math.abs(year) < 0.001) return "0";
   const absolute = Math.abs(year);
   const formatted = Number.isInteger(absolute)
-    ? absolute.toLocaleString()
-    : absolute.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  return year < 0 ? `${formatted} BCE` : formatted;
+    ? absolute.toLocaleString(locale)
+    : absolute.toLocaleString(locale, { maximumFractionDigits: 2 });
+  return year < 0
+    ? locale === "zh-CN"
+      ? `${formatted} BCE`
+      : `${formatted} BCE`
+    : formatted;
 }

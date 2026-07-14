@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 
 import type { EntryType } from "../types";
 import { getEntryTypeMeta } from "../utils/entryTypeMeta";
+import { useI18n } from "../../../shared/i18n";
 
 type EntryTypeBadgeProps = {
   type: EntryType;
@@ -10,6 +11,7 @@ type EntryTypeBadgeProps = {
 
 export function EntryTypeBadge({ type, onClick }: EntryTypeBadgeProps) {
   const meta = getEntryTypeMeta(type);
+  const { t } = useI18n();
 
   const className = [
     "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.18em] transition",
@@ -29,7 +31,7 @@ export function EntryTypeBadge({ type, onClick }: EntryTypeBadgeProps) {
       <span
         className={["h-1.5 w-1.5 rounded-full", meta.dotClassName].join(" ")}
       />
-      {meta.label}
+      {t(`type.${type}`)}
     </>
   );
 

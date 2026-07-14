@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { seedEntries } from "../data/seedEntries.ts";
+import { seedEntries } from "../data/seedEntries";
 import type { Entry, EntryInput } from "../types";
 
 type EntryDrawerMode = "create" | "edit";
