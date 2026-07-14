@@ -62,10 +62,12 @@ const navItems = [
 function NavigationContent({
   onNavigate,
   showClose = false,
+  showWorldCard = false,
   closeButtonRef,
 }: {
   onNavigate?: () => void;
   showClose?: boolean;
+  showWorldCard?: boolean;
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const { locale, setLocale, t } = useI18n();
@@ -151,7 +153,7 @@ function NavigationContent({
       </nav>
 
       <div className="mt-auto space-y-3">
-        <div className="ws-surface-soft rounded-[1.5rem] p-4">
+        {showWorldCard ? <div className="ws-surface-soft rounded-[1.5rem] p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
               {t("common.currentWorld")}
@@ -167,7 +169,7 @@ function NavigationContent({
           <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
             {profile.description || t("settings.worldDescriptionEmpty")}
           </p>
-        </div>
+        </div> : null}
 
         <label className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-sm font-semibold text-[var(--text-muted)]">
           <Languages size={18} strokeWidth={1.65} />
@@ -256,7 +258,7 @@ export function Sidebar({
 
       {mobileOpen ? (
         <div
-          className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm lg:hidden"
+          className="ws-backdrop-enter fixed inset-0 z-40 bg-black/55 backdrop-blur-sm lg:hidden"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) onMobileClose();
           }}
@@ -268,11 +270,12 @@ export function Sidebar({
             aria-modal="true"
             aria-label={t("navigation.primary")}
             onKeyDown={trapFocus}
-            className="h-full w-[min(19rem,88vw)] border-r border-[var(--border)] bg-[var(--surface-solid)] shadow-2xl"
+            className="ws-drawer-enter-left h-full w-[min(19rem,88vw)] border-r border-[var(--border)] bg-[var(--surface-solid)] shadow-2xl"
           >
             <NavigationContent
               onNavigate={onMobileClose}
               showClose
+              showWorldCard
               closeButtonRef={closeButtonRef}
             />
           </aside>

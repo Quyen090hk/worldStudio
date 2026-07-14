@@ -19,6 +19,8 @@ import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
 import { useMapStore } from "../map/stores/useMapStore";
 import { useTimelineStore } from "../timeline/stores/useTimelineStore";
 import { useWorldStore } from "../world/stores/useWorldStore";
+import { WorldManagementPanel } from "../world/components/WorldManagementPanel";
+import { useWorldRegistryStore } from "../world/stores/useWorldRegistryStore";
 import type { WorldProfile } from "../world/types";
 import {
   MAX_WORLD_DESCRIPTION_LENGTH,
@@ -48,6 +50,8 @@ function WorldProfileForm({
 }) {
   const { t } = useI18n();
   const updateProfile = useWorldStore((state) => state.updateProfile);
+  const activeWorldId = useWorldRegistryStore((state) => state.activeWorldId);
+  const upsertWorld = useWorldRegistryStore((state) => state.upsert);
   const [name, setName] = useState(profile.name);
   const [description, setDescription] = useState(profile.description);
 
@@ -55,6 +59,8 @@ function WorldProfileForm({
     event.preventDefault();
     if (!name.trim()) return;
     updateProfile(name, description);
+    const current = useWorldStore.getState().profile;
+    upsertWorld({ id: activeWorldId, ...current, name: name.trim(), description: description.trim(), updatedAt: new Date().toISOString() });
     onSaved();
   }
 
@@ -209,7 +215,7 @@ export function SettingsPage() {
     <MotionPage className="space-y-6">
       <header>
         <p className="ws-eyebrow">{t("settings.eyebrow")}</p>
-        <h2 className="mt-2 text-5xl font-semibold tracking-[-.04em] text-[var(--text)]">
+        <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
           {t("nav.settings")}
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
@@ -246,6 +252,13 @@ export function SettingsPage() {
         ) : null}
       </section>
 
+      <WorldManagementPanel />
+
+      <div>
+        <p className="ws-eyebrow">{t("settings.overviewEyebrow")}</p>
+        <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">{t("settings.overviewTitle")}</h3>
+      </div>
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {[
           [t("settings.entries"), entryCount],
@@ -265,8 +278,6 @@ export function SettingsPage() {
           </div>
         ))}
       </section>
-
-      <DataHealthPanel />
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
         <div className="ws-surface rounded-[2rem] p-6 md:p-7">
@@ -369,6 +380,8 @@ export function SettingsPage() {
           </p>
         </aside>
       </section>
+
+      <DataHealthPanel />
     </MotionPage>
   );
 }

@@ -245,7 +245,7 @@ export function MapPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="ws-eyebrow">{t("map.eyebrow")}</p>
-          <h2 className="mt-2 text-5xl font-semibold tracking-[-.04em]">
+          <h2 className="mt-2 break-words text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
             {activeMap.name}
           </h2>
           <p className="mt-2 text-sm text-[var(--text-muted)]">
@@ -274,14 +274,16 @@ export function MapPage() {
               {t("map.replace")}
             </button>
           ) : null}
-          <button
-            disabled={!imageUrl}
-            onClick={() => setPlacing(!placing)}
-            className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
-          >
-            {placing ? <X size={16} /> : <MapPin size={16} />}
-            {placing ? t("map.cancel") : t("map.placeMarker")}
-          </button>
+          {imageUrl ? (
+            <button
+              type="button"
+              onClick={() => setPlacing(!placing)}
+              className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
+            >
+              {placing ? <X size={16} /> : <MapPin size={16} />}
+              {placing ? t("map.cancel") : t("map.placeMarker")}
+            </button>
+          ) : null}
         </div>
       </header>
       {placing ? (
@@ -297,14 +299,20 @@ export function MapPage() {
 
       <section className="grid min-h-[680px] gap-4 xl:grid-cols-[20rem_minmax(0,1fr)_21rem]">
         <aside className="ws-surface flex min-h-0 flex-col rounded-[2rem] p-4">
-          <div className="grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1">
+          <div role="tablist" className="grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1">
             <button
+              type="button"
+              role="tab"
+              aria-selected={panel === "maps"}
               onClick={() => setPanel("maps")}
               className={`rounded-full py-2 text-xs font-semibold ${panel === "maps" ? "bg-[var(--surface-raised)] shadow" : "text-[var(--text-muted)]"}`}
             >
               {t("map.maps")}
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={panel === "layers"}
               onClick={() => setPanel("layers")}
               className={`rounded-full py-2 text-xs font-semibold ${panel === "layers" ? "bg-[var(--surface-raised)] shadow" : "text-[var(--text-muted)]"}`}
             >
@@ -318,8 +326,10 @@ export function MapPage() {
                   {t("map.worldAtlas")}
                 </span>
                 <button
+                  type="button"
                   onClick={createMap}
                   className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--surface-muted)]"
+                  aria-label={t("map.newMap")}
                   title={t("map.newMap")}
                 >
                   <Plus size={15} />
@@ -365,11 +375,14 @@ export function MapPage() {
                   {t("map.visibleLayers")}
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     const name = window.prompt(t("map.layerName"));
                     if (name) store.addLayer(activeMap.id, name);
                   }}
                   className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--surface-muted)]"
+                  aria-label={t("map.layerName")}
+                  title={t("map.layerName")}
                 >
                   <Plus size={15} />
                 </button>
@@ -556,29 +569,38 @@ export function MapPage() {
             <>
               <div className="absolute bottom-4 right-4 flex overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface-solid)] shadow">
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setZoomSafe(zoom - 0.2);
                   }}
                   className="h-10 w-10"
+                  aria-label={t("canvas.zoomOut")}
+                  title={t("canvas.zoomOut")}
                 >
                   <Minus size={16} className="m-auto" />
                 </button>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     resetView();
                   }}
                   className="border-x border-[var(--border)] px-3 text-xs font-semibold"
+                  aria-label={`${Math.round(zoom * 100)}%`}
+                  title={`${Math.round(zoom * 100)}%`}
                 >
                   {Math.round(zoom * 100)}%
                 </button>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setZoomSafe(zoom + 0.2);
                   }}
                   className="h-10 w-10"
+                  aria-label={t("canvas.zoomIn")}
+                  title={t("canvas.zoomIn")}
                 >
                   <Plus size={16} className="m-auto" />
                 </button>

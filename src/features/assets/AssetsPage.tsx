@@ -312,7 +312,7 @@ export function AssetsPage() {
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="ws-eyebrow">{t("assets.eyebrow")}</p>
-          <h2 className="mt-2 text-5xl font-semibold tracking-[-.04em] text-[var(--text)]">
+          <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
             {t("nav.assets")}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
@@ -326,15 +326,17 @@ export function AssetsPage() {
           onChange={importFiles}
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          className="ws-button-primary flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold"
-        >
-          {busy ? <Upload size={17} /> : <Plus size={17} />}
-          {busy ? t("assets.importing") : t("assets.add")}
-        </button>
+        {assets.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            className="ws-button-primary flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold"
+          >
+            {busy ? <Upload size={17} /> : <Plus size={17} />}
+            {busy ? t("assets.importing") : t("assets.add")}
+          </button>
+        ) : null}
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">
@@ -445,6 +447,7 @@ export function AssetsPage() {
                       onClick={() => setEditingId(asset.id)}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
                       aria-label={t("assets.editNamed", { name: asset.name })}
+                      title={t("assets.editNamed", { name: asset.name })}
                     >
                       <Pencil size={15} />
                     </button>
@@ -453,6 +456,7 @@ export function AssetsPage() {
                       onClick={() => downloadAsset(asset)}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
                       aria-label={t("assets.downloadNamed", { name: asset.name })}
+                      title={t("assets.downloadNamed", { name: asset.name })}
                     >
                       <Download size={15} />
                     </button>
@@ -462,6 +466,7 @@ export function AssetsPage() {
                       disabled={deletingId === asset.id}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-red-500 hover:bg-red-500/10"
                       aria-label={t("assets.deleteNamed", { name: asset.name })}
+                      title={t("assets.deleteNamed", { name: asset.name })}
                     >
                       <Trash2 size={15} />
                     </button>
@@ -486,7 +491,7 @@ export function AssetsPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="ws-button-secondary mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
+              className="ws-button-primary mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
             >
               <Upload size={16} />
               {t("assets.chooseFiles")}

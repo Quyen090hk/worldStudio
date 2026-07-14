@@ -316,7 +316,7 @@ export function CanvasPage() {
       <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="ws-eyebrow">{t("canvas.eyebrow")}</p>
-          <h2 className="mt-2 text-5xl font-semibold tracking-[-.04em] text-[var(--text)]">
+          <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
             {t("nav.canvas")}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
@@ -332,15 +332,16 @@ export function CanvasPage() {
             <StickyNote size={16} />
             {t("canvas.addNote")}
           </button>
-          <button
-            type="button"
-            onClick={resetCanvas}
-            disabled={!cards.length}
-            className="ws-button-secondary flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
-          >
-            <Trash2 size={16} />
-            {t("canvas.clear")}
-          </button>
+          {cards.length > 0 ? (
+            <button
+              type="button"
+              onClick={resetCanvas}
+              className="flex min-h-11 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-5 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
+            >
+              <Trash2 size={16} />
+              {t("canvas.clear")}
+            </button>
+          ) : null}
         </div>
       </header>
 

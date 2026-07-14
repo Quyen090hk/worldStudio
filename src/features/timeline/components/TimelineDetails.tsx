@@ -36,7 +36,7 @@ export function TimelineDetails({
     : [];
 
   return (
-    <aside className="absolute bottom-3 right-3 top-3 z-40 w-80 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-4 shadow-2xl">
+    <aside className="ws-panel-enter-right absolute bottom-3 left-3 right-3 top-3 z-40 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-4 shadow-2xl sm:left-auto sm:w-80">
       <div className="flex items-start gap-3">
         <span className="mt-1 h-3 w-3 rounded-full" style={{ background: item.color }} />
         <div className="min-w-0 flex-1">
@@ -49,7 +49,7 @@ export function TimelineDetails({
           </p>
           <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
         </div>
-        <button type="button" onClick={close}><X size={16} /></button>
+        <button type="button" onClick={close} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]" aria-label={t("common.close")} title={t("common.close")}><X size={16} /></button>
       </div>
       <p className="mt-4 text-sm font-semibold">
         {formatWorldYear(item.startYear, locale)}
@@ -69,7 +69,7 @@ export function TimelineDetails({
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">{item.summary || t("timeline.noNote")}</p>
       {item.tags.length ? <div className="mt-3 flex flex-wrap gap-1">{item.tags.map((tag) => <span key={tag} className="rounded-full bg-[var(--surface-muted)] px-2 py-1 text-[10px]">#{tag}</span>)}</div> : null}
       <div className="mt-5 grid grid-cols-2 gap-2">
-        {item.entryId ? <button type="button" onClick={openEntry} className="ws-button-secondary h-9 rounded-md text-xs">{t("timeline.openEntry")}</button> : null}
+        {item.entryId ? <button type="button" onClick={openEntry} className="ws-button-primary h-9 rounded-md text-xs">{t("timeline.openEntry")}</button> : null}
         <button type="button" onClick={openGraph} className="ws-button-secondary flex h-9 items-center justify-center gap-2 rounded-md text-xs"><Focus size={13} />{t("timeline.localGraph")}</button>
       </div>
       <p className="mt-6 text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">{t("timeline.connectedKnowledge", { count: related.length })}</p>

@@ -82,15 +82,17 @@ export function DashboardPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <motion.button
-                type="button"
-                whileTap={pressTap}
-                onClick={openCreateEntry}
-                className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
-              >
-                <Plus size={17} strokeWidth={1.8} />
-                {t("common.createEntry")}
-              </motion.button>
+              {entries.length > 0 ? (
+                <motion.button
+                  type="button"
+                  whileTap={pressTap}
+                  onClick={openCreateEntry}
+                  className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
+                >
+                  <Plus size={17} strokeWidth={1.8} />
+                  {t("common.createEntry")}
+                </motion.button>
+              ) : null}
 
               <button
                 type="button"
@@ -156,7 +158,6 @@ export function DashboardPage() {
                 key={stat.label}
                 variants={listItem}
                 whileHover={cardHover}
-                whileTap={pressTap}
                 className="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface-muted)] p-5 will-change-transform"
               >
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)]">
@@ -190,13 +191,15 @@ export function DashboardPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openCreateEntry}
-            className="ws-button-secondary rounded-full px-4 py-2 text-sm font-semibold"
-          >
-            {t("common.createEntry")}
-          </button>
+          {recentEntries.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => navigate("/entries")}
+              className="inline-flex min-h-10 items-center rounded-full px-3 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+            >
+              {t("common.browseArchive")}
+            </button>
+          ) : null}
         </div>
 
         {recentEntries.length === 0 ? (

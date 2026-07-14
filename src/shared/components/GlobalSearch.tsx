@@ -247,7 +247,7 @@ export function GlobalSearch() {
       </div>
 
       {open ? (
-        <div className="fixed left-4 right-4 top-[4.5rem] z-50 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+.4rem)] sm:w-[min(34rem,calc(100vw-2rem))]">
+        <div className="ws-popover-enter fixed left-4 right-4 top-[4.5rem] z-50 origin-top-right sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+.4rem)] sm:w-[min(34rem,calc(100vw-2rem))]">
           <div
             role="search"
             aria-labelledby={`${listId}-title`}

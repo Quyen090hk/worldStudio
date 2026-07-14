@@ -229,7 +229,7 @@ export function GraphPage() {
   const [depth, setDepth] = useState(1);
   const [query, setQuery] = useState("");
   const [eraYear, setEraYear] = useState("");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [targetId, setTargetId] = useState("");
   const [relationType, setRelationType] =
     useState<RelationshipType>("Allied with");
@@ -529,7 +529,7 @@ export function GraphPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="ws-eyebrow">{t("graph.eyebrow")}</p>
-          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em]">
+          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
           {t("nav.graph")}
           </h2>
         </div>
@@ -556,16 +556,18 @@ export function GraphPage() {
           className="absolute inset-0 h-full w-full outline-none"
         />
 
-        <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+        <div className="absolute left-3 right-3 top-3 z-20 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setPanelOpen(!panelOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] text-[var(--text-muted)] shadow-lg backdrop-blur hover:bg-[var(--surface-raised)]"
             aria-label={t("graph.toggleControls")}
+            title={t("graph.toggleControls")}
+            aria-expanded={panelOpen}
           >
             <Settings2 size={16} />
           </button>
-          <label className="flex h-9 w-56 items-center gap-2 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] px-3 text-[var(--text-muted)] shadow-lg backdrop-blur">
+          <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] px-3 text-[var(--text-muted)] shadow-lg backdrop-blur sm:max-w-56">
             <Search size={14} />
             <input
               value={query}
@@ -574,7 +576,13 @@ export function GraphPage() {
               className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[var(--text-faint)]"
             />
             {query ? (
-              <button type="button" onClick={() => setQuery("")}>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-muted)]"
+                aria-label={t("entries.clearSearch")}
+                title={t("entries.clearSearch")}
+              >
                 <X size={13} />
               </button>
             ) : null}
@@ -679,7 +687,7 @@ function GraphControls(props: ControlsProps) {
   const settings = props.settings;
   const { t } = useI18n();
   return (
-    <aside className="absolute left-3 top-14 z-20 max-h-[calc(100%-4.5rem)] w-72 overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] text-[var(--text)] shadow-2xl backdrop-blur-xl">
+    <aside className="ws-popover-enter absolute left-3 top-14 z-20 max-h-[calc(100%-4.5rem)] w-[min(18rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] text-[var(--text)] shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <span className="text-xs font-semibold">{t("graph.settings")}</span>
         <button
@@ -777,7 +785,7 @@ function GraphControls(props: ControlsProps) {
           </div>
         </div>
       </details>
-      <details open className="border-b border-[var(--border)]">
+      <details className="border-b border-[var(--border)]">
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-semibold">
           <ChevronDown size={13} />
           {t("graph.groups")}
@@ -801,7 +809,7 @@ function GraphControls(props: ControlsProps) {
           </button>
         </div>
       </details>
-      <details open>
+      <details>
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-semibold">
           <ChevronDown size={13} />
           {t("graph.forces")}
@@ -1056,7 +1064,7 @@ type NodePanelProps = {
 function NodePanel(props: NodePanelProps) {
   const { t } = useI18n();
   return (
-    <aside className="absolute bottom-3 right-3 top-3 z-20 w-80 overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl">
+    <aside className="ws-panel-enter-right absolute bottom-3 left-3 right-3 top-3 z-20 overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl sm:left-auto sm:w-80">
       <div className="flex items-start gap-3">
         <span
           className="mt-1 h-3 w-3 shrink-0 rounded-full"
@@ -1073,7 +1081,9 @@ function NodePanel(props: NodePanelProps) {
         <button
           type="button"
           onClick={props.close}
-          className="text-[var(--text-faint)] hover:text-[var(--text)]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+          aria-label={t("common.close")}
+          title={t("common.close")}
         >
           <X size={16} />
         </button>
@@ -1092,7 +1102,7 @@ function NodePanel(props: NodePanelProps) {
         <button
           type="button"
           onClick={props.open}
-          className="ws-button-secondary h-9 rounded-md text-xs"
+          className="ws-button-primary h-9 rounded-md text-xs"
         >
           {t("graph.openNote")}
         </button>
@@ -1121,7 +1131,9 @@ function NodePanel(props: NodePanelProps) {
               <button
                 type="button"
                 onClick={() => props.deleteRelationship(relationship.id)}
-                className="opacity-0 text-red-500 group-hover:opacity-100"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-red-500 opacity-60 transition hover:bg-red-500/10 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                aria-label={t("graph.deleteRelationship")}
+                title={t("graph.deleteRelationship")}
               >
                 <Trash2 size={12} />
               </button>
@@ -1219,12 +1231,18 @@ function RelationshipPanel({
     (entry) => entry.id === relationship.targetEntryId,
   );
   return (
-    <aside className="absolute right-3 top-3 z-20 w-72 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl">
+    <aside className="ws-panel-enter-right absolute left-3 right-3 top-3 z-20 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-4 text-[var(--text)] shadow-2xl backdrop-blur-xl sm:left-auto sm:w-72">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">
           {t("graph.relationship")}
         </p>
-        <button type="button" onClick={close}>
+        <button
+          type="button"
+          onClick={close}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+          aria-label={t("common.close")}
+          title={t("common.close")}
+        >
           <X size={15} />
         </button>
       </div>

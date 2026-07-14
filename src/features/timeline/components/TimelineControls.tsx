@@ -34,8 +34,8 @@ export function TimelineControls({
 }: TimelineControlsProps) {
   const { t } = useI18n();
   return (
-    <aside className="absolute left-3 top-14 z-30 w-64 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-2 shadow-2xl backdrop-blur">
-      <details open>
+    <aside className="ws-popover-enter absolute left-3 top-14 z-30 max-h-[calc(100%-4.5rem)] w-[min(16rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_96%,transparent)] p-2 shadow-2xl backdrop-blur">
+      <details>
         <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold">
           <ChevronDown size={13} />
           {t("timeline.threads")}
@@ -75,7 +75,7 @@ export function TimelineControls({
           </button>
         </div>
       </details>
-      <details open className="mt-2 border-t border-[var(--border)] pt-2">
+      <details className="mt-2 border-t border-[var(--border)] pt-2">
         <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold">
           <ChevronDown size={13} />
           {t("timeline.lens")}
@@ -126,8 +126,9 @@ export function TimelineControls({
                 <button
                   type="button"
                   onClick={() => deleteEra(era.id)}
-                  className="text-[var(--text-faint)] opacity-0 hover:text-red-500 group-hover:opacity-100"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--text-faint)] opacity-60 transition hover:bg-red-500/10 hover:text-red-500 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   aria-label={t("timeline.deleteEra", { name: era.name })}
+                  title={t("timeline.deleteEra", { name: era.name })}
                 >
                   <Trash2 size={12} />
                 </button>

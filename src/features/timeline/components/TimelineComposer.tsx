@@ -57,13 +57,13 @@ export function TimelineComposer({
   }
 
   return (
-    <aside className="absolute bottom-3 right-3 top-3 z-40 w-80 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-4 shadow-2xl">
+    <aside className="ws-panel-enter-right absolute bottom-3 left-3 right-3 top-3 z-40 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-4 shadow-2xl sm:left-auto sm:w-80">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[var(--text-faint)]">{t("timeline.eyebrow")}</p>
           <h3 className="mt-1 text-lg font-semibold">{t("timeline.recordHistoricalEvent")}</h3>
         </div>
-        <button type="button" onClick={close}><X size={16} /></button>
+        <button type="button" onClick={close} className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]" aria-label={t("common.close")} title={t("common.close")}><X size={16} /></button>
       </div>
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">{t("timeline.composerHelp")}</p>
       <div className="mt-5 space-y-3">

@@ -90,7 +90,7 @@ export function TimelinePage() {
   const [showRelationships, setShowRelationships] = useState(true);
   const [showUncertain, setShowUncertain] = useState(true);
   const [minimumImportance, setMinimumImportance] = useState(1);
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(
     requestedItem?.id ?? null,
   );
@@ -300,7 +300,7 @@ export function TimelinePage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="ws-eyebrow">{t("timeline.eyebrow")}</p>
-          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em]">
+          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
             {t("nav.timeline")}
           </h2>
         </div>
@@ -316,16 +316,18 @@ export function TimelinePage() {
       </header>
 
       <section className="relative h-[calc(100vh-12.5rem)] min-h-[680px] overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[var(--shadow-raised)]">
-        <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
+        <div className="absolute left-3 right-3 top-3 z-30 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setControlsOpen((open) => !open)}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] text-[var(--text-muted)] shadow-lg"
             aria-label={t("timeline.controls")}
+            title={t("timeline.controls")}
+            aria-expanded={controlsOpen}
           >
             <CalendarRange size={15} />
           </button>
-          <label className="flex h-9 w-60 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] px-3 text-[var(--text-muted)] shadow-lg">
+          <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] px-3 text-[var(--text-muted)] shadow-lg sm:max-w-60">
             <Search size={14} />
             <input
               value={query}
@@ -334,33 +336,27 @@ export function TimelinePage() {
               className="min-w-0 flex-1 bg-transparent text-xs outline-none"
             />
             {query ? (
-              <button type="button" onClick={() => setQuery("")}>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-muted)]"
+                aria-label={t("entries.clearSearch")}
+                title={t("entries.clearSearch")}
+              >
                 <X size={13} />
               </button>
             ) : null}
           </label>
-          <button
-            type="button"
-            onClick={() => {
-              setComposerOpen(true);
-              setEraComposerOpen(false);
-            }}
-            className="ws-button-primary flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
-          >
-            <Plus size={14} />
-            {t("timeline.recordEvent")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEraComposerOpen(true);
-              setComposerOpen(false);
-            }}
-            className="ws-button-secondary flex h-9 items-center gap-2 rounded-lg px-3 text-xs shadow-lg"
-          >
-            <Plus size={14} />
-            {t("timeline.defineEra")}
-          </button>
+          <details className="group relative">
+            <summary className="ws-button-primary flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg">
+              <Plus size={14} />
+              {t("timeline.add")}
+            </summary>
+            <div className="ws-popover-enter absolute right-0 top-[calc(100%+.4rem)] z-40 w-44 origin-top-right rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-1.5 shadow-2xl">
+              <button type="button" onClick={(event) => { setComposerOpen(true); setEraComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--surface-muted)]">{t("timeline.recordEvent")}</button>
+              <button type="button" onClick={(event) => { setEraComposerOpen(true); setComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--surface-muted)]">{t("timeline.defineEra")}</button>
+            </div>
+          </details>
         </div>
 
         {controlsOpen ? (
@@ -392,7 +388,7 @@ export function TimelinePage() {
             style={{ minWidth: 620 }}
           >
             <div className="sticky top-0 z-20 h-12 border-y border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_92%,transparent)] backdrop-blur">
-              <div className="absolute inset-y-0 left-0 flex w-[118px] items-center px-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
+              <div className="absolute inset-y-0 left-0 flex w-[118px] items-center px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
                 {t("timeline.worldYear")}
               </div>
               {ticks.map((tick) => (
@@ -409,7 +405,7 @@ export function TimelinePage() {
             </div>
 
             <div className="relative h-10 border-b border-[var(--border)] bg-[var(--surface-muted)]/40">
-              <div className="absolute inset-y-0 left-0 z-10 flex w-[118px] items-center border-r border-[var(--border)] bg-[var(--surface-solid)]/90 px-3 text-[9px] font-semibold uppercase tracking-[.14em] text-[var(--text-faint)]">
+              <div className="absolute inset-y-0 left-0 z-10 flex w-[118px] items-center border-r border-[var(--border)] bg-[var(--surface-solid)]/90 px-3 text-[10px] font-semibold uppercase tracking-[.14em] text-[var(--text-faint)]">
                 {t("timeline.historicalEras")}
               </div>
               {eras
@@ -423,7 +419,7 @@ export function TimelinePage() {
                   return (
                     <div
                       key={era.id}
-                      className="absolute inset-y-1 flex items-center overflow-hidden rounded px-2 text-[9px] font-semibold"
+                      className="absolute inset-y-1 flex items-center overflow-hidden rounded px-2 text-[10px] font-semibold"
                       style={{
                         left,
                         width: Math.max(2, right - left),

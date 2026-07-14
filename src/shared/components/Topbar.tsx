@@ -4,7 +4,7 @@ import { Menu, Moon, Plus, Sun } from "lucide-react";
 import { pressTap } from "../motion/presets";
 import { useTheme } from "../theme/ThemeContext";
 import { useEntryStore } from "../../features/entries/stores/useEntryStore";
-import { useWorldStore } from "../../features/world/stores/useWorldStore";
+import { WorldSwitcher } from "../../features/world/components/WorldSwitcher";
 import { useI18n, type Locale } from "../i18n";
 import { GlobalSearch } from "./GlobalSearch";
 
@@ -16,7 +16,6 @@ export function Topbar({
   onOpenNavigation: () => void;
 }) {
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
-  const worldName = useWorldStore((state) => state.profile.name);
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
   const ThemeIcon = theme === "dark" ? Moon : Sun;
@@ -30,21 +29,14 @@ export function Topbar({
           onClick={onOpenNavigation}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--text-muted)] transition-colors hover:text-[var(--text)] lg:hidden"
           aria-label={t("navigation.open")}
+          title={t("navigation.open")}
           aria-controls="mobile-navigation"
           aria-expanded={navigationOpen}
         >
           <Menu size={19} />
         </button>
 
-        <div className="hidden min-w-0 shrink-0 md:block">
-          <div className="text-[0.66rem] font-bold uppercase tracking-[0.24em] text-[var(--text-faint)]">
-            {t("topbar.workspace")}
-          </div>
-
-          <h1 className="ws-display ws-foil-text mt-1 text-2xl font-semibold leading-none">
-            {worldName}
-          </h1>
-        </div>
+        <WorldSwitcher />
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
           <div className="min-w-0 flex-1 sm:flex sm:justify-end">
@@ -63,6 +55,11 @@ export function Topbar({
                 : t("theme.switchToDark")
             }
             aria-pressed={theme === "dark"}
+            title={
+              theme === "dark"
+                ? t("theme.switchToLight")
+                : t("theme.switchToDark")
+            }
           >
             <motion.span
               initial={false}
@@ -93,6 +90,7 @@ export function Topbar({
             onClick={openCreateEntry}
             className="ws-button-primary flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold sm:h-11 sm:w-auto sm:px-4"
             aria-label={t("topbar.newEntry")}
+            title={t("topbar.newEntry")}
           >
             <Plus size={17} strokeWidth={1.8} />
             <span className="hidden sm:inline">{t("topbar.newEntry")}</span>

@@ -572,6 +572,46 @@ select:disabled {
 }
 .rich-text-content a { color: var(--accent); text-decoration: underline; }
 
+@keyframes ws-popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ws-panel-in-right {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ws-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ws-drawer-in-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.ws-popover-enter { animation: ws-popover-in 160ms cubic-bezier(.22, 1, .36, 1); }
+.ws-panel-enter-right { animation: ws-panel-in-right 200ms cubic-bezier(.22, 1, .36, 1); }
+.ws-backdrop-enter { animation: ws-backdrop-in 160ms ease-out; }
+.ws-drawer-enter-left { animation: ws-drawer-in-left 220ms cubic-bezier(.22, 1, .36, 1); }
+
+details > summary .lucide-chevron-down { transition: transform 160ms cubic-bezier(.22, 1, .36, 1); }
+details[open] > summary .lucide-chevron-down { transform: rotate(180deg); }
+details[open] > :not(summary) { animation: ws-popover-in 140ms cubic-bezier(.22, 1, .36, 1); }
+.ws-panel-enter-right label,
+.ws-panel-enter-right [class*="text-[10px]"] { font-size: 0.6875rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-popover-enter,
+  .ws-panel-enter-right,
+  .ws-backdrop-enter,
+  .ws-drawer-enter-left,
+  details[open] > :not(summary) { animation: none; }
+  details > summary .lucide-chevron-down { transition: none; }
+}
+
 .rich-text-editor .ProseMirror h1 {
   margin: 2rem 0 1rem;
   font-family: var(--font-display);

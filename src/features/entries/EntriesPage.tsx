@@ -111,7 +111,7 @@ export function EntriesPage() {
       <section className="space-y-2">
         <p className="ws-eyebrow">{t("common.archive")}</p>
 
-        <h2 className="text-5xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+        <h2 className="text-4xl font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-5xl">
           {t("nav.entries")}
         </h2>
 
@@ -196,15 +196,7 @@ export function EntriesPage() {
               >
                 {t("common.clearFilters")}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={openCreateEntry}
-                className="ws-button-primary h-12 rounded-[1.15rem] px-4 text-sm font-semibold"
-              >
-                New Entry
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
 
