@@ -5,7 +5,7 @@ import { pressTap } from "../motion/presets";
 import { useTheme } from "../theme/ThemeContext";
 import { useEntryStore } from "../../features/entries/stores/useEntryStore";
 import { WorldSwitcher } from "../../features/world/components/WorldSwitcher";
-import { useI18n, type Locale } from "../i18n";
+import { useI18n } from "../i18n";
 import { GlobalSearch } from "./GlobalSearch";
 
 export function Topbar({
@@ -17,11 +17,11 @@ export function Topbar({
 }) {
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
   const { theme, setTheme } = useTheme();
-  const { locale, setLocale, t } = useI18n();
+  const { t } = useI18n();
   const ThemeIcon = theme === "dark" ? Moon : Sun;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] px-4 py-3 backdrop-blur-2xl sm:py-4 lg:px-8">
+    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_86%,transparent)] px-4 py-2.5 backdrop-blur-2xl lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-3 lg:gap-5">
         <button
           id="mobile-navigation-trigger"
@@ -45,7 +45,6 @@ export function Topbar({
 
           <motion.button
             type="button"
-            whileHover={{ scale: 1.05 }}
             whileTap={pressTap}
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
@@ -70,19 +69,6 @@ export function Topbar({
               <ThemeIcon size={17} strokeWidth={1.7} />
             </motion.span>
           </motion.button>
-
-          <label className="hidden items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-xs font-semibold text-[var(--text-muted)] 2xl:flex">
-            <span className="sr-only">{t("topbar.language")}</span>
-            <select
-              value={locale}
-              onChange={(event) => setLocale(event.target.value as Locale)}
-              aria-label={t("topbar.language")}
-              className="bg-transparent py-2 outline-none"
-            >
-              <option value="en-US">EN</option>
-              <option value="zh-CN">中文</option>
-            </select>
-          </label>
 
           <motion.button
             type="button"

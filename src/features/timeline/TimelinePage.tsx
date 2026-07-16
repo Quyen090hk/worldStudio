@@ -299,12 +299,11 @@ export function TimelinePage() {
     <MotionPage className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="ws-eyebrow">{t("timeline.eyebrow")}</p>
-          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
+          <h2 className="ws-page-title">
             {t("nav.timeline")}
           </h2>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+        <div className="flex items-center gap-2 pb-1 text-xs text-[var(--text-muted)]">
           <span>
             {filteredItems.length} {t("timeline.records")} · {eras.length} {t("timeline.eras")}
           </span>
@@ -315,7 +314,7 @@ export function TimelinePage() {
         </div>
       </header>
 
-      <section className="relative h-[calc(100vh-12.5rem)] min-h-[680px] overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[var(--shadow-raised)]">
+      <section className="relative h-[calc(100vh-10.5rem)] min-h-[620px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]">
         <div className="absolute left-3 right-3 top-3 z-30 flex items-center gap-2">
           <button
             type="button"

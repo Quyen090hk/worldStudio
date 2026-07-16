@@ -1,5 +1,7 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
+import { removeLegacyDefaultWorldDescription } from "../worldModel";
 
 export type WorldRecord = { id: string; name: string; description: string; createdAt: string; updatedAt: string; archived?: boolean };
 const initialId = "world-primary";
@@ -23,6 +25,25 @@ export const useWorldRegistryStore = create<WorldRegistryStore>()(
       remove: (id) => set((state) => ({ worlds: state.worlds.filter((item) => item.id !== id) })),
       replace: (worlds, activeWorldId) => set({ worlds, activeWorldId }),
     }),
-    { name: "world-studio.world-registry.v1" },
+    {
+      name: "world-studio.world-registry.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as Pick<
+          WorldRegistryStore,
+          "activeWorldId" | "worlds"
+        >;
+        return {
+          ...state,
+          worlds: (state.worlds ?? []).map((world) => ({
+            ...world,
+            description: removeLegacyDefaultWorldDescription(
+              world.description,
+            ),
+          })),
+        };
+      },
+    },
   ),
 );

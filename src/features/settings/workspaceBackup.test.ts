@@ -33,6 +33,7 @@ function createValidBackup(): WorkspaceBackup {
           updatedAt: "2026-07-14T00:00:00.000Z",
         },
       ],
+      revisions: [],
       relationships: [],
       timeline: {
         items: [],
@@ -173,6 +174,21 @@ describe("parseWorkspaceBackup", () => {
 
     expect(parsed.version).toBe(WORKSPACE_BACKUP_VERSION);
     expect(parsed.data.world.name).toBe("The Ashen Archive");
+  });
+
+  it("migrates version 4 backups without revision history", () => {
+    const legacy = JSON.parse(
+      JSON.stringify(createValidBackup()),
+    ) as Record<string, unknown> & {
+      data: Record<string, unknown>;
+    };
+    legacy.version = 4;
+    delete legacy.data.revisions;
+
+    const parsed = parseWorkspaceBackup(JSON.stringify(legacy));
+
+    expect(parsed.version).toBe(WORKSPACE_BACKUP_VERSION);
+    expect(parsed.data.revisions).toEqual([]);
   });
 
   it("rejects duplicate entity IDs", () => {

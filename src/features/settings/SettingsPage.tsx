@@ -215,22 +215,22 @@ export function SettingsPage() {
     <MotionPage className="space-y-6">
       <header>
         <p className="ws-eyebrow">{t("settings.eyebrow")}</p>
-        <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
+        <h2 className="ws-page-title mt-2">
           {t("nav.settings")}
         </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+        <p className="ws-page-status max-w-2xl">
           {t("settings.description")}
         </p>
       </header>
 
-      <section className="ws-surface rounded-[2rem] p-6 md:p-7">
+      <section className="ws-compact-surface p-5 md:p-6">
         <div className="flex items-start gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
             <Globe2 size={21} strokeWidth={1.7} />
           </span>
           <div className="min-w-0 flex-1">
             <p className="ws-eyebrow">{t("settings.worldIdentity")}</p>
-            <h3 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
+            <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
               {t("settings.worldProfile")}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
@@ -259,7 +259,7 @@ export function SettingsPage() {
         <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">{t("settings.overviewTitle")}</h3>
       </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <section className="grid border-y border-[var(--border)] md:grid-cols-3 xl:grid-cols-6">
         {[
           [t("settings.entries"), entryCount],
           [t("settings.relationships"), relationshipCount],
@@ -267,12 +267,12 @@ export function SettingsPage() {
           [t("settings.maps"), mapCount],
           [t("settings.assets"), assetCount],
           [t("settings.canvasCards"), canvasCardCount],
-        ].map(([label, value]) => (
-          <div key={label} className="ws-surface rounded-[1.5rem] p-5">
+        ].map(([label, value], index) => (
+          <div key={label} className={`px-3 py-4 ${index ? "border-t border-[var(--border)] md:border-l md:border-t-0" : ""} ${index === 3 ? "md:border-l-0 xl:border-l" : ""}`}>
             <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
               {label}
             </p>
-            <p className="ws-display mt-3 text-3xl font-semibold text-[var(--text)]">
+            <p className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
               {value}
             </p>
           </div>
@@ -280,14 +280,14 @@ export function SettingsPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
-        <div className="ws-surface rounded-[2rem] p-6 md:p-7">
+        <div className="ws-compact-surface p-5 md:p-6">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
               <Database size={21} strokeWidth={1.7} />
             </span>
             <div>
               <p className="ws-eyebrow">{t("settings.dataSafety")}</p>
-              <h3 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
+              <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
                 {t("settings.workspaceBackup")}
               </h3>
               <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-muted)]">
@@ -348,7 +348,7 @@ export function SettingsPage() {
           ) : null}
         </div>
 
-        <aside className="ws-surface rounded-[2rem] p-6">
+        <aside className="ws-compact-surface p-5">
           <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[var(--surface-muted)] text-[var(--text-muted)]">
             <ShieldCheck size={20} strokeWidth={1.7} />
           </div>

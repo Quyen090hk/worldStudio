@@ -29,7 +29,7 @@ export function MapMarkerPanel({
 
   if (!selected) {
     return (
-      <aside className="ws-surface overflow-y-auto rounded-[2rem] p-5">
+      <aside className="ws-compact-surface overflow-y-auto p-4">
         <div className="flex min-h-64 flex-col items-center justify-center text-center">
           <MapPin size={28} className="text-[var(--text-faint)]" />
           <h3 className="ws-display mt-4 text-2xl font-semibold">{t("map.selectMarker")}</h3>
@@ -75,7 +75,7 @@ export function MapMarkerPanel({
   }
 
   return (
-    <aside className="ws-surface overflow-y-auto rounded-[2rem] p-5">
+    <aside className="ws-compact-surface overflow-y-auto p-4">
       <div className="space-y-4">
         <div><p className="ws-eyebrow">{t("map.loreMarker")}</p><input value={selected.title} onChange={(event) => update({ title: event.target.value })} className="ws-display mt-2 w-full bg-transparent text-3xl font-semibold outline-none" /></div>
         <div className="grid grid-cols-2 gap-2">

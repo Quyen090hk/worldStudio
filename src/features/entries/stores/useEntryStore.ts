@@ -1,12 +1,14 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 import { seedEntries } from "../data/seedEntries";
-import type { Entry, EntryInput } from "../types";
+import type { Entry, EntryInput, EntryRevision } from "../types";
 
 type EntryDrawerMode = "create" | "edit";
 
 type EntryStore = {
   entries: Entry[];
+  revisions: EntryRevision[];
 
   drawerOpen: boolean;
   drawerSession: number;
@@ -20,6 +22,8 @@ type EntryStore = {
   createEntry: (input: EntryInput) => void;
   updateEntry: (entryId: string, input: EntryInput) => void;
   updateEntryContent: (entryId: string, content: string) => void;
+  createRevision: (entryId: string, content: string) => void;
+  restoreRevision: (entryId: string, revisionId: string) => void;
   deleteEntry: (entryId: string) => void;
 };
 
@@ -35,6 +39,7 @@ export const useEntryStore = create<EntryStore>()(
   persist(
     (set) => ({
       entries: seedEntries,
+      revisions: [],
 
       drawerOpen: false,
       drawerSession: 0,
@@ -117,9 +122,55 @@ export const useEntryStore = create<EntryStore>()(
         }));
       },
 
+      createRevision: (entryId, content) => {
+        set((state) => {
+          const latest = state.revisions.find((revision) => revision.entryId === entryId);
+          if (latest?.content === content) return state;
+          const revision: EntryRevision = {
+            id: createId(),
+            entryId,
+            content,
+            createdAt: new Date().toISOString(),
+          };
+          const older = state.revisions.filter((item) => item.entryId !== entryId);
+          const own = state.revisions.filter((item) => item.entryId === entryId).slice(0, 19);
+          return { revisions: [revision, ...own, ...older] };
+        });
+      },
+
+      restoreRevision: (entryId, revisionId) => {
+        set((state) => {
+          const entry = state.entries.find((item) => item.id === entryId);
+          const target = state.revisions.find(
+            (revision) => revision.id === revisionId && revision.entryId === entryId,
+          );
+          if (!entry || !target || entry.content === target.content) return state;
+          const now = new Date().toISOString();
+          const current: EntryRevision = {
+            id: createId(),
+            entryId,
+            content: entry.content,
+            createdAt: now,
+          };
+          const older = state.revisions
+            .filter((item) => item.entryId !== entryId || item.content !== entry.content)
+            .filter((item) => item.entryId !== entryId);
+          const own = state.revisions
+            .filter((item) => item.entryId === entryId && item.content !== entry.content)
+            .slice(0, 19);
+          return {
+            entries: state.entries.map((item) =>
+              item.id === entryId ? { ...item, content: target.content, updatedAt: now } : item,
+            ),
+            revisions: [current, ...own, ...older],
+          };
+        });
+      },
+
       deleteEntry: (entryId) => {
         set((state) => ({
           entries: state.entries.filter((entry) => entry.id !== entryId),
+          revisions: state.revisions.filter((revision) => revision.entryId !== entryId),
           drawerOpen:
             state.editingEntryId === entryId ? false : state.drawerOpen,
           editingEntryId:
@@ -129,8 +180,10 @@ export const useEntryStore = create<EntryStore>()(
     }),
     {
       name: "world-studio.entries.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       partialize: (state) => ({
         entries: state.entries,
+        revisions: state.revisions,
       }),
     }
   )

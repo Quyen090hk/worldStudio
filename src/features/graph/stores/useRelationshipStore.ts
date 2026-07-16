@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 import { inverseFor, normalizeRelationshipType } from "../relationshipMeta";
 import type { EntryRelationship, RelationshipInput } from "../types";
 
@@ -99,6 +100,7 @@ export const useRelationshipStore = create<RelationshipStore>()(
     }),
     {
       name: "world-studio.relationships.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       version: 2,
       migrate: (persistedState) => {
         const state = persistedState as Partial<RelationshipStore>;

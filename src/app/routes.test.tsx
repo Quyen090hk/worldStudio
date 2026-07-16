@@ -19,7 +19,7 @@ describe("AppRoutes", () => {
     );
 
     expect(html).toContain('id="main-content"');
-    expect(html).toContain("This path is not in the atlas");
+    expect(html).toContain("Page not found");
     expect(html).toContain('href="/dashboard"');
   });
 });

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 import type { MapConnection, MapLayer, MapMarker, MapScale, WorldMap } from "../types";
 
 type MapStore = {
@@ -98,6 +99,10 @@ export const useMapStore = create<MapStore>()(
       },
       deleteConnection: (id) => set((state) => ({ connections: state.connections.filter((connection) => connection.id !== id) })),
     }),
-    { name: "world-studio.map.v2", version: 2 },
+    {
+      name: "world-studio.map.v2",
+      version: 2,
+      storage: createJSONStorage(() => indexedDbStateStorage),
+    },
   ),
 );

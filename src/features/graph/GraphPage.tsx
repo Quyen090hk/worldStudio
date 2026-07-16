@@ -89,7 +89,7 @@ function createGraphStyles(theme: ResolvedTheme): StylesheetJson {
         "overlay-opacity": 0,
         "transition-property":
           "width, height, opacity, background-color, border-color, border-width, text-opacity, underlay-opacity",
-        "transition-duration": 0.18,
+        "transition-duration": 180,
       },
     },
     {
@@ -145,7 +145,7 @@ function createGraphStyles(theme: ResolvedTheme): StylesheetJson {
         label: "",
         "overlay-opacity": 0,
         "transition-property": "opacity, width",
-        "transition-duration": 0.18,
+        "transition-duration": 180,
       },
     },
     {
@@ -230,6 +230,7 @@ export function GraphPage() {
   const [query, setQuery] = useState("");
   const [eraYear, setEraYear] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
+  const [graphReady, setGraphReady] = useState(false);
   const [targetId, setTargetId] = useState("");
   const [relationType, setRelationType] =
     useState<RelationshipType>("Allied with");
@@ -318,7 +319,6 @@ export function GraphPage() {
       layout: { name: "grid", padding: 80 },
       minZoom: 0.08,
       maxZoom: 5,
-      wheelSensitivity: 4,
       boxSelectionEnabled: true,
       textureOnViewport: initialProjection.entries.length > 800,
       hideEdgesOnViewport: initialProjection.entries.length > 1500,
@@ -361,6 +361,8 @@ export function GraphPage() {
     );
     graphSyncRef.current = graphSync;
     let physicsController: DragPhysicsController | null = null;
+    let revealFrame = 0;
+    let revealTimer = 0;
     const frame = window.requestAnimationFrame(() => {
       graph.resize();
       const initialLayout = graph.layout(
@@ -371,9 +373,7 @@ export function GraphPage() {
               quality:
                 initialProjection.entries.length > 1200 ? "draft" : "default",
               randomize: true,
-              animate: initialProjection.entries.length < 1400,
-              animationDuration: animationDurationRef.current,
-              animationEasing: "ease-out",
+              animate: false,
               fit: true,
               padding: 100,
               nodeRepulsion: () => physicsOptionsRef.current.repelForce,
@@ -386,6 +386,7 @@ export function GraphPage() {
               tilingPaddingHorizontal: 22,
             }) as unknown as LayoutOptions,
       );
+      revealTimer = window.setTimeout(() => setGraphReady(true), 1200);
       graph.one("layoutstop", () => {
         if (graph.destroyed()) return;
         fitGraph(graph);
@@ -395,6 +396,8 @@ export function GraphPage() {
           () => physicsOptionsRef.current,
         );
         physicsControllerRef.current = physicsController;
+        window.clearTimeout(revealTimer);
+        revealFrame = window.requestAnimationFrame(() => setGraphReady(true));
       });
       initialLayout.run();
     });
@@ -402,6 +405,8 @@ export function GraphPage() {
     observer.observe(container);
     return () => {
       window.cancelAnimationFrame(frame);
+      window.clearTimeout(revealTimer);
+      window.cancelAnimationFrame(revealFrame);
       physicsController?.destroy();
       if (physicsControllerRef.current === physicsController) {
         physicsControllerRef.current = null;
@@ -461,7 +466,8 @@ export function GraphPage() {
           ? {
               name: "concentric",
               animate: true,
-              animationDuration,
+              animationDuration: Math.min(900, Math.max(240, animationDuration)),
+              animationEasing: "ease-out-cubic",
               padding: 100,
               fit: false,
             }
@@ -470,7 +476,8 @@ export function GraphPage() {
               quality: visibleEntries.length > 1200 ? "draft" : "default",
               randomize: false,
               animate: true,
-              animationDuration,
+              animationDuration: Math.min(900, Math.max(240, animationDuration)),
+              animationEasing: "ease-out-cubic",
               fit: false,
               padding: 100,
               nodeRepulsion: () => nodeRepulsion,
@@ -528,18 +535,17 @@ export function GraphPage() {
     <MotionPage className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="ws-eyebrow">{t("graph.eyebrow")}</p>
-          <h2 className="mt-1 text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
+          <h2 className="ws-page-title">
           {t("nav.graph")}
           </h2>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+        <div className="pb-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
           <span>{visibleEntries.length} {t("graph.notes")}</span>
           <span>·</span>
           <span>{visibleRelationships.length} {t("graph.links")}</span>
         </div>
       </header>
-      <section className="relative h-[calc(100vh-12.5rem)] min-h-[680px] overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[var(--shadow-raised)]">
+      <section className="relative h-[calc(100vh-10.5rem)] min-h-[620px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]">
         <div
           className="pointer-events-none absolute inset-0 opacity-35"
           style={{
@@ -553,8 +559,19 @@ export function GraphPage() {
           tabIndex={0}
           onKeyDown={handleGraphKeyDown}
           aria-label={t("graph.aria")}
-          className="absolute inset-0 h-full w-full outline-none"
+          className={`absolute inset-0 h-full w-full outline-none transition-opacity duration-500 ${graphReady ? "opacity-100" : "opacity-0"}`}
         />
+
+        {!graphReady ? (
+          <div className="graph-loading-layer absolute inset-0 z-10 flex items-center justify-center" role="status" aria-live="polite">
+            <div className="text-center">
+              <div className="graph-loading-constellation mx-auto" aria-hidden="true">
+                <span /><span /><span /><span /><span />
+              </div>
+              <p className="mt-5 text-xs font-semibold uppercase tracking-[.2em] text-[var(--text-faint)]">{t("graph.preparing")}</p>
+            </div>
+          </div>
+        ) : null}
 
         <div className="absolute left-3 right-3 top-3 z-20 flex items-center gap-2">
           <button

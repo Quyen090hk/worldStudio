@@ -4,6 +4,7 @@ import {
   GripHorizontal,
   Link2,
   MousePointer2,
+  Scan,
   Plus,
   StickyNote,
   Trash2,
@@ -26,6 +27,7 @@ import {
   MAX_CANVAS_ZOOM,
   MIN_CANVAS_ZOOM,
   clampCanvasPosition,
+  clampCanvasZoom,
 } from "./canvasModel";
 import { useCanvasStore } from "./stores/useCanvasStore";
 import type { CanvasCard, CanvasCardColor } from "./types";
@@ -311,16 +313,61 @@ export function CanvasPage() {
     }
   }
 
+  function changeZoom(nextZoom: number) {
+    const viewport = viewportRef.current;
+    const clamped = clampCanvasZoom(nextZoom);
+    if (!viewport || clamped === zoom) {
+      setZoom(clamped);
+      return;
+    }
+    const centerX = (viewport.scrollLeft + viewport.clientWidth / 2) / zoom;
+    const centerY = (viewport.scrollTop + viewport.clientHeight / 2) / zoom;
+    setZoom(clamped);
+    window.requestAnimationFrame(() => {
+      viewport.scrollLeft = centerX * clamped - viewport.clientWidth / 2;
+      viewport.scrollTop = centerY * clamped - viewport.clientHeight / 2;
+    });
+  }
+
+  function fitCanvasContent() {
+    const viewport = viewportRef.current;
+    if (!viewport || !cards.length) return;
+    const minX = Math.min(...cards.map((card) => card.x));
+    const minY = Math.min(...cards.map((card) => card.y));
+    const maxX = Math.max(...cards.map((card) => card.x + CANVAS_CARD_WIDTH));
+    const maxY = Math.max(...cards.map((card) => card.y + 220));
+    const contentWidth = Math.max(1, maxX - minX);
+    const contentHeight = Math.max(1, maxY - minY);
+    const targetZoom = clampCanvasZoom(
+      Math.min(
+        (viewport.clientWidth - 120) / contentWidth,
+        (viewport.clientHeight - 120) / contentHeight,
+        1,
+      ),
+    );
+    setZoom(targetZoom);
+    window.requestAnimationFrame(() => {
+      viewport.scrollTo({
+        left: ((minX + maxX) / 2) * targetZoom - viewport.clientWidth / 2,
+        top: ((minY + maxY) / 2) * targetZoom - viewport.clientHeight / 2,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+  }
+
   return (
     <MotionPage className="space-y-5">
       <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="ws-eyebrow">{t("canvas.eyebrow")}</p>
-          <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
+          <h2 className="ws-page-title">
             {t("nav.canvas")}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-            {t("canvas.description")}
+          <p className="ws-page-status">
+            {t("canvas.headerStatus", {
+              cards: cards.length,
+              connections: connections.length,
+              zoom: Math.round(zoom * 100),
+            })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -345,13 +392,13 @@ export function CanvasPage() {
         </div>
       </header>
 
-      <section className="ws-surface rounded-[1.5rem] p-3 sm:p-4">
+      <section className="ws-compact-surface p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
             <select
               value={entryToAdd}
               onChange={(event) => setEntryToAdd(event.target.value)}
-              className="ws-input min-h-11 min-w-0 flex-1 rounded-full px-4 text-sm xl:max-w-sm"
+              className="ws-input h-10 min-w-0 flex-1 rounded-xl px-3 text-sm xl:max-w-sm"
               aria-label={t("canvas.chooseEntry")}
             >
               <option value="">{t("canvas.chooseEntry")}</option>
@@ -365,7 +412,7 @@ export function CanvasPage() {
               type="button"
               onClick={createEntryCard}
               disabled={!entryToAdd}
-              className="ws-button-secondary flex min-h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold"
+              className="ws-button-secondary flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold"
             >
               <Plus size={15} />
               {t("canvas.addEntry")}
@@ -373,16 +420,10 @@ export function CanvasPage() {
           </div>
 
           <div className="flex items-center justify-between gap-2 xl:justify-end">
-            <span className="text-xs text-[var(--text-faint)]">
-              {t("canvas.counts", {
-                cards: cards.length,
-                connections: connections.length,
-              })}
-            </span>
             <div className="flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1">
               <button
                 type="button"
-                onClick={() => setZoom(zoom - 0.1)}
+                onClick={() => changeZoom(zoom - 0.1)}
                 disabled={zoom <= MIN_CANVAS_ZOOM}
                 className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[var(--surface-raised)]"
                 aria-label={t("canvas.zoomOut")}
@@ -394,7 +435,7 @@ export function CanvasPage() {
               </span>
               <button
                 type="button"
-                onClick={() => setZoom(zoom + 0.1)}
+                onClick={() => changeZoom(zoom + 0.1)}
                 disabled={zoom >= MAX_CANVAS_ZOOM}
                 className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[var(--surface-raised)]"
                 aria-label={t("canvas.zoomIn")}
@@ -402,6 +443,16 @@ export function CanvasPage() {
                 <ZoomIn size={15} />
               </button>
             </div>
+            {cards.length ? (
+              <button
+                type="button"
+                onClick={fitCanvasContent}
+                className="flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
+              >
+                <Scan size={15} />
+                {t("canvas.fitContent")}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -466,10 +517,10 @@ export function CanvasPage() {
         ) : null}
       </section>
 
-      <section className="ws-surface overflow-hidden rounded-[1.5rem]">
+      <section className="relative overflow-hidden rounded-xl border border-[var(--border)]">
         <div
           ref={viewportRef}
-          className="h-[68vh] min-h-[32rem] overflow-auto bg-[var(--bg-subtle)]"
+          className="h-[72vh] min-h-[32rem] overflow-auto bg-[var(--bg-subtle)]"
           aria-label={t("canvas.workspace")}
         >
           <div
@@ -532,22 +583,20 @@ export function CanvasPage() {
                 />
               ))}
 
-              {!cards.length ? (
-                <div className="absolute left-1/2 top-1/2 w-[min(28rem,80vw)] -translate-x-1/2 -translate-y-1/2 text-center">
-                  <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                    <GitBranch size={24} />
-                  </span>
-                  <h3 className="ws-display mt-5 text-3xl font-semibold text-[var(--text)]">
-                    {t("canvas.empty")}
-                  </h3>
-                  <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                    {t("canvas.emptyHelp")}
-                  </p>
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
+        {!cards.length ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center">
+            <div className="w-full max-w-md">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+                <GitBranch size={24} />
+              </span>
+              <h3 className="ws-display mt-5 text-3xl font-semibold text-[var(--text)]">{t("canvas.empty")}</h3>
+              <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{t("canvas.emptyHelp")}</p>
+            </div>
+          </div>
+        ) : null}
       </section>
     </MotionPage>
   );

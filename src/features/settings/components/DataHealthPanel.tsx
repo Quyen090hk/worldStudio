@@ -27,7 +27,7 @@ export function DataHealthPanel() {
     if (window.confirm(t("settings.healthRepairConfirm", { count: report.total }))) repairWorkspaceData();
   }
   return (
-    <section className="ws-surface rounded-[2rem] p-6 md:p-7">
+    <section className="ws-compact-surface p-5 md:p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]"><HeartPulse size={21} /></span><div><p className="ws-eyebrow">{t("settings.healthEyebrow")}</p><h3 className="ws-display mt-2 text-3xl font-semibold">{t("settings.healthTitle")}</h3><p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{t("settings.healthDescription")}</p></div></div>
         {report.total > 0 ? <button type="button" onClick={repair} className="ws-button-secondary flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold"><Wrench size={16} />{t("settings.repairIssues", { count: report.total })}</button> : null}

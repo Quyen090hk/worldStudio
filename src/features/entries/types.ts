@@ -23,3 +23,10 @@ export type EntryInput = {
   content: string;
   tags: string[];
 };
+
+export type EntryRevision = {
+  id: string;
+  entryId: string;
+  content: string;
+  createdAt: string;
+};

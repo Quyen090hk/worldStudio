@@ -1,15 +1,17 @@
 import {
   ArrowLeft,
-  Calendar,
+  BookOpen,
   CalendarRange,
   CheckCircle2,
   ChevronRight,
   Clock3,
   FileText,
   GitBranch,
+  History,
   LayoutDashboard,
   MapPin,
   Pencil,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -24,7 +26,11 @@ import {
   formatEntryRelative,
 } from "./utils/formatEntryDate";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
+import { EditorRecoveryBoundary } from "./components/EditorRecoveryBoundary";
+import { RecoveryContentEditor } from "./components/RecoveryContentEditor";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
+import { normalizeEntryContent } from "./utils/normalizeEntryContent";
+import { getReferencedEntryIds } from "./utils/entryReferences";
 import { useI18n } from "../../shared/i18n";
 import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
 import { useMapStore } from "../map/stores/useMapStore";
@@ -83,6 +89,9 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   const updateEntryContent = useEntryStore(
     (state) => state.updateEntryContent,
   );
+  const revisions = useEntryStore((state) => state.revisions);
+  const createRevision = useEntryStore((state) => state.createRevision);
+  const restoreRevision = useEntryStore((state) => state.restoreRevision);
   const relationships = useRelationshipStore((state) => state.relationships);
   const maps = useMapStore((state) => state.maps);
   const markers = useMapStore((state) => state.markers);
@@ -92,6 +101,17 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   const entry = useMemo(
     () => entries.find((item) => item.id === entryId),
     [entries, entryId]
+  );
+  const entryContent = useMemo(
+    () => normalizeEntryContent(entry?.content),
+    [entry?.content],
+  );
+  const referenceEntries = useMemo(
+    () =>
+      entries
+        .filter((item) => item.id !== entryId)
+        .map(({ id, title, type }) => ({ id, title, type })),
+    [entries, entryId],
   );
   const linkedRelationships = useMemo(
     () =>
@@ -116,20 +136,36 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
       ),
     [canvasCards, entryId],
   );
+  const backlinks = useMemo(
+    () =>
+      entryId
+        ? entries.filter(
+            (item) =>
+              item.id !== entryId &&
+              getReferencedEntryIds(normalizeEntryContent(item.content)).has(entryId),
+          )
+        : [],
+    [entries, entryId],
+  );
+  const entryRevisions = useMemo(
+    () => revisions.filter((revision) => revision.entryId === entryId),
+    [entryId, revisions],
+  );
 
   const [isEditingContent, setIsEditingContent] = useState(false);
-  const [draftContent, setDraftContent] = useState(entry?.content ?? "");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [draftContent, setDraftContent] = useState(entryContent);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(
     entry ? "saved" : "idle",
   );
   const pendingContentSaveRef = useRef<PendingContentSave | null>(null);
 
   const writingStats = useMemo(
-    () => getWritingStats(isEditingContent ? draftContent : entry?.content ?? ""),
-    [draftContent, entry?.content, isEditingContent]
+    () => getWritingStats(isEditingContent ? draftContent : entryContent),
+    [draftContent, entryContent, isEditingContent]
   );
   const currentEntryId = entry?.id;
-  const savedContent = entry?.content;
+  const savedContent = entryContent;
 
   useEffect(() => {
     if (!currentEntryId) return;
@@ -177,7 +213,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   function handleContentChange(content: string) {
     setDraftContent(content);
 
-    if (!entry || content === entry.content) {
+    if (!entry || content === entryContent) {
       pendingContentSaveRef.current = null;
       setSaveStatus("saved");
       return;
@@ -185,6 +221,24 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
     pendingContentSaveRef.current = { entryId: entry.id, content };
     setSaveStatus("saving");
+  }
+
+  function startEditingContent() {
+    if (!entry) return;
+    createRevision(entry.id, entryContent);
+    setDraftContent(entryContent);
+    setHistoryOpen(false);
+    setIsEditingContent(true);
+  }
+
+  function handleRestoreRevision(revisionId: string) {
+    if (!entry) return;
+    const revision = entryRevisions.find((item) => item.id === revisionId);
+    if (!revision) return;
+    if (!window.confirm(t("entry.restoreRevisionConfirm"))) return;
+    restoreRevision(entry.id, revision.id);
+    setDraftContent(revision.content);
+    setHistoryOpen(false);
   }
 
   function finishEditingContent() {
@@ -276,18 +330,11 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
       <section
         className={[
-          "ws-surface-raised relative overflow-hidden rounded-[2.25rem] p-7 md:p-8",
+          "relative border-b border-[var(--border)] px-1 pb-8 pt-2",
           typeMeta.borderClassName,
         ].join(" ")}
       >
-        <div
-          className={[
-            "pointer-events-none absolute inset-0 opacity-70",
-            typeMeta.glowClassName,
-          ].join(" ")}
-        />
-
-        <div className="relative grid gap-8 xl:grid-cols-[1fr_20rem]">
+        <div className="relative">
           <div>
             <div className="mb-5 flex flex-wrap items-center gap-3">
               <EntryTypeBadge type={entry.type} />
@@ -298,7 +345,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
               </span>
             </div>
 
-            <h1 className="ws-display-tight max-w-4xl text-5xl font-semibold leading-[0.98] text-[var(--text)] md:text-6xl">
+            <h1 className="ws-display-tight max-w-4xl text-4xl font-semibold leading-[1.02] text-[var(--text)] md:text-5xl">
               {entry.title}
             </h1>
 
@@ -324,53 +371,19 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
             </div>
           </div>
 
-          <aside className="ws-surface-soft rounded-[1.75rem] p-5">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)]">
-              {t("entry.recordDetails")}
-            </p>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                  {t("common.type")}
-                </div>
-                <EntryTypeBadge type={entry.type} />
-                <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
-                  {t(`type.${entry.type}.description`)}
-                </p>
-              </div>
-
-              <div className="border-t border-[var(--border)] pt-4">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                  <Calendar size={14} strokeWidth={1.7} />
-                  {t("common.created")}
-                </div>
-                <p className="text-sm text-[var(--text-muted)]">
-                  {formatEntryDateTime(entry.createdAt, locale)}
-                </p>
-              </div>
-
-              <div className="border-t border-[var(--border)] pt-4">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-faint)]">
-                  <Clock3 size={14} strokeWidth={1.7} />
-                  {t("common.updated")}
-                </div>
-                <p className="text-sm text-[var(--text-muted)]">
-                  {formatEntryDateTime(entry.updatedAt, locale)}
-                </p>
-              </div>
-            </div>
-          </aside>
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_20rem]">
-        <article className="ws-surface rounded-[2rem] p-5 md:p-6">
+      <section className={isEditingContent ? "block" : "grid gap-6 xl:grid-cols-[1fr_20rem]"}>
+        <article
+          className={isEditingContent
+            ? "rounded-[2rem] bg-transparent p-2 md:p-4"
+            : "ws-compact-surface p-5 md:p-6"}
+        >
+          <div>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="ws-eyebrow">{t("entry.loreNotes")}</p>
-
-              <h2 className="ws-display mt-2 text-3xl font-semibold text-[var(--text)]">
+              <h2 className="ws-display text-3xl font-semibold text-[var(--text)] sm:text-4xl">
                 {t("entry.mainText")}
               </h2>
 
@@ -396,12 +409,27 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
                 </span>
               ) : null}
 
+              {!isEditingContent ? (
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen((open) => !open)}
+                  className="flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-4 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
+                  aria-expanded={historyOpen}
+                >
+                  <History size={16} strokeWidth={1.75} />
+                  {t("entry.versionHistory")}
+                  {entryRevisions.length ? (
+                    <span className="rounded-full bg-[var(--surface-solid)] px-2 py-0.5 text-xs">{entryRevisions.length}</span>
+                  ) : null}
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() =>
                   isEditingContent
                     ? finishEditingContent()
-                    : setIsEditingContent(true)
+                    : startEditingContent()
                 }
                 className="ws-button-secondary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
               >
@@ -411,21 +439,75 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
             </div>
           </div>
 
+          {historyOpen && !isEditingContent ? (
+            <section className="mb-6 rounded-[1.5rem] border border-[var(--border-strong)] bg-[var(--surface-muted)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--text)]">{t("entry.versionHistory")}</p>
+                  <p className="mt-1 text-xs text-[var(--text-faint)]">{t("entry.versionHistoryHelp")}</p>
+                </div>
+                <button type="button" onClick={() => setHistoryOpen(false)} className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text)]">
+                  {t("common.close")}
+                </button>
+              </div>
+              {entryRevisions.length ? (
+                <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {entryRevisions.map((revision, index) => {
+                    const stats = getWritingStats(revision.content);
+                    return (
+                      <div key={revision.id} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-[var(--text)]">
+                            {index === 0 ? t("entry.latestSnapshot") : t("entry.olderSnapshot")}
+                          </p>
+                          <p className="mt-1 text-xs text-[var(--text-faint)]">
+                            {formatEntryDateTime(revision.createdAt, locale)} · {t("entry.wordsCharacters", stats)}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => handleRestoreRevision(revision.id)} className="flex h-9 shrink-0 items-center gap-2 rounded-full border border-[var(--border)] px-3 text-xs font-semibold transition hover:bg-[var(--surface-muted)]">
+                          <RotateCcw size={14} />
+                          {t("entry.restoreRevision")}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-4 rounded-xl border border-dashed border-[var(--border)] p-5 text-center text-sm text-[var(--text-faint)]">
+                  {t("entry.noRevisions")}
+                </p>
+              )}
+            </section>
+          ) : null}
+
           {isEditingContent ? (
-            <Suspense
+            <EditorRecoveryBoundary
               fallback={
-                <div className="min-h-[24rem] animate-pulse rounded-[1.5rem] bg-[var(--surface-muted)]" />
+                <RecoveryContentEditor
+                  value={draftContent}
+                  onChange={handleContentChange}
+                />
               }
             >
-              <RichTextEditor
-                value={draftContent}
-                onChange={handleContentChange}
-                editable
-                placeholder={t("entry.writePlaceholder")}
-              />
-            </Suspense>
-          ) : entry.content ? (
-            <RichTextReadView value={entry.content} />
+              <Suspense
+                fallback={
+                  <RecoveryContentEditor
+                    value={draftContent}
+                    onChange={handleContentChange}
+                  />
+                }
+              >
+                <RichTextEditor
+                  value={draftContent}
+                  onChange={handleContentChange}
+                  editable
+                  placeholder={t("entry.writePlaceholder")}
+                  referenceEntries={referenceEntries}
+                />
+              </Suspense>
+            </EditorRecoveryBoundary>
+          ) : entryContent ? (
+            <RichTextReadView value={entryContent} />
           ) : (
             <div className="rounded-[1.5rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-6 py-12 text-center">
               <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
@@ -438,17 +520,18 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
               <button
                 type="button"
-                onClick={() => setIsEditingContent(true)}
+                onClick={startEditingContent}
                 className="ws-button-primary mt-6 rounded-full px-5 py-2.5 text-sm font-semibold"
               >
                 {t("entry.startWriting")}
               </button>
             </div>
           )}
+          </div>
         </article>
 
-        <aside className="space-y-6">
-          <section className="ws-surface rounded-[2rem] p-5">
+        <aside className={isEditingContent ? "hidden" : "space-y-6"}>
+          <section className="ws-compact-surface p-5">
             <p className="ws-eyebrow">{t("common.tags")}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -467,7 +550,44 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
             </div>
           </section>
 
-          <section className="ws-surface rounded-[2rem] p-5">
+          <section className="ws-compact-surface p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="ws-eyebrow">{t("entry.backlinks")}</p>
+              <span className="rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)]">
+                {backlinks.length}
+              </span>
+            </div>
+
+            {backlinks.length ? (
+              <div className="mt-4 space-y-2">
+                {backlinks.map((backlink) => (
+                  <button
+                    key={backlink.id}
+                    type="button"
+                    onClick={() => navigate(`/entries/${encodeURIComponent(backlink.id)}`)}
+                    className="group flex w-full items-center gap-3 rounded-[1rem] border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2.5 text-left transition hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-solid)] text-[var(--accent)]">
+                      <BookOpen size={16} strokeWidth={1.8} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate text-sm text-[var(--text)]">{backlink.title}</b>
+                      <span className="block truncate text-xs text-[var(--text-faint)]">
+                        {t(`type.${backlink.type}`)}
+                      </span>
+                    </span>
+                    <ChevronRight size={15} className="text-[var(--text-faint)] transition group-hover:translate-x-0.5" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-xs leading-5 text-[var(--text-faint)]">
+                {t("entry.noBacklinks")}
+              </p>
+            )}
+          </section>
+
+          <section className="ws-compact-surface p-5">
             <p className="ws-eyebrow">{t("entry.linkedRecords")}</p>
 
             <div className="mt-4 space-y-2">

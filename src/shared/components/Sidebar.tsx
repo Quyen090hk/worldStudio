@@ -4,7 +4,6 @@ import {
   GitBranch,
   Home,
   Image,
-  Languages,
   Map,
   Settings,
   Sparkles,
@@ -18,8 +17,9 @@ import {
   type RefObject,
 } from "react";
 import { NavLink } from "react-router-dom";
-import { useI18n, type Locale } from "../i18n";
+import { useI18n } from "../i18n";
 import { useWorldStore } from "../../features/world/stores/useWorldStore";
+import { LanguageMenu } from "./LanguageMenu";
 
 const navItems = [
   {
@@ -70,15 +70,15 @@ function NavigationContent({
   showWorldCard?: boolean;
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
 }) {
-  const { locale, setLocale, t } = useI18n();
+  const { t } = useI18n();
   const profile = useWorldStore((state) => state.profile);
 
   return (
-    <div className="flex h-full flex-col px-4 py-5">
-      <div className="mb-8 px-2">
+    <div className="flex h-full flex-col px-3 py-4">
+      <div className="mb-5 px-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] text-[var(--accent)]">
               <Sparkles size={18} strokeWidth={1.65} />
             </div>
 
@@ -87,7 +87,7 @@ function NavigationContent({
                 World
               </div>
 
-              <div className="ws-display ws-foil-text text-xl font-bold leading-none">
+              <div className="ws-display ws-foil-text text-lg font-bold leading-none">
                 Studio
               </div>
             </div>
@@ -106,7 +106,7 @@ function NavigationContent({
           ) : null}
         </div>
 
-        <div className="mt-5 h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
+        <div className="mt-4 h-px bg-[var(--border)]" />
       </div>
 
       <nav className="space-y-1" aria-label={t("navigation.primary")}>
@@ -120,9 +120,9 @@ function NavigationContent({
               onClick={onNavigate}
               className={({ isActive }) =>
                 [
-                  "group relative flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-semibold transition",
+                  "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
                   isActive
-                    ? "bg-[var(--accent-soft)] text-[var(--text)] ring-1 ring-[var(--border-strong)]"
+                    ? "bg-[var(--accent-soft)] text-[var(--text)]"
                     : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]",
                 ].join(" ")
               }
@@ -171,28 +171,16 @@ function NavigationContent({
           </p>
         </div> : null}
 
-        <label className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-sm font-semibold text-[var(--text-muted)]">
-          <Languages size={18} strokeWidth={1.65} />
-          <span className="flex-1">{t("topbar.language")}</span>
-          <select
-            value={locale}
-            onChange={(event) => setLocale(event.target.value as Locale)}
-            className="bg-transparent py-1 text-xs outline-none"
-            aria-label={t("topbar.language")}
-          >
-            <option value="en-US">EN</option>
-            <option value="zh-CN">中文</option>
-          </select>
-        </label>
+        <LanguageMenu />
 
         <NavLink
           to="/settings"
           onClick={onNavigate}
           className={({ isActive }) =>
             [
-              "flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-semibold transition",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
               isActive
-                ? "bg-[var(--accent-soft)] text-[var(--text)] ring-1 ring-[var(--border-strong)]"
+                ? "bg-[var(--accent-soft)] text-[var(--text)]"
                 : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]",
             ].join(" ")
           }

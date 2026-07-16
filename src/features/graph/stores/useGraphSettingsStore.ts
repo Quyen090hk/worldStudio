@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 import { ENTRY_TYPES, type GraphGroup } from "../graphModel";
 import type { EntryType } from "../../entries/types";
 
@@ -74,6 +75,7 @@ export const useGraphSettingsStore = create<GraphSettingsStore>()(
     }),
     {
       name: "world-studio.graph-settings.v2",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       partialize: (state) => ({
         visibleTypes: state.visibleTypes,
         showSecrets: state.showSecrets,

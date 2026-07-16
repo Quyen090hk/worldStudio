@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 
 import type { AssetRecord } from "../types";
 
@@ -34,6 +35,7 @@ export const useAssetStore = create<AssetStore>()(
     }),
     {
       name: "world-studio.assets.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       partialize: (state) => ({ assets: state.assets }),
     },
   ),

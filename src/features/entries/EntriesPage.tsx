@@ -109,20 +109,18 @@ export function EntriesPage() {
   return (
     <MotionPage className="space-y-6">
       <section className="space-y-2">
-        <p className="ws-eyebrow">{t("common.archive")}</p>
-
-        <h2 className="text-4xl font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-5xl">
+        <h2 className="ws-page-title">
           {t("nav.entries")}
         </h2>
 
-        <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-          {t("entries.description")}
+        <p className="ws-page-status">
+          {t("entries.headerStatus", { count: entries.length })}
         </p>
       </section>
 
-      <section className="ws-surface rounded-[2rem] p-4 md:p-5">
+      <section className="ws-compact-surface p-3 md:p-4">
         <div className="grid gap-3 xl:grid-cols-[1fr_12rem_12rem_auto]">
-          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
             <Search
               size={17}
               strokeWidth={1.7}
@@ -149,7 +147,7 @@ export function EntriesPage() {
             ) : null}
           </label>
 
-          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
             <SlidersHorizontal
               size={16}
               strokeWidth={1.7}
@@ -171,7 +169,7 @@ export function EntriesPage() {
             </select>
           </label>
 
-          <label className="ws-input flex h-12 items-center gap-3 rounded-[1.15rem] px-4">
+          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
             <select
               value={selectedTag}
               onChange={(event) => setSelectedTag(event.target.value)}
@@ -192,7 +190,7 @@ export function EntriesPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="ws-button-secondary h-12 rounded-[1.15rem] px-4 text-sm font-medium"
+                className="ws-button-secondary h-10 rounded-xl px-4 text-sm font-medium"
               >
                 {t("common.clearFilters")}
               </button>
@@ -216,7 +214,7 @@ export function EntriesPage() {
         </div>
       </section>
 
-      <section className="ws-surface overflow-hidden rounded-[2rem]">
+      <section className="ws-compact-surface overflow-hidden">
         <div className="hidden grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto] gap-4 border-b border-[var(--border)] px-5 py-4 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[var(--text-faint)] lg:grid">
           <div>{t("common.title")}</div>
           <div>{t("common.type")}</div>

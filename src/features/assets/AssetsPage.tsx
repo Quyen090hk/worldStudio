@@ -311,12 +311,14 @@ export function AssetsPage() {
     <MotionPage className="space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="ws-eyebrow">{t("assets.eyebrow")}</p>
-          <h2 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-[var(--text)] sm:text-5xl">
+          <h2 className="ws-page-title">
             {t("nav.assets")}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-            {t("assets.description")}
+          <p className="ws-page-status">
+            {t("assets.headerStatus", {
+              count: assets.length,
+              size: formatAssetSize(totalSize),
+            })}
           </p>
         </div>
         <input
@@ -339,26 +341,26 @@ export function AssetsPage() {
         ) : null}
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid border-y border-[var(--border)] sm:grid-cols-3">
         {[
           [t("assets.totalFiles"), assets.length],
           [t("assets.images"), assets.filter((asset) => asset.kind === "image").length],
           [t("assets.storageUsed"), formatAssetSize(totalSize)],
-        ].map(([label, value]) => (
-          <div key={label} className="ws-surface rounded-[1.5rem] p-5">
+        ].map(([label, value], index) => (
+          <div key={label} className={`px-2 py-4 sm:px-5 ${index ? "border-t border-[var(--border)] sm:border-l sm:border-t-0" : ""}`}>
             <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
               {label}
             </p>
-            <p className="ws-display mt-3 text-3xl font-semibold text-[var(--text)]">
+            <p className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
               {value}
             </p>
           </div>
         ))}
       </section>
 
-      <section className="ws-surface rounded-[1.5rem] p-3 sm:p-4">
+      <section className="ws-compact-surface p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <label className="ws-input flex min-h-11 flex-1 items-center gap-3 rounded-full px-4 xl:max-w-md">
+          <label className="ws-input flex h-10 flex-1 items-center gap-3 rounded-xl px-3 xl:max-w-md">
             <Search size={16} className="text-[var(--text-faint)]" />
             <input
               type="search"
@@ -375,7 +377,7 @@ export function AssetsPage() {
                 type="button"
                 onClick={() => setKind(filterKind)}
                 aria-pressed={kind === filterKind}
-                className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
+                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition ${
                   kind === filterKind
                     ? "bg-[var(--button-primary-bg)] text-[var(--button-primary-text)]"
                     : "bg-[var(--surface-muted)] text-[var(--text-muted)] hover:text-[var(--text)]"
@@ -408,7 +410,7 @@ export function AssetsPage() {
             return (
               <article
                 key={asset.id}
-                className="group ws-surface overflow-hidden rounded-[1.5rem]"
+                className="group ws-compact-surface overflow-hidden"
               >
                 <div className="aspect-[16/10] overflow-hidden border-b border-[var(--border)]">
                   <AssetPreview asset={asset} />

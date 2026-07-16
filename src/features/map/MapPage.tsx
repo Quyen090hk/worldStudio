@@ -245,10 +245,10 @@ export function MapPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="ws-eyebrow">{t("map.eyebrow")}</p>
-          <h2 className="mt-2 break-words text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
+          <h2 className="ws-page-title mt-2 break-words">
             {activeMap.name}
           </h2>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">
+          <p className="ws-page-status">
             {t(`map.scale.${activeMap.scale}`)} · {mapMarkers.length}{" "}
             {t("map.markers")} · {mapConnections.length}{" "}
             {t("map.connectionsWord")}
@@ -297,8 +297,8 @@ export function MapPage() {
         </div>
       ) : null}
 
-      <section className="grid min-h-[680px] gap-4 xl:grid-cols-[20rem_minmax(0,1fr)_21rem]">
-        <aside className="ws-surface flex min-h-0 flex-col rounded-[2rem] p-4">
+      <section className="grid min-h-[640px] gap-3 xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
+        <aside className="ws-compact-surface flex min-h-0 flex-col p-3">
           <div role="tablist" className="grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1">
             <button
               type="button"
@@ -450,7 +450,7 @@ export function MapPage() {
             dragRef.current = null;
           }}
           onWheel={wheel}
-          className={`relative min-h-[560px] overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[var(--shadow-soft)] touch-none ${placing ? "cursor-crosshair" : zoom > 1 ? "cursor-grab" : ""}`}
+          className={`relative min-h-[560px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] touch-none ${placing ? "cursor-crosshair" : zoom > 1 ? "cursor-grab" : ""}`}
         >
           {!imageUrl ? (
             <div className="flex h-full min-h-[560px] flex-col items-center justify-center p-8 text-center">

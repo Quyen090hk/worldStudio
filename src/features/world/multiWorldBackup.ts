@@ -1,7 +1,7 @@
-import { parseWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from "../settings/workspaceBackup";
+import { createWorkspaceBackup, parseWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from "../settings/workspaceBackup";
 import { useWorldRegistryStore, type WorldRecord } from "./stores/useWorldRegistryStore";
-import { saveActiveWorld } from "./worldWorkspace";
-import { loadWorldWorkspace, saveWorldWorkspace } from "./workspaceStorage";
+import { saveActiveWorld, switchWorld } from "./worldWorkspace";
+import { saveWorldWorkspace } from "./workspaceStorage";
 
 export const MULTI_WORLD_BACKUP_FORMAT = "world-studio-multiworld-backup";
 export const MULTI_WORLD_BACKUP_VERSION = 1;
@@ -17,12 +17,21 @@ export type MultiWorldBackup = {
 export async function createMultiWorldBackup(): Promise<MultiWorldBackup> {
   await saveActiveWorld();
   const registry = useWorldRegistryStore.getState();
+  const originalWorldId = registry.activeWorldId;
   const worlds = [];
-  for (const record of registry.worlds) {
-    const workspace = await loadWorldWorkspace(record.id);
-    if (workspace) worlds.push({ record, workspace });
+  try {
+    for (const record of registry.worlds) {
+      if (useWorldRegistryStore.getState().activeWorldId !== record.id) {
+        await switchWorld(record.id);
+      }
+      worlds.push({ record, workspace: await createWorkspaceBackup() });
+    }
+  } finally {
+    if (useWorldRegistryStore.getState().activeWorldId !== originalWorldId) {
+      await switchWorld(originalWorldId);
+    }
   }
-  return { format: MULTI_WORLD_BACKUP_FORMAT, version: MULTI_WORLD_BACKUP_VERSION, exportedAt: new Date().toISOString(), activeWorldId: registry.activeWorldId, worlds };
+  return { format: MULTI_WORLD_BACKUP_FORMAT, version: MULTI_WORLD_BACKUP_VERSION, exportedAt: new Date().toISOString(), activeWorldId: originalWorldId, worlds };
 }
 
 export function parseMultiWorldBackup(text: string): MultiWorldBackup {

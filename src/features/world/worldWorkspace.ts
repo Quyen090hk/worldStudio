@@ -1,8 +1,9 @@
 import { useGraphSettingsStore } from "../graph/stores/useGraphSettingsStore";
-import { createWorkspaceBackup, restoreWorkspaceBackup, type WorkspaceBackup } from "../settings/workspaceBackup";
+import { createWorkspaceSnapshot, restoreWorkspaceBackup, restoreWorkspaceSnapshot, type WorkspaceBackup } from "../settings/workspaceBackup";
 import { useWorldRegistryStore, type WorldRecord } from "./stores/useWorldRegistryStore";
 import { useWorldStore } from "./stores/useWorldStore";
 import { deleteWorldWorkspace, loadWorldWorkspace, saveWorldWorkspace } from "./workspaceStorage";
+import { hydrateWorkspaceStores } from "./hydrateWorkspaceStores";
 
 function id(prefix: string) {
   return `${prefix}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
@@ -18,11 +19,11 @@ function blankBackup(world: WorldRecord): WorkspaceBackup {
   const graph = useGraphSettingsStore.getState();
   return {
     format: "world-studio-backup",
-    version: 4,
+    version: 5,
     exportedAt: new Date().toISOString(),
     data: {
       world: { name: world.name, description: world.description, createdAt: world.createdAt, updatedAt: world.updatedAt },
-      entries: [], relationships: [],
+      entries: [], revisions: [], relationships: [],
       timeline: { items: [], eras: [], viewport: { centerYear: 0, yearsPerScreen: 500 } },
       atlas: { maps: [{ id: mapId, name: world.name, scale: "World", description: "", createdAt: world.createdAt }], activeMapId: mapId, layers: [{ id: id("layer"), mapId, name: "Places", color: "#986e36", visible: true }], markers: [], connections: [], images: [] },
       assetLibrary: { items: [], files: [] },
@@ -42,7 +43,16 @@ function blankBackup(world: WorldRecord): WorkspaceBackup {
   };
 }
 
+async function restoreStoredWorkspace(workspace: WorkspaceBackup) {
+  const containsPortableFiles =
+    workspace.data.atlas.images.length > 0 ||
+    workspace.data.assetLibrary.files.length > 0;
+  if (containsPortableFiles) await restoreWorkspaceBackup(workspace);
+  else restoreWorkspaceSnapshot(workspace);
+}
+
 export async function initializeWorldRegistry() {
+  await hydrateWorkspaceStores();
   const registry = useWorldRegistryStore.getState();
   const profile = useWorldStore.getState().profile;
   let current = registry.worlds.find((world) => world.id === registry.activeWorldId);
@@ -50,23 +60,25 @@ export async function initializeWorldRegistry() {
     current = { id: registry.activeWorldId, ...profile };
     registry.upsert(current);
   }
-  if (!(await loadWorldWorkspace(current.id))) await saveWorldWorkspace(current.id, await createWorkspaceBackup());
+  if (!(await loadWorldWorkspace(current.id))) await saveWorldWorkspace(current.id, await createWorkspaceSnapshot());
 }
 
 export async function saveActiveWorld() {
+  await hydrateWorkspaceStores();
   const registry = useWorldRegistryStore.getState();
   const profile = useWorldStore.getState().profile;
   registry.upsert({ id: registry.activeWorldId, ...profile });
-  await saveWorldWorkspace(registry.activeWorldId, await createWorkspaceBackup());
+  await saveWorldWorkspace(registry.activeWorldId, await createWorkspaceSnapshot());
 }
 
 export async function switchWorld(targetId: string) {
+  await hydrateWorkspaceStores();
   const registry = useWorldRegistryStore.getState();
   if (targetId === registry.activeWorldId) return;
   const backup = await loadWorldWorkspace(targetId);
   if (!backup) throw new Error("World workspace not found");
   await saveActiveWorld();
-  await restoreWorkspaceBackup(backup);
+  await restoreStoredWorkspace(backup);
   registry.setActive(targetId);
 }
 
@@ -110,7 +122,7 @@ export async function deleteWorld(worldId: string) {
     if (!target) return false;
     const backup = await loadWorldWorkspace(target.id);
     if (!backup) return false;
-    await restoreWorkspaceBackup(backup);
+    await restoreStoredWorkspace(backup);
     registry.setActive(target.id);
   }
   registry.remove(worldId);

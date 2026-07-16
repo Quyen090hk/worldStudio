@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 
 import {
   clampCanvasPosition,
@@ -169,6 +170,7 @@ export const useCanvasStore = create<CanvasStore>()(
     }),
     {
       name: "world-studio.canvas.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       version: 1,
       partialize: (state) => ({
         cards: state.cards,

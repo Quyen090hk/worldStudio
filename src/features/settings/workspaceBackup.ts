@@ -14,7 +14,7 @@ import type {
   CanvasConnection,
   CanvasViewport,
 } from "../canvas/types";
-import type { Entry, EntryType } from "../entries/types";
+import type { Entry, EntryRevision, EntryType } from "../entries/types";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type {
   EntryRelationship,
@@ -58,10 +58,11 @@ import {
   MAX_WORLD_DESCRIPTION_LENGTH,
   MAX_WORLD_NAME_LENGTH,
   createDefaultWorldProfile,
+  removeLegacyDefaultWorldDescription,
 } from "../world/worldModel";
 
 export const WORKSPACE_BACKUP_FORMAT = "world-studio-backup";
-export const WORKSPACE_BACKUP_VERSION = 4;
+export const WORKSPACE_BACKUP_VERSION = 5;
 export const MAX_BACKUP_FILE_BYTES = 250 * 1024 * 1024;
 const MAX_MAP_IMAGE_BYTES = 15 * 1024 * 1024;
 
@@ -81,6 +82,7 @@ type WorkspaceAssetFile = {
 export type WorkspaceBackupData = {
   world: WorldProfile;
   entries: Entry[];
+  revisions: EntryRevision[];
   relationships: EntryRelationship[];
   timeline: {
     items: TimelineItem[];
@@ -226,6 +228,16 @@ function isEntry(value: unknown): value is Entry {
     isStringArray(value.tags) &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
+  );
+}
+
+function isEntryRevision(value: unknown): value is EntryRevision {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.entryId === "string" &&
+    typeof value.content === "string" &&
+    typeof value.createdAt === "string"
   );
 }
 
@@ -472,6 +484,7 @@ function assertUniqueIds(items: Array<{ id: string }>, label: string) {
 
 function validateReferences(data: WorkspaceBackupData) {
   assertUniqueIds(data.entries, "Entries");
+  assertUniqueIds(data.revisions, "Entry revisions");
   assertUniqueIds(data.relationships, "Relationships");
   assertUniqueIds(data.timeline.items, "Timeline items");
   assertUniqueIds(data.timeline.eras, "Timeline eras");
@@ -504,7 +517,8 @@ function validateReferences(data: WorkspaceBackupData) {
         !entryIds.has(relationship.sourceEntryId) ||
         !entryIds.has(relationship.targetEntryId),
     ) ||
-    data.timeline.items.some((item) => !entryIds.has(item.entryId))
+    data.timeline.items.some((item) => !entryIds.has(item.entryId)) ||
+    data.revisions.some((revision) => !entryIds.has(revision.entryId))
   ) {
     throw new WorkspaceBackupError(
       "invalid-data",
@@ -616,6 +630,7 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
     value.version !== 1 &&
     value.version !== 2 &&
     value.version !== 3 &&
+    value.version !== 4 &&
     value.version !== WORKSPACE_BACKUP_VERSION
   ) {
     throw new WorkspaceBackupError(
@@ -639,6 +654,7 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
             assetLibrary: { items: [], files: [] },
             canvas: emptyCanvas,
             world: defaultWorld,
+            revisions: [],
           },
         }
       : value.version === 2 && isRecord(value.data)
@@ -649,15 +665,22 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
               ...value.data,
               canvas: emptyCanvas,
               world: defaultWorld,
+              revisions: [],
             },
           }
         : value.version === 3 && isRecord(value.data)
           ? {
               ...value,
               version: WORKSPACE_BACKUP_VERSION,
-              data: { ...value.data, world: defaultWorld },
+              data: { ...value.data, world: defaultWorld, revisions: [] },
             }
-          : value;
+          : value.version === 4 && isRecord(value.data)
+            ? {
+                ...value,
+                version: WORKSPACE_BACKUP_VERSION,
+                data: { ...value.data, revisions: [] },
+              }
+            : value;
 
   if (
     typeof normalizedValue.exportedAt !== "string" ||
@@ -671,6 +694,8 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
     !isWorldProfile(data.world) ||
     !Array.isArray(data.entries) ||
     !data.entries.every(isEntry) ||
+    !Array.isArray(data.revisions) ||
+    !data.revisions.every(isEntryRevision) ||
     !Array.isArray(data.relationships) ||
     !data.relationships.every(isRelationship) ||
     !isRecord(data.timeline) ||
@@ -780,6 +805,7 @@ export function sanitizeWorkspaceData(
 
   return {
     ...data,
+    revisions: data.revisions.filter((revision) => entryIds.has(revision.entryId)),
     relationships: data.relationships.filter(
       (relationship) =>
         entryIds.has(relationship.sourceEntryId) &&
@@ -820,7 +846,7 @@ export function sanitizeWorkspaceData(
   };
 }
 
-export async function createWorkspaceBackup(): Promise<WorkspaceBackup> {
+async function createWorkspacePackage(includeBinaryFiles: boolean): Promise<WorkspaceBackup> {
   const entryState = useEntryStore.getState();
   const relationshipState = useRelationshipStore.getState();
   const timelineState = useTimelineStore.getState();
@@ -828,10 +854,10 @@ export async function createWorkspaceBackup(): Promise<WorkspaceBackup> {
   const assetState = useAssetStore.getState();
   const canvasState = useCanvasStore.getState();
   const images: WorkspaceMapImage[] = [];
-  const assetItems: AssetRecord[] = [];
+  const assetItems: AssetRecord[] = [...assetState.assets];
   const assetFiles: WorkspaceAssetFile[] = [];
 
-  for (const map of mapState.maps) {
+  for (const map of includeBinaryFiles ? mapState.maps : []) {
     const image = await loadMapImage(map.id);
     if (!image) continue;
     images.push({
@@ -842,10 +868,9 @@ export async function createWorkspaceBackup(): Promise<WorkspaceBackup> {
     });
   }
 
-  for (const asset of assetState.assets) {
+  for (const asset of includeBinaryFiles ? assetState.assets : []) {
     const file = await loadAssetFile(asset.id);
     if (!file) continue;
-    assetItems.push(asset);
     assetFiles.push({
       assetId: asset.id,
       type: asset.mediaType,
@@ -856,6 +881,7 @@ export async function createWorkspaceBackup(): Promise<WorkspaceBackup> {
   const data = sanitizeWorkspaceData({
     world: useWorldStore.getState().profile,
     entries: entryState.entries,
+    revisions: entryState.revisions,
     relationships: relationshipState.relationships,
     timeline: {
       items: timelineState.items,
@@ -888,6 +914,16 @@ export async function createWorkspaceBackup(): Promise<WorkspaceBackup> {
     exportedAt: new Date().toISOString(),
     data,
   });
+}
+
+/** Full portable backup, including binary files encoded for export. */
+export function createWorkspaceBackup(): Promise<WorkspaceBackup> {
+  return createWorkspacePackage(true);
+}
+
+/** Fast internal snapshot. Binary files remain in IndexedDB and are not copied. */
+export function createWorkspaceSnapshot(): Promise<WorkspaceBackup> {
+  return createWorkspacePackage(false);
 }
 
 export function serializeWorkspaceBackup(backup: WorkspaceBackup) {
@@ -970,9 +1006,15 @@ async function replaceAssetFiles(
 }
 
 function applyWorkspaceData(data: WorkspaceBackupData) {
-  useWorldStore.setState({ profile: data.world });
+  useWorldStore.setState({
+    profile: {
+      ...data.world,
+      description: removeLegacyDefaultWorldDescription(data.world.description),
+    },
+  });
   useEntryStore.setState({
     entries: data.entries,
+    revisions: data.revisions,
     drawerOpen: false,
     editingEntryId: null,
   });
@@ -998,11 +1040,17 @@ function applyWorkspaceData(data: WorkspaceBackupData) {
   useGraphSettingsStore.setState(data.graphSettings);
 }
 
+/** Restores an internal world snapshot without rewriting binary object stores. */
+export function restoreWorkspaceSnapshot(snapshot: WorkspaceBackup) {
+  const normalized = validateWorkspaceBackupObject(snapshot);
+  applyWorkspaceData(normalized.data);
+}
+
 export async function restoreWorkspaceBackup(backup: WorkspaceBackup) {
-  validateWorkspaceBackupObject(backup);
-  const replacementImages = await decodeMapImages(backup.data.atlas.images);
+  const normalizedBackup = validateWorkspaceBackupObject(backup);
+  const replacementImages = await decodeMapImages(normalizedBackup.data.atlas.images);
   const replacementAssetFiles = await decodeAssetFiles(
-    backup.data.assetLibrary,
+    normalizedBackup.data.assetLibrary,
   );
 
   const currentMapState = useMapStore.getState();
@@ -1010,6 +1058,7 @@ export async function restoreWorkspaceBackup(backup: WorkspaceBackup) {
   const currentData: WorkspaceBackupData = {
     world: useWorldStore.getState().profile,
     entries: useEntryStore.getState().entries,
+    revisions: useEntryStore.getState().revisions,
     relationships: useRelationshipStore.getState().relationships,
     timeline: {
       items: useTimelineStore.getState().items,
@@ -1040,20 +1089,20 @@ export async function restoreWorkspaceBackup(backup: WorkspaceBackup) {
   );
   const allMapIds = new Set([
     ...currentMapState.maps.map((map) => map.id),
-    ...backup.data.atlas.maps.map((map) => map.id),
+    ...normalizedBackup.data.atlas.maps.map((map) => map.id),
   ]);
   const currentAssetFiles = await readCurrentAssetFiles(
     currentAssetState.assets.map((asset) => asset.id),
   );
   const allAssetIds = new Set([
     ...currentAssetState.assets.map((asset) => asset.id),
-    ...backup.data.assetLibrary.items.map((asset) => asset.id),
+    ...normalizedBackup.data.assetLibrary.items.map((asset) => asset.id),
   ]);
 
   try {
     await replaceMapImages(allMapIds, replacementImages);
     await replaceAssetFiles(allAssetIds, replacementAssetFiles);
-    applyWorkspaceData(backup.data);
+    applyWorkspaceData(normalizedBackup.data);
   } catch (error) {
     await Promise.allSettled([
       replaceMapImages(allMapIds, currentImages),

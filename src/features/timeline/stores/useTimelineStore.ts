@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { indexedDbStateStorage } from "../../../shared/storage/database";
 import type {
   TimelineCategory,
   TimelineEra,
@@ -97,6 +98,7 @@ export const useTimelineStore = create<TimelineStore>()(
     }),
     {
       name: "world-studio.timeline.v1",
+      storage: createJSONStorage(() => indexedDbStateStorage),
       version: 2,
       migrate: (persistedState) => {
         const state = persistedState as Partial<TimelineStore>;
