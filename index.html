@@ -1,12 +1,79 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>world-studio</title>
+    <title>World Studio</title>
+    <script>
+      (() => {
+        let locale = null;
+        let theme = "light";
+        let openingShown = false;
+        try {
+          locale = localStorage.getItem("world-studio-locale");
+          theme = localStorage.getItem("world-studio-theme") || "light";
+          openingShown = sessionStorage.getItem("world-studio-opening-shown") === "true";
+        } catch {}
+        document.documentElement.lang = locale === "zh-CN" ? "zh-CN" : "en-US";
+        document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+        document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
+        if (openingShown) document.documentElement.dataset.skipOpening = "true";
+      })();
+    </script>
+    <style>
+      #opening-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;overflow:hidden;background:#f3ead8;color:#1d1914;transition:opacity .46s cubic-bezier(.22,1,.36,1),transform .46s cubic-bezier(.22,1,.36,1)}
+      [data-theme="dark"] #opening-screen{background:#181511;color:#eee5d7}
+      #opening-screen::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 50% 42%,rgba(151,112,63,.09),transparent 44%),radial-gradient(rgba(75,55,34,.09) .65px,transparent .65px);background-size:auto,7px 7px;pointer-events:none}
+      .opening-inner{position:relative;width:min(38rem,calc(100vw - 3rem));text-align:center;animation:opening-arrive .72s cubic-bezier(.22,1,.36,1) both}
+      .opening-mark{display:grid;width:2.75rem;height:2.75rem;margin:0 auto 2rem;place-items:center;border:1px solid rgba(107,78,43,.28);border-radius:1rem;font:500 1.1rem Georgia,"Songti SC",serif;color:#8c6539}
+      .opening-quote{margin:0;font:500 clamp(1.55rem,3vw,2.5rem)/1.55 Georgia,"Songti SC","STSong",serif;letter-spacing:.015em;text-wrap:balance;view-transition-name:daily-quote}
+      .opening-source{margin-top:1.2rem;font:600 .68rem/1.4 system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.48}
+      .opening-status{margin-top:3.5rem;font:500 .7rem/1.4 system-ui,sans-serif;letter-spacing:.12em;opacity:.42}
+      .opening-status::after{content:"";display:inline-block;width:1.4rem;height:1px;margin-left:.65rem;vertical-align:middle;background:currentColor;transform-origin:left;animation:opening-progress 1.25s ease-in-out infinite}
+      #opening-screen[data-ready="true"]{cursor:pointer}
+      #opening-screen[data-ready="true"] .opening-status{opacity:.62}
+      #opening-screen[data-ready="true"] .opening-status::after{width:.35rem;height:.35rem;border-radius:999px;animation:opening-ready 1.8s ease-in-out infinite}
+      .opening-zh,.opening-en{display:none}.opening-error{display:none;margin-top:1rem}.opening-retry{border:1px solid currentColor;border-radius:999px;background:transparent;color:inherit;padding:.65rem 1rem;cursor:pointer}
+      :lang(zh-CN) .opening-zh,:lang(en-US) .opening-en{display:block}
+      #opening-screen[data-error="true"] .opening-status{display:none}#opening-screen[data-error="true"] .opening-error{display:block}
+      #opening-screen.is-leaving{opacity:0;transform:scale(1.012);pointer-events:none}
+      [data-skip-opening="true"] #opening-screen{display:none}
+      #root.app-entering{animation:app-arrive .55s cubic-bezier(.22,1,.36,1) both}
+      @keyframes opening-arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+      @keyframes opening-progress{0%,100%{transform:scaleX(.2);opacity:.35}50%{transform:scaleX(1);opacity:.8}}
+      @keyframes opening-ready{0%,100%{transform:scale(1);opacity:.25}50%{transform:scale(1.35);opacity:.75}}
+      @keyframes app-arrive{from{opacity:0}to{opacity:1}}
+      ::view-transition-group(daily-quote){animation-duration:.78s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
+      ::view-transition-old(daily-quote){animation:opening-quote-out .46s cubic-bezier(.4,0,1,1) both}
+      ::view-transition-new(daily-quote){animation:opening-quote-in .78s cubic-bezier(.22,1,.36,1) both}
+      ::view-transition-old(root){animation:opening-root-out .56s ease both}
+      ::view-transition-new(root){animation:opening-root-in .68s ease both}
+      @keyframes opening-quote-out{to{opacity:.14;filter:blur(2px)}}
+      @keyframes opening-quote-in{from{opacity:.18;filter:blur(3px)}to{opacity:1;filter:blur(0)}}
+      @keyframes opening-root-out{to{opacity:0}}
+      @keyframes opening-root-in{from{opacity:0}to{opacity:1}}
+      @media(prefers-reduced-motion:reduce){.opening-inner,.opening-status::after,#root.app-entering{animation:none}#opening-screen{transition:opacity .18s linear}::view-transition-group(daily-quote),::view-transition-old(daily-quote),::view-transition-new(daily-quote),::view-transition-old(root),::view-transition-new(root){animation-duration:.01ms}}
+    </style>
   </head>
   <body>
+    <div id="opening-screen" role="status" aria-live="polite">
+      <div class="opening-inner">
+        <div class="opening-mark" aria-hidden="true">✦</div>
+        <div class="opening-zh">
+          <blockquote class="opening-quote" data-opening-quote>天地有大美而不言。</blockquote>
+          <p class="opening-source" data-opening-source>《庄子·知北游》</p>
+          <p class="opening-status" data-opening-status data-loading-text="正在展开世界" data-ready-text="按任意键进入">正在展开世界</p>
+          <div class="opening-error"><p>世界暂时未能展开</p><button class="opening-retry" type="button" onclick="location.reload()">重新尝试</button></div>
+        </div>
+        <div class="opening-en">
+          <blockquote class="opening-quote" data-opening-quote>The world was all before them.</blockquote>
+          <p class="opening-source" data-opening-source>John Milton · Paradise Lost</p>
+          <p class="opening-status" data-opening-status data-loading-text="Opening your world" data-ready-text="Press any key to enter">Opening your world</p>
+          <div class="opening-error"><p>Your world could not be opened.</p><button class="opening-retry" type="button" onclick="location.reload()">Try again</button></div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

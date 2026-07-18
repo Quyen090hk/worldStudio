@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useI18n } from "../../../shared/i18n";
+import { useSoftDialog } from "../../../shared/components/softDialogContext";
 import { useEntryStore } from "../../entries/stores/useEntryStore";
 import {
   MAP_CATEGORIES,
@@ -20,6 +21,7 @@ export function MapMarkerPanel({
   clearSelection: () => void;
 }) {
   const { t } = useI18n();
+  const dialog = useSoftDialog();
   const navigate = useNavigate();
   const store = useMapStore();
   const entries = useEntryStore((state) => state.entries);
@@ -75,14 +77,14 @@ export function MapMarkerPanel({
   }
 
   return (
-    <aside className="ws-compact-surface overflow-y-auto p-4">
-      <div className="space-y-4">
+    <aside className="ws-compact-surface overflow-y-auto p-5">
+      <div className="space-y-5">
         <div><p className="ws-eyebrow">{t("map.loreMarker")}</p><input value={selected.title} onChange={(event) => update({ title: event.target.value })} className="ws-display mt-2 w-full bg-transparent text-3xl font-semibold outline-none" /></div>
         <div className="grid grid-cols-2 gap-2">
-          <label><span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.category")}</span><select value={selected.category} onChange={(event) => update({ category: event.target.value as MarkerCategory })} className="ws-input h-10 w-full rounded-xl px-2 text-xs">{MAP_CATEGORIES.map((category) => <option key={category} value={category}>{t(`map.category.${category}`)}</option>)}</select></label>
-          <label><span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.layer")}</span><select value={selected.layerId} onChange={(event) => update({ layerId: event.target.value })} className="ws-input h-10 w-full rounded-xl px-2 text-xs">{mapLayers.map((layer) => <option key={layer.id} value={layer.id}>{layer.name}</option>)}</select></label>
+          <label><span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.category")}</span><select value={selected.category} onChange={(event) => update({ category: event.target.value as MarkerCategory })} className="ws-input ws-field w-full text-xs">{MAP_CATEGORIES.map((category) => <option key={category} value={category}>{t(`map.category.${category}`)}</option>)}</select></label>
+          <label><span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.layer")}</span><select value={selected.layerId} onChange={(event) => update({ layerId: event.target.value })} className="ws-input ws-field w-full text-xs">{mapLayers.map((layer) => <option key={layer.id} value={layer.id}>{layer.name}</option>)}</select></label>
         </div>
-        <label><span className="mb-1 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.writerNote")}</span><textarea value={selected.description} onChange={(event) => update({ description: event.target.value })} rows={3} className="ws-input w-full rounded-xl p-3 text-sm" /></label>
+        <label><span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.writerNote")}</span><textarea value={selected.description} onChange={(event) => update({ description: event.target.value })} rows={4} className="ws-input w-full rounded-xl p-4 text-sm leading-6" /></label>
         <div><span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.visibleDuringEra")}</span><div className="grid grid-cols-2 gap-2"><input type="number" value={selected.startYear ?? ""} onChange={(event) => update({ startYear: event.target.value ? Number(event.target.value) : null })} placeholder={t("map.fromYear")} className="ws-input h-10 rounded-xl px-2 text-xs" /><input type="number" value={selected.endYear ?? ""} onChange={(event) => update({ endYear: event.target.value ? Number(event.target.value) : null })} placeholder={t("map.toYear")} className="ws-input h-10 rounded-xl px-2 text-xs" /></div></div>
         <details className="rounded-xl border border-[var(--border)] p-3">
           <summary className="cursor-pointer text-xs font-bold uppercase tracking-[.12em] text-[var(--text-faint)]">{t("map.linkedEntries", { count: selected.entryIds.length })}</summary>
@@ -93,7 +95,7 @@ export function MapMarkerPanel({
           <div className="mt-3 space-y-2"><select value={connectionTarget} onChange={(event) => setConnectionTarget(event.target.value)} className="ws-input h-10 w-full rounded-xl px-2 text-xs"><option value="">{t("map.connectMarker")}</option>{mapMarkers.filter((marker) => marker.id !== selected.id).map((marker) => <option key={marker.id} value={marker.id}>{marker.title}</option>)}</select><div className="flex gap-2"><select value={connectionType} onChange={(event) => setConnectionType(event.target.value as ConnectionType)} className="ws-input h-10 min-w-0 flex-1 rounded-xl px-2 text-xs">{MAP_CONNECTION_TYPES.map((type) => <option key={type} value={type}>{t(`map.connection.${type}`)}</option>)}</select><button type="button" onClick={connectMarkers} disabled={!connectionTarget} className="ws-button-primary flex h-10 w-10 items-center justify-center rounded-xl" aria-label={t("map.connectMarker")} title={t("map.connectMarker")}><Link2 size={15} /></button></div>{selectedConnections.map((connection) => { const otherId = connection.fromMarkerId === selected.id ? connection.toMarkerId : connection.fromMarkerId; const otherName = mapMarkers.find((marker) => marker.id === otherId)?.title ?? ""; return <div key={connection.id} className="flex items-center gap-2 rounded-lg bg-[var(--surface-muted)] p-2 text-xs"><Route size={14} /><span className="flex-1 truncate">{t(`map.connection.${connection.type}`)} · {otherName}</span><button type="button" onClick={() => store.deleteConnection(connection.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-500/10" aria-label={t("canvas.removeConnection", { name: otherName })} title={t("canvas.removeConnection", { name: otherName })}><X size={13} /></button></div>; })}</div>
         </details>
         <div><span className="mb-2 block text-[10px] font-bold uppercase text-[var(--text-faint)]">{t("map.style")}</span><div className="flex items-center gap-2">{MAP_COLORS.map((color) => <button key={color} onClick={() => update({ color })} className={`h-7 w-7 rounded-full ${selected.color === color ? "ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--surface-solid)]" : ""}`} style={{ background: color }} aria-label={color} />)}<select value={selected.size} onChange={(event) => update({ size: event.target.value as "Small" | "Medium" | "Large" })} className="ws-input ml-auto h-9 rounded-xl px-2 text-xs"><option value="Small">{t("map.small")}</option><option value="Medium">{t("map.medium")}</option><option value="Large">{t("map.large")}</option></select></div></div>
-        <button onClick={() => { if (window.confirm(t("map.deleteMarkerConfirm", { title: selected.title }))) { store.deleteMarker(selected.id); clearSelection(); } }} className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500/10 text-xs font-semibold text-red-500"><Trash2 size={14} />{t("map.deleteMarker")}</button>
+        <button onClick={() => void dialog.confirm({ message: t("map.deleteMarkerConfirm", { title: selected.title }), danger: true, confirmLabel: t("common.delete") }).then((confirmed) => { if (confirmed) { store.deleteMarker(selected.id); clearSelection(); } })} className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500/10 text-xs font-semibold text-red-500"><Trash2 size={14} />{t("map.deleteMarker")}</button>
       </div>
     </aside>
   );

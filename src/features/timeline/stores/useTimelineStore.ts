@@ -2,18 +2,21 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { indexedDbStateStorage } from "../../../shared/storage/database";
 import type {
-  TimelineCategory,
   TimelineEra,
   TimelineEraInput,
   TimelineItem,
   TimelineItemInput,
+  TimelineLane,
   TimelineViewport,
+  WorldYearFormat,
 } from "../types";
-import { TIMELINE_CATEGORIES } from "../timelineModel";
+import { DEFAULT_TIMELINE_LANES, DEFAULT_WORLD_YEAR_FORMAT } from "../timelineModel";
 
 type TimelineStore = {
   items: TimelineItem[];
   eras: TimelineEra[];
+  lanes: TimelineLane[];
+  yearFormat: WorldYearFormat;
   viewport: TimelineViewport;
   createItem: (input: TimelineItemInput) => string;
   updateItem: (id: string, patch: Partial<TimelineItemInput>) => void;
@@ -22,6 +25,11 @@ type TimelineStore = {
   createEra: (input: TimelineEraInput) => string;
   updateEra: (id: string, patch: Partial<TimelineEraInput>) => void;
   deleteEra: (id: string) => void;
+  createLane: (name: string, color: string) => string;
+  updateLane: (id: string, patch: Partial<Pick<TimelineLane, "name" | "color">>) => void;
+  deleteLane: (id: string) => void;
+  moveLane: (id: string, direction: -1 | 1) => void;
+  setYearFormat: (format: WorldYearFormat) => void;
   setViewport: (viewport: TimelineViewport) => void;
 };
 
@@ -31,34 +39,13 @@ function createId() {
     : `timeline-${Date.now()}`;
 }
 
-const LEGACY_TIMELINE_CATEGORIES: Record<string, TimelineCategory> = {
-  政治与权力: "Politics & Power",
-  冲突: "Conflict",
-  文化与信仰: "Culture & Faith",
-  探索: "Exploration",
-  灾变: "Catastrophe",
-  人生: "Lives",
-  其他: "Other",
-};
-
-function normalizeTimelineCategory(value: unknown) {
-  if (value === undefined) return undefined;
-  if (
-    typeof value === "string" &&
-    TIMELINE_CATEGORIES.includes(value as TimelineCategory)
-  )
-    return value as TimelineCategory;
-
-  return typeof value === "string"
-    ? (LEGACY_TIMELINE_CATEGORIES[value] ?? "Other")
-    : "Other";
-}
-
 export const useTimelineStore = create<TimelineStore>()(
   persist(
     (set) => ({
       items: [],
       eras: [],
+      lanes: DEFAULT_TIMELINE_LANES.map((lane) => ({ ...lane })),
+      yearFormat: { ...DEFAULT_WORLD_YEAR_FORMAT },
       viewport: { centerYear: 0, yearsPerScreen: 500 },
       createItem: (input) => {
         const id = createId();
@@ -94,22 +81,37 @@ export const useTimelineStore = create<TimelineStore>()(
         set((state) => ({
           eras: state.eras.filter((era) => era.id !== id),
         })),
+      createLane: (name, color) => {
+        const id = `lane-${crypto.randomUUID?.() ?? Date.now()}`;
+        set((state) => ({ lanes: [...state.lanes, { id, name: name.trim(), color }] }));
+        return id;
+      },
+      updateLane: (id, patch) => set((state) => ({
+        lanes: state.lanes.map((lane) => lane.id === id ? { ...lane, ...patch, name: patch.name?.trim() || lane.name } : lane),
+      })),
+      deleteLane: (id) => set((state) => {
+        if (state.lanes.length <= 1) return state;
+        const fallback = state.lanes.find((lane) => lane.id !== id)!;
+        return {
+          lanes: state.lanes.filter((lane) => lane.id !== id),
+          items: state.items.map((item) => item.category === id ? { ...item, category: fallback.id } : item),
+        };
+      }),
+      moveLane: (id, direction) => set((state) => {
+        const index = state.lanes.findIndex((lane) => lane.id === id);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= state.lanes.length) return state;
+        const lanes = [...state.lanes];
+        [lanes[index], lanes[target]] = [lanes[target], lanes[index]];
+        return { lanes };
+      }),
+      setYearFormat: (yearFormat) => set({ yearFormat }),
       setViewport: (viewport) => set({ viewport }),
     }),
     {
       name: "world-studio.timeline.v1",
       storage: createJSONStorage(() => indexedDbStateStorage),
-      version: 2,
-      migrate: (persistedState) => {
-        const state = persistedState as Partial<TimelineStore>;
-        return {
-          ...state,
-          items: (state.items ?? []).map((item) => ({
-            ...item,
-            category: normalizeTimelineCategory(item.category),
-          })),
-        } as TimelineStore;
-      },
+      version: 3,
     },
   ),
 );

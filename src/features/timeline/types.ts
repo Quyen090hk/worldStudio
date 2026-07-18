@@ -1,17 +1,23 @@
-export type TimelineCategory =
-  | "Politics & Power"
-  | "Conflict"
-  | "Culture & Faith"
-  | "Exploration"
-  | "Catastrophe"
-  | "Lives"
-  | "Other";
+export type TimelineCategory = string;
+
+export type TimelineLane = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+export type WorldYearFormat = {
+  beforeSuffix: string;
+  afterSuffix: string;
+  zeroLabel: string;
+};
 
 export type TimelineCertainty = "canon" | "rumored" | "legendary";
 
 export type TimelineItem = {
   id: string;
-  entryId: string;
+  entryId: string | null;
+  title: string;
   startYear: number;
   endYear: number | null;
   description: string;

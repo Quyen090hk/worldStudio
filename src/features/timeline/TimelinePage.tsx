@@ -20,10 +20,9 @@ import { useEntryStore } from "../entries/stores/useEntryStore";
 import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
 import {
   formatWorldYear,
+  isDefaultTimelineLane,
   niceYearStep,
   resolveTimelineItems,
-  TIMELINE_CATEGORIES,
-  TIMELINE_CATEGORY_COLORS,
   type ResolvedTimelineItem,
 } from "./timelineModel";
 import { useTimelineStore } from "./stores/useTimelineStore";
@@ -35,6 +34,10 @@ import { TimelineControls } from "./components/TimelineControls";
 import { TimelineComposer } from "./components/TimelineComposer";
 import { EraComposer } from "./components/EraComposer";
 import { TimelineDetails } from "./components/TimelineDetails";
+import {
+  removeTimelineEraWithUndo,
+  removeTimelineItemWithUndo,
+} from "../../shared/undo/workspaceUndoActions";
 
 const LANE_LABEL_WIDTH = 118;
 
@@ -64,11 +67,16 @@ export function TimelinePage() {
   const relationships = useRelationshipStore((state) => state.relationships);
   const storedItems = useTimelineStore((state) => state.items);
   const eras = useTimelineStore((state) => state.eras);
+  const lanes = useTimelineStore((state) => state.lanes);
+  const yearFormat = useTimelineStore((state) => state.yearFormat);
   const savedViewport = useTimelineStore((state) => state.viewport);
   const createItem = useTimelineStore((state) => state.createItem);
-  const deleteItem = useTimelineStore((state) => state.deleteItem);
   const createEra = useTimelineStore((state) => state.createEra);
-  const deleteEra = useTimelineStore((state) => state.deleteEra);
+  const createLane = useTimelineStore((state) => state.createLane);
+  const updateLane = useTimelineStore((state) => state.updateLane);
+  const deleteLane = useTimelineStore((state) => state.deleteLane);
+  const moveLane = useTimelineStore((state) => state.moveLane);
+  const setYearFormat = useTimelineStore((state) => state.setYearFormat);
   const persistViewport = useTimelineStore((state) => state.setViewport);
   const requestedItem = storedItems.find(
     (item) => item.entryId === searchParams.get("entry"),
@@ -86,7 +94,7 @@ export function TimelinePage() {
   );
   const [query, setQuery] = useState("");
   const [visibleCategories, setVisibleCategories] =
-    useState<TimelineCategory[]>(TIMELINE_CATEGORIES);
+    useState<TimelineCategory[]>(() => lanes.map((lane) => lane.id));
   const [showRelationships, setShowRelationships] = useState(true);
   const [showUncertain, setShowUncertain] = useState(true);
   const [minimumImportance, setMinimumImportance] = useState(1);
@@ -103,8 +111,8 @@ export function TimelinePage() {
   const panRef = useRef<{ x: number; centerYear: number } | null>(null);
 
   const allItems = useMemo(
-    () => resolveTimelineItems(storedItems, entries, relationships),
-    [storedItems, entries, relationships],
+    () => resolveTimelineItems(storedItems, entries, relationships, lanes),
+    [storedItems, entries, relationships, lanes],
   );
   const normalizedQuery = query.trim().toLowerCase();
   const filteredItems = useMemo(
@@ -152,11 +160,9 @@ export function TimelinePage() {
     return result;
   }, [step, windowStart, windowEnd]);
 
-  const lanes = useMemo(() => {
+  const timelineRows = useMemo(() => {
     const names: Array<TimelineCategory | "Relationships"> = [
-      ...TIMELINE_CATEGORIES.filter((category) =>
-        visibleCategories.includes(category),
-      ),
+      ...lanes.map((lane) => lane.id).filter((category) => visibleCategories.includes(category)),
       ...(showRelationships ? (["Relationships"] as const) : []),
     ];
     return names.map((name) => {
@@ -183,6 +189,7 @@ export function TimelinePage() {
   }, [
     contentWidth,
     filteredItems,
+    lanes,
     showRelationships,
     viewport.yearsPerScreen,
     visibleCategories,
@@ -296,25 +303,20 @@ export function TimelinePage() {
   }
 
   return (
-    <MotionPage className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="ws-page-title">
-            {t("nav.timeline")}
-          </h2>
-        </div>
-        <div className="flex items-center gap-2 pb-1 text-xs text-[var(--text-muted)]">
+    <MotionPage className="space-y-3">
+      <div className="ws-workbench">
+        <div className="flex flex-wrap items-center gap-2 ws-workbench-meta">
           <span>
             {filteredItems.length} {t("timeline.records")} · {eras.length} {t("timeline.eras")}
           </span>
           <span>·</span>
           <span>
-            {formatWorldYear(windowStart, locale)}–{formatWorldYear(windowEnd, locale)}
+            {formatWorldYear(windowStart, locale, yearFormat)}–{formatWorldYear(windowEnd, locale, yearFormat)}
           </span>
         </div>
-      </header>
+      </div>
 
-      <section className="relative h-[calc(100vh-10.5rem)] min-h-[620px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]">
+      <section className="relative h-[72dvh] min-h-[30rem] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
         <div className="absolute left-3 right-3 top-3 z-30 flex items-center gap-2">
           <button
             type="button"
@@ -361,7 +363,20 @@ export function TimelinePage() {
         {controlsOpen ? (
           <TimelineControls
             visibleCategories={visibleCategories}
+            lanes={lanes}
             toggleCategory={toggleCategory}
+            createLane={(name, color) => {
+              const id = createLane(name, color);
+              setVisibleCategories((current) => [...current, id]);
+            }}
+            updateLane={updateLane}
+            deleteLane={(id) => {
+              deleteLane(id);
+              setVisibleCategories((current) => current.filter((candidate) => candidate !== id));
+            }}
+            moveLane={moveLane}
+            yearFormat={yearFormat}
+            setYearFormat={setYearFormat}
             showRelationships={showRelationships}
             setShowRelationships={setShowRelationships}
             showUncertain={showUncertain}
@@ -369,7 +384,10 @@ export function TimelinePage() {
             minimumImportance={minimumImportance}
             setMinimumImportance={setMinimumImportance}
             eras={eras}
-            deleteEra={deleteEra}
+            deleteEra={(id) => {
+              const era = eras.find((item) => item.id === id);
+              if (era) removeTimelineEraWithUndo(id, era.name);
+            }}
           />
         ) : null}
 
@@ -397,7 +415,7 @@ export function TimelinePage() {
                   style={{ left: yearToX(tick) }}
                 >
                   <span className="absolute left-2 top-3 whitespace-nowrap text-[10px] text-[var(--text-faint)]">
-                    {formatWorldYear(tick, locale)}
+                    {formatWorldYear(tick, locale, yearFormat)}
                   </span>
                 </div>
               ))}
@@ -426,7 +444,7 @@ export function TimelinePage() {
                         background: `color-mix(in srgb, ${era.color} 25%, transparent)`,
                         borderLeft: `2px solid ${era.color}`,
                       }}
-                      title={`${era.name}: ${formatWorldYear(era.startYear, locale)}–${formatWorldYear(era.endYear, locale)}`}
+                      title={`${era.name}: ${formatWorldYear(era.startYear, locale, yearFormat)}–${formatWorldYear(era.endYear, locale, yearFormat)}`}
                     >
                       <span className="truncate">{era.name}</span>
                     </div>
@@ -434,7 +452,7 @@ export function TimelinePage() {
                 })}
             </div>
 
-            {lanes.map((lane) => (
+            {timelineRows.map((lane) => (
               <div
                 key={lane.name}
                 className="relative border-b border-[var(--border)]"
@@ -447,10 +465,10 @@ export function TimelinePage() {
                       background:
                         lane.name === "Relationships"
                           ? "#777780"
-                          : TIMELINE_CATEGORY_COLORS[lane.name],
+                          : lanes.find((candidate) => candidate.id === lane.name)?.color ?? "#777780",
                     }}
                   />
-                  {lane.name}
+                  {lane.name === "Relationships" ? t("timeline.relationships") : (() => { const definition = lanes.find((candidate) => candidate.id === lane.name); return definition && definition.id === definition.name && ["Politics & Power", "Conflict", "Culture & Faith", "Exploration", "Catastrophe", "Lives", "Other"].includes(definition.id) ? t(`timeline.category.${definition.id}`) : definition?.name ?? lane.name; })()}
                 </div>
                 {ticks.map((tick) => (
                   <div
@@ -488,7 +506,7 @@ export function TimelinePage() {
                         opacity: item.certainty === "legendary" ? 0.72 : 1,
                         color: "var(--text)",
                       }}
-                      title={`${item.title} · ${formatWorldYear(item.startYear, locale)}`}
+                      title={`${item.title} · ${formatWorldYear(item.startYear, locale, yearFormat)}`}
                     >
                       <span className="truncate">{item.title}</span>
                     </button>
@@ -532,6 +550,7 @@ export function TimelinePage() {
         {composerOpen ? (
           <TimelineComposer
             entries={entries}
+            lanes={lanes}
             createItem={createItem}
             close={() => setComposerOpen(false)}
             created={(id, year) => {
@@ -551,8 +570,13 @@ export function TimelinePage() {
         {selected && !composerOpen && !eraComposerOpen ? (
           <TimelineDetails
             item={selected}
+            yearFormat={yearFormat}
+            laneName={(() => {
+              const lane = lanes.find((candidate) => candidate.id === selected.lane);
+              return lane && isDefaultTimelineLane(lane) ? t(`timeline.category.${lane.id}`) : lane?.name ?? selected.lane;
+            })()}
             relationships={relationships}
-            deleteItem={deleteItem}
+            deleteItem={(id) => removeTimelineItemWithUndo(id, selected.title)}
             close={() => setSelectedId(null)}
             openEntry={() =>
               selected.entryId && navigate(`/entries/${selected.entryId}`)

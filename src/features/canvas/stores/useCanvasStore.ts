@@ -19,6 +19,8 @@ type CanvasStore = {
   viewport: CanvasViewport;
   addNoteCard: (x: number, y: number) => string;
   addEntryCard: (entryId: string, x: number, y: number) => string;
+  duplicateCard: (cardId: string) => string | null;
+  arrangeCards: (cardIds: string[], mode: "left" | "top" | "horizontal" | "vertical") => void;
   updateNoteCard: (
     cardId: string,
     patch: { title: string; body: string; color: CanvasCardColor },
@@ -26,7 +28,8 @@ type CanvasStore = {
   moveCard: (cardId: string, x: number, y: number) => void;
   deleteCard: (cardId: string) => void;
   removeEntryCards: (entryId: string) => void;
-  addConnection: (fromCardId: string, toCardId: string) => string | null;
+  addConnection: (fromCardId: string, toCardId: string, label?: string) => string | null;
+  updateConnectionLabel: (connectionId: string, label: string) => void;
   deleteConnection: (connectionId: string) => void;
   setZoom: (zoom: number) => void;
   clearCanvas: () => void;
@@ -83,6 +86,35 @@ export const useCanvasStore = create<CanvasStore>()(
         }));
         return id;
       },
+      duplicateCard: (cardId) => {
+        const source = get().cards.find((card) => card.id === cardId);
+        if (!source) return null;
+        const id = createId(source.kind === "note" ? "canvas-note" : "canvas-entry");
+        const now = new Date().toISOString();
+        const position = clampCanvasPosition(source.x + 32, source.y + 32);
+        const copy = source.kind === "note"
+          ? { ...source, ...position, id, title: source.title, createdAt: now, updatedAt: now }
+          : { ...source, ...position, id, createdAt: now, updatedAt: now };
+        set((state) => ({ cards: [...state.cards, copy] }));
+        return id;
+      },
+      arrangeCards: (cardIds, mode) => set((state) => {
+        const selected = state.cards.filter((card) => cardIds.includes(card.id));
+        if (selected.length < 2) return state;
+        const positions = new Map<string, { x: number; y: number }>();
+        if (mode === "left" || mode === "top") {
+          const value = Math.min(...selected.map((card) => mode === "left" ? card.x : card.y));
+          selected.forEach((card) => positions.set(card.id, mode === "left" ? { x: value, y: card.y } : { x: card.x, y: value }));
+        } else {
+          const axis = mode === "horizontal" ? "x" : "y";
+          const sorted = [...selected].sort((a, b) => a[axis] - b[axis]);
+          const start = sorted[0][axis];
+          const end = sorted[sorted.length - 1][axis];
+          const step = (end - start) / Math.max(1, sorted.length - 1);
+          sorted.forEach((card, index) => positions.set(card.id, axis === "x" ? { x: start + step * index, y: card.y } : { x: card.x, y: start + step * index }));
+        }
+        return { cards: state.cards.map((card) => positions.has(card.id) ? { ...card, ...positions.get(card.id)!, updatedAt: new Date().toISOString() } : card) };
+      }),
       updateNoteCard: (cardId, patch) =>
         set((state) => ({
           cards: state.cards.map((card) =>
@@ -130,7 +162,7 @@ export const useCanvasStore = create<CanvasStore>()(
             ),
           };
         }),
-      addConnection: (fromCardId, toCardId) => {
+      addConnection: (fromCardId, toCardId, label = "") => {
         if (fromCardId === toCardId) return null;
         const state = get();
         const cardIds = new Set(state.cards.map((card) => card.id));
@@ -152,12 +184,18 @@ export const useCanvasStore = create<CanvasStore>()(
               id,
               fromCardId,
               toCardId,
+              label: label.trim(),
               createdAt: new Date().toISOString(),
             },
           ],
         }));
         return id;
       },
+      updateConnectionLabel: (connectionId, label) => set((state) => ({
+        connections: state.connections.map((connection) => connection.id === connectionId
+          ? { ...connection, label: label.slice(0, 48) }
+          : connection),
+      })),
       deleteConnection: (connectionId) =>
         set((state) => ({
           connections: state.connections.filter(

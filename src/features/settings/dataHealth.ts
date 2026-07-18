@@ -39,7 +39,7 @@ export function scanWorkspaceHealth(data: DataHealthSnapshot): DataHealthReport 
     relationships: data.relationships.filter(
       (item) => !entryIds.has(item.sourceEntryId) || !entryIds.has(item.targetEntryId),
     ).length,
-    timeline: data.timelineItems.filter((item) => !entryIds.has(item.entryId)).length,
+    timeline: data.timelineItems.filter((item) => item.entryId !== null && !entryIds.has(item.entryId)).length,
     mapMarkers: data.markers.filter(
       (marker) => !mapIds.has(marker.mapId) || !layerIds.has(marker.layerId),
     ).length,

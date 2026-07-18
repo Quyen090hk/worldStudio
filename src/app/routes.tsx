@@ -4,12 +4,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "../shared/components/AppLayout";
 import { NotFoundPage } from "../shared/components/NotFoundPage";
 import { useI18n } from "../shared/i18n";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 
-const DashboardPage = lazy(() =>
-  import("../features/dashboard/DashboardPage").then((module) => ({
-    default: module.DashboardPage,
-  })),
-);
 const EntriesPage = lazy(() =>
   import("../features/entries/EntriesPage").then((module) => ({
     default: module.EntriesPage,
@@ -43,6 +39,11 @@ const CanvasPage = lazy(() =>
 const GraphPage = lazy(() =>
   import("../features/graph/GraphPage").then((module) => ({
     default: module.GraphPage,
+  })),
+);
+const InspirationPage = lazy(() =>
+  import("../features/inspiration/InspirationPage").then((module) => ({
+    default: module.InspirationPage,
   })),
 );
 
@@ -140,6 +141,14 @@ export function AppRoutes() {
           element={
             <RouteSuspense message={t("common.preparingPage")}>
               <AssetsPage />
+            </RouteSuspense>
+          }
+        />
+        <Route
+          path="inspiration"
+          element={
+            <RouteSuspense message={t("common.preparingPage")}>
+              <InspirationPage />
             </RouteSuspense>
           }
         />

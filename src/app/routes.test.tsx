@@ -1,24 +1,28 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { AppRoutes } from "./routes";
 import { I18nProvider } from "../shared/i18n";
 import { ThemeProvider } from "../shared/theme/ThemeProvider";
-import { AppRoutes } from "./routes";
+import { SoftDialogProvider } from "../shared/components/SoftDialogProvider";
+import { useWorldRegistryStore } from "../features/world/stores/useWorldRegistryStore";
+import { NotFoundPage } from "../shared/components/NotFoundPage";
+
+function render(path: string) {
+  return renderToString(
+    <ThemeProvider><I18nProvider><SoftDialogProvider><MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter></SoftDialogProvider></I18nProvider></ThemeProvider>,
+  );
+}
 
 describe("AppRoutes", () => {
-  it("renders the application layout and not-found page for unknown paths", () => {
-    const html = renderToStaticMarkup(
-      <ThemeProvider>
-        <I18nProvider>
-          <MemoryRouter initialEntries={["/abc"]}>
-            <AppRoutes />
-          </MemoryRouter>
-        </I18nProvider>
-      </ThemeProvider>,
-    );
+  it("shows world setup instead of inventing a default world", () => {
+    useWorldRegistryStore.setState({ worlds: [], activeWorldId: "" });
+    expect(render("/dashboard")).toContain("Create your first world");
+  });
 
-    expect(html).toContain('id="main-content"');
+  it("renders a recoverable not-found destination", () => {
+    const html = renderToString(<I18nProvider><MemoryRouter><NotFoundPage /></MemoryRouter></I18nProvider>);
     expect(html).toContain("Page not found");
     expect(html).toContain('href="/dashboard"');
   });

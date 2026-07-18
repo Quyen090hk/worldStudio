@@ -5,12 +5,12 @@ import {
   Database,
   Download,
   FileJson,
-  Globe2,
   ShieldCheck,
   Upload,
 } from "lucide-react";
 
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
 import { useAssetStore } from "../assets/stores/useAssetStore";
 import { useCanvasStore } from "../canvas/stores/useCanvasStore";
@@ -131,6 +131,7 @@ function backupErrorMessage(error: unknown, t: (key: string) => string) {
 
 export function SettingsPage() {
   const { t } = useI18n();
+  const dialog = useSoftDialog();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<BusyAction>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -190,13 +191,14 @@ export function SettingsPage() {
     setNotice(null);
     try {
       const backup = parseWorkspaceBackup(await file.text());
-      const confirmed = window.confirm(
-        t("settings.importConfirm", {
+      const confirmed = await dialog.confirm({
+        message: t("settings.importConfirm", {
           world: backup.data.world.name,
           entries: backup.data.entries.length,
           maps: backup.data.atlas.maps.length,
         }),
-      );
+        danger: true,
+      });
       if (!confirmed) return;
 
       await restoreWorkspaceBackup(backup);
@@ -212,30 +214,13 @@ export function SettingsPage() {
   }
 
   return (
-    <MotionPage className="space-y-6">
-      <header>
-        <p className="ws-eyebrow">{t("settings.eyebrow")}</p>
-        <h2 className="ws-page-title mt-2">
-          {t("nav.settings")}
-        </h2>
-        <p className="ws-page-status max-w-2xl">
-          {t("settings.description")}
-        </p>
-      </header>
-
-      <section className="ws-compact-surface p-5 md:p-6">
-        <div className="flex items-start gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
-            <Globe2 size={21} strokeWidth={1.7} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="ws-eyebrow">{t("settings.worldIdentity")}</p>
-            <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
+    <MotionPage className="space-y-5">
+      <section className="ws-compact-surface ws-panel-padding">
+        <div>
+          <div className="min-w-0">
+            <h3 className="ws-display text-2xl font-semibold text-[var(--text)]">
               {t("settings.worldProfile")}
             </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              {t("settings.worldProfileHelp")}
-            </p>
           </div>
         </div>
 
@@ -255,8 +240,7 @@ export function SettingsPage() {
       <WorldManagementPanel />
 
       <div>
-        <p className="ws-eyebrow">{t("settings.overviewEyebrow")}</p>
-        <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">{t("settings.overviewTitle")}</h3>
+        <h3 className="ws-display text-2xl font-semibold text-[var(--text)]">{t("settings.overviewTitle")}</h3>
       </div>
 
       <section className="grid border-y border-[var(--border)] md:grid-cols-3 xl:grid-cols-6">
@@ -268,7 +252,7 @@ export function SettingsPage() {
           [t("settings.assets"), assetCount],
           [t("settings.canvasCards"), canvasCardCount],
         ].map(([label, value], index) => (
-          <div key={label} className={`px-3 py-4 ${index ? "border-t border-[var(--border)] md:border-l md:border-t-0" : ""} ${index === 3 ? "md:border-l-0 xl:border-l" : ""}`}>
+          <div key={label} className={`px-4 py-4 ${index ? "border-t border-[var(--border)] md:border-l md:border-t-0" : ""} ${index === 3 ? "md:border-l-0 xl:border-l" : ""}`}>
             <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
               {label}
             </p>
@@ -280,7 +264,7 @@ export function SettingsPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
-        <div className="ws-compact-surface p-5 md:p-6">
+        <div className="ws-compact-surface ws-panel-padding">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
               <Database size={21} strokeWidth={1.7} />
@@ -348,7 +332,7 @@ export function SettingsPage() {
           ) : null}
         </div>
 
-        <aside className="ws-compact-surface p-5">
+        <aside className="ws-compact-surface ws-panel-padding">
           <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[var(--surface-muted)] text-[var(--text-muted)]">
             <ShieldCheck size={20} strokeWidth={1.7} />
           </div>

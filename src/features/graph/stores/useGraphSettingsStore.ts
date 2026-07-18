@@ -14,6 +14,7 @@ export type GraphSettings = {
   centerGravity: number;
   animationDuration: number;
   groups: GraphGroup[];
+  nodePositions?: Record<string, { x: number; y: number }>;
 };
 
 const defaults: GraphSettings = {
@@ -26,6 +27,7 @@ const defaults: GraphSettings = {
   centerGravity: 0.18,
   animationDuration: 500,
   groups: [],
+  nodePositions: {},
 };
 
 export type GraphSettingsStore = GraphSettings & {
@@ -86,6 +88,7 @@ export const useGraphSettingsStore = create<GraphSettingsStore>()(
         centerGravity: state.centerGravity,
         animationDuration: state.animationDuration,
         groups: state.groups,
+        nodePositions: state.nodePositions,
       }),
     },
   ),

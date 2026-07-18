@@ -13,7 +13,7 @@ export function repairWorkspaceData() {
     ),
   }));
   useTimelineStore.setState((state) => ({
-    items: state.items.filter((item) => entryIds.has(item.entryId)),
+    items: state.items.filter((item) => item.entryId === null || entryIds.has(item.entryId)),
   }));
 
   useMapStore.setState((state) => {

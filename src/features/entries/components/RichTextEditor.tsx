@@ -625,7 +625,7 @@ export function RichTextEditor({
       </BubbleMenu>
 
       {editable ? (
-        <div className="rich-text-editor-toolbar sticky top-2 z-10 mx-auto mb-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-[1.35rem] border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-raised)_88%,transparent)] p-1.5 shadow-md backdrop-blur-xl">
+        <div className="rich-text-editor-toolbar sticky top-3 z-10 mx-auto mb-6 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-[1.35rem] border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-raised)_88%,transparent)] p-1.5 shadow-md backdrop-blur-xl">
           <label className="relative flex h-9 items-center gap-2 rounded-xl border border-transparent px-2 text-[var(--text-muted)] transition hover:border-[var(--border)] hover:bg-[var(--surface-muted)]">
             <Pilcrow size={16} strokeWidth={1.75} aria-hidden="true" />
             <span className="sr-only">{t("editor.blockStyle")}</span>
@@ -682,14 +682,6 @@ export function RichTextEditor({
             <Italic size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
-          <ToolbarButton title={t("editor.underline")} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
-            <UnderlineIcon size={17} strokeWidth={1.75} />
-          </ToolbarButton>
-
-          <ToolbarButton title={t("editor.highlight")} active={editor.isActive("textHighlight")} onClick={() => editor.chain().focus().toggleTextHighlight().run()}>
-            <Highlighter size={17} strokeWidth={1.75} />
-          </ToolbarButton>
-
           <ToolbarButton
             title={t("editor.bulletList")}
             active={editor.isActive("bulletList")}
@@ -712,21 +704,6 @@ export function RichTextEditor({
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
           >
             <Quote size={17} strokeWidth={1.75} />
-          </ToolbarButton>
-
-          <ToolbarButton
-            title={t("editor.codeBlock")}
-            active={editor.isActive("codeBlock")}
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          >
-            <Code size={17} strokeWidth={1.75} />
-          </ToolbarButton>
-
-          <ToolbarButton
-            title={t("editor.horizontalRule")}
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          >
-            <SeparatorHorizontal size={17} strokeWidth={1.75} />
           </ToolbarButton>
 
           <div className="mx-1 h-6 w-px bg-[var(--border)]" />
@@ -790,11 +767,11 @@ export function RichTextEditor({
         </section>
       ) : null}
 
-      <div className="mx-auto grid w-full max-w-6xl gap-8 xl:grid-cols-[minmax(0,1fr)_13rem]">
+      <div className="rich-text-editor-layout mx-auto grid w-full max-w-6xl gap-6">
         <EditorContent
           editor={editor}
           className={[
-            "min-h-[72vh] w-full rounded-[1.5rem] border border-transparent bg-[color-mix(in_srgb,var(--surface-solid)_72%,transparent)] px-6 pb-[38vh] pt-8 sm:px-10 sm:pt-12 lg:px-14",
+            "min-h-[72vh] w-full rounded-[1.5rem] border border-transparent bg-[color-mix(in_srgb,var(--surface-solid)_72%,transparent)] px-5 pb-[28vh] pt-8 sm:px-8 sm:pt-10 lg:px-10",
             editable
               ? "focus-within:bg-[color-mix(in_srgb,var(--surface-solid)_88%,transparent)]"
               : "",

@@ -1,7 +1,6 @@
 import {
-  BookOpen,
-  GitBranch,
   GripHorizontal,
+  Copy,
   Link2,
   MousePointer2,
   Scan,
@@ -12,13 +11,15 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type { Entry } from "../entries/types";
+import { AssetThumbnail } from "../assets/components/AssetThumbnail";
 import {
   CANVAS_CARD_CENTER_Y,
   CANVAS_CARD_WIDTH,
@@ -31,6 +32,10 @@ import {
 } from "./canvasModel";
 import { useCanvasStore } from "./stores/useCanvasStore";
 import type { CanvasCard, CanvasCardColor } from "./types";
+import {
+  removeCanvasCardsWithUndo,
+  removeCanvasConnectionWithUndo,
+} from "../../shared/undo/workspaceUndoActions";
 
 const CARD_COLORS: Record<CanvasCardColor, string> = {
   parchment: "#c8a96b",
@@ -45,18 +50,21 @@ function CanvasCardView({
   zoom,
   selected,
   onSelect,
+  onPositionPreview,
+  onDelete,
 }: {
   card: CanvasCard;
   entry?: Entry;
   zoom: number;
   selected: boolean;
-  onSelect: () => void;
+  onSelect: (additive?: boolean) => void;
+  onPositionPreview: (position: { x: number; y: number } | null) => void;
+  onDelete: () => void;
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const updateNoteCard = useCanvasStore((state) => state.updateNoteCard);
   const moveCard = useCanvasStore((state) => state.moveCard);
-  const deleteCard = useCanvasStore((state) => state.deleteCard);
   const dragStartRef = useRef<{
     clientX: number;
     clientY: number;
@@ -84,12 +92,16 @@ function CanvasCardView({
   function continueDrag(event: PointerEvent<HTMLButtonElement>) {
     const start = dragStartRef.current;
     if (!start) return;
-    setDragPosition(
-      clampCanvasPosition(
-        start.x + (event.clientX - start.clientX) / zoom,
-        start.y + (event.clientY - start.clientY) / zoom,
-      ),
+    const unclamped = clampCanvasPosition(
+      start.x + (event.clientX - start.clientX) / zoom,
+      start.y + (event.clientY - start.clientY) / zoom,
     );
+    const nextPosition = {
+      x: Math.round(unclamped.x / 12) * 12,
+      y: Math.round(unclamped.y / 12) * 12,
+    };
+    setDragPosition(nextPosition);
+    onPositionPreview(nextPosition);
   }
 
   function finishDrag(event: PointerEvent<HTMLButtonElement>) {
@@ -98,55 +110,54 @@ function CanvasCardView({
     moveCard(card.id, dragPosition.x, dragPosition.y);
     dragStartRef.current = null;
     setDragPosition(null);
+    onPositionPreview(null);
   }
 
-  function removeCard() {
-    if (window.confirm(t("canvas.deleteCardConfirm"))) deleteCard(card.id);
+  function cancelDrag() {
+    dragStartRef.current = null;
+    setDragPosition(null);
+    onPositionPreview(null);
   }
 
   return (
     <article
-      onMouseDown={onSelect}
+      onMouseDown={(event) => onSelect(event.ctrlKey || event.metaKey)}
       style={{
         left: position.x,
         top: position.y,
         width: CANVAS_CARD_WIDTH,
         borderTopColor: CARD_COLORS[card.color],
       }}
-      className={`absolute overflow-hidden rounded-[1.25rem] border border-t-[3px] bg-[var(--surface-solid)] shadow-[0_18px_50px_rgba(0,0,0,.16)] transition-shadow ${
+      className={`group absolute overflow-hidden rounded-[1.25rem] border border-t-[3px] bg-[var(--surface-solid)] shadow-[0_12px_36px_rgba(0,0,0,.13)] transition-shadow ${
         selected
           ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]"
           : "hover:shadow-[0_22px_60px_rgba(0,0,0,.22)]"
       }`}
     >
-      <div className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2">
+      <div className={`absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_92%,transparent)] p-1 shadow-md backdrop-blur transition-opacity ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}>
         <button
           type="button"
           onPointerDown={startDrag}
           onPointerMove={continueDrag}
           onPointerUp={finishDrag}
-          onPointerCancel={() => {
-            dragStartRef.current = null;
-            setDragPosition(null);
-          }}
-          className="flex h-8 flex-1 touch-none items-center gap-2 rounded-lg px-2 text-left text-[0.68rem] font-semibold uppercase tracking-[.12em] text-[var(--text-faint)] hover:bg-[var(--surface-muted)]"
+          onPointerCancel={cancelDrag}
+          className="flex h-7 w-7 touch-none items-center justify-center rounded-full text-[var(--text-faint)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
           aria-label={t("canvas.dragCard")}
         >
-          <GripHorizontal size={15} />
-          {card.kind === "note" ? t("canvas.note") : t("canvas.entryCard")}
+          <GripHorizontal size={14} />
         </button>
         <button
           type="button"
-          onClick={removeCard}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-500/10"
+          onClick={onDelete}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-faint)] hover:bg-red-500/10 hover:text-red-500"
           aria-label={t("canvas.deleteCard")}
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} />
         </button>
       </div>
 
       {card.kind === "note" ? (
-        <div className="space-y-2 p-4">
+        <div className="space-y-2 p-4 pt-5">
           <input
             value={card.title}
             onChange={(event) =>
@@ -157,7 +168,7 @@ function CanvasCardView({
               })
             }
             placeholder={t("canvas.noteTitle")}
-            className="w-full border-0 bg-transparent text-base font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+            className="w-full border-0 bg-transparent text-lg font-semibold leading-snug text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
           />
           <textarea
             value={card.body}
@@ -170,9 +181,9 @@ function CanvasCardView({
             }
             placeholder={t("canvas.noteBody")}
             rows={4}
-            className="w-full resize-none border-0 bg-transparent text-sm leading-6 text-[var(--text-muted)] outline-none placeholder:text-[var(--text-faint)]"
+            className="w-full resize-none border-0 bg-transparent text-[0.95rem] leading-6 text-[var(--text-muted)] outline-none placeholder:text-[var(--text-faint)]"
           />
-          <div className="flex gap-2 pt-1" aria-label={t("canvas.cardColor")}>
+          <div className={`gap-2 pt-1 ${selected ? "flex" : "hidden group-focus-within:flex"}`} aria-label={t("canvas.cardColor")}>
             {(Object.keys(CARD_COLORS) as CanvasCardColor[]).map((color) => (
               <button
                 key={color}
@@ -197,26 +208,15 @@ function CanvasCardView({
           </div>
         </div>
       ) : (
-        <div className="p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[.9rem] bg-[var(--accent-soft)] text-[var(--accent)]">
-            <BookOpen size={18} />
-          </div>
-          <h3 className="ws-display mt-4 text-2xl font-semibold text-[var(--text)]">
-            {entry?.title ?? t("entry.notFound")}
-          </h3>
-          <p className="mt-2 line-clamp-3 text-xs leading-5 text-[var(--text-muted)]">
-            {entry?.summary || t("common.noSummary")}
-          </p>
-          {entry ? (
-            <button
-              type="button"
-              onClick={() => navigate(`/entries/${entry.id}`)}
-              className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[var(--accent)] hover:underline"
-            >
-              {t("canvas.openEntry")}
-            </button>
+        <button type="button" disabled={!entry} onClick={() => entry && navigate(`/entries/${entry.id}`)} className="block w-full text-left">
+          {entry?.media?.bannerAssetId || entry?.media?.primaryAssetId ? (
+            <AssetThumbnail assetId={(entry.media.bannerAssetId ?? entry.media.primaryAssetId)!} alt={entry.title} className="aspect-[16/9] w-full border-b border-[var(--border)]" />
           ) : null}
-        </div>
+          <span className="block p-4 pt-5">
+            <strong className="ws-display block line-clamp-2 text-[1.4rem] font-semibold leading-[1.15] text-[var(--text)]">{entry?.title ?? t("entry.notFound")}</strong>
+            {entry?.summary ? <small className="mt-2.5 block line-clamp-3 text-sm leading-6 text-[var(--text-muted)]">{entry.summary}</small> : null}
+          </span>
+        </button>
       )}
     </article>
   );
@@ -224,6 +224,7 @@ function CanvasCardView({
 
 export function CanvasPage() {
   const { t } = useI18n();
+  const dialog = useSoftDialog();
   const [searchParams] = useSearchParams();
   const viewportRef = useRef<HTMLDivElement>(null);
   const cards = useCanvasStore((state) => state.cards);
@@ -232,7 +233,10 @@ export function CanvasPage() {
   const addNoteCard = useCanvasStore((state) => state.addNoteCard);
   const addEntryCard = useCanvasStore((state) => state.addEntryCard);
   const addConnection = useCanvasStore((state) => state.addConnection);
-  const deleteConnection = useCanvasStore((state) => state.deleteConnection);
+  const duplicateCard = useCanvasStore((state) => state.duplicateCard);
+  const arrangeCards = useCanvasStore((state) => state.arrangeCards);
+  const moveCard = useCanvasStore((state) => state.moveCard);
+  const updateConnectionLabel = useCanvasStore((state) => state.updateConnectionLabel);
   const setZoom = useCanvasStore((state) => state.setZoom);
   const clearCanvas = useCanvasStore((state) => state.clearCanvas);
   const entries = useEntryStore((state) => state.entries);
@@ -243,8 +247,13 @@ export function CanvasPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(
     requestedCard?.id ?? null,
   );
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
+    () => new Set(requestedCard ? [requestedCard.id] : []),
+  );
   const [entryToAdd, setEntryToAdd] = useState("");
   const [connectionTarget, setConnectionTarget] = useState("");
+  const [connectionLabel, setConnectionLabel] = useState("");
+  const [previewPositions, setPreviewPositions] = useState<Record<string, { x: number; y: number }>>({});
 
   const entriesById = useMemo(
     () => new Map(entries.map((entry) => [entry.id, entry])),
@@ -265,6 +274,41 @@ export function CanvasPage() {
       )
     : [];
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!selectedCard || target?.matches("input, textarea, select, [contenteditable=true]")) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "d") {
+        event.preventDefault();
+        const ids = [...selectedCardIds].map((cardId) => duplicateCard(cardId)).filter((id): id is string => Boolean(id));
+        if (ids.length) { setSelectedCardId(ids.at(-1)!); setSelectedCardIds(new Set(ids)); }
+        return;
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        removeCanvasCardsWithUndo(selectedCardIds, t("canvas.cardsCount", { count: selectedCardIds.size }));
+        setSelectedCardId(null);
+        setSelectedCardIds(new Set());
+        return;
+      }
+      const delta = event.shiftKey ? 24 : 6;
+      const movement: Record<string, [number, number]> = {
+        ArrowLeft: [-delta, 0], ArrowRight: [delta, 0], ArrowUp: [0, -delta], ArrowDown: [0, delta],
+      };
+      const offset = movement[event.key];
+      if (!offset) return;
+      event.preventDefault();
+      selectedCardIds.forEach((id) => {
+        const card = cardsById.get(id);
+        if (!card) return;
+        const next = clampCanvasPosition(card.x + offset[0], card.y + offset[1]);
+        moveCard(id, next.x, next.y);
+      });
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cardsById, duplicateCard, moveCard, selectedCard, selectedCardIds, t]);
+
   function nextCardPosition() {
     const viewport = viewportRef.current;
     if (!viewport) return { x: 80, y: 80 };
@@ -281,6 +325,7 @@ export function CanvasPage() {
     const position = nextCardPosition();
     const id = addNoteCard(position.x, position.y);
     setSelectedCardId(id);
+    setSelectedCardIds(new Set([id]));
     setConnectionTarget("");
   }
 
@@ -289,6 +334,7 @@ export function CanvasPage() {
     const position = nextCardPosition();
     const id = addEntryCard(entryToAdd, position.x, position.y);
     setSelectedCardId(id);
+    setSelectedCardIds(new Set([id]));
     setEntryToAdd("");
     setConnectionTarget("");
   }
@@ -301,14 +347,16 @@ export function CanvasPage() {
 
   function connectSelected() {
     if (!selectedCard || !connectionTarget) return;
-    addConnection(selectedCard.id, connectionTarget);
+    addConnection(selectedCard.id, connectionTarget, connectionLabel);
     setConnectionTarget("");
+    setConnectionLabel("");
   }
 
-  function resetCanvas() {
-    if (!cards.length || window.confirm(t("canvas.clearConfirm"))) {
+  async function resetCanvas() {
+    if (!cards.length || await dialog.confirm({ message: t("canvas.clearConfirm"), danger: true, confirmLabel: t("canvas.clear") })) {
       clearCanvas();
       setSelectedCardId(null);
+      setSelectedCardIds(new Set());
       setConnectionTarget("");
     }
   }
@@ -356,13 +404,10 @@ export function CanvasPage() {
   }
 
   return (
-    <MotionPage className="space-y-5">
-      <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <h2 className="ws-page-title">
-            {t("nav.canvas")}
-          </h2>
-          <p className="ws-page-status">
+    <MotionPage className="space-y-4">
+      <div className="ws-workbench flex-wrap">
+        <div className="ws-workbench-meta">
+          <p>
             {t("canvas.headerStatus", {
               cards: cards.length,
               connections: connections.length,
@@ -382,7 +427,7 @@ export function CanvasPage() {
           {cards.length > 0 ? (
             <button
               type="button"
-              onClick={resetCanvas}
+              onClick={() => void resetCanvas()}
               className="flex min-h-11 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-5 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
             >
               <Trash2 size={16} />
@@ -390,7 +435,7 @@ export function CanvasPage() {
             </button>
           ) : null}
         </div>
-      </header>
+      </div>
 
       <section className="ws-compact-surface p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -462,6 +507,8 @@ export function CanvasPage() {
               <MousePointer2 size={14} className="text-[var(--accent)]" />
               <span className="truncate">{cardLabel(selectedCard)}</span>
             </div>
+            <button type="button" onClick={() => { const ids = [...selectedCardIds].map((id) => duplicateCard(id)).filter((id): id is string => Boolean(id)); if (ids.length) { setSelectedCardId(ids.at(-1)!); setSelectedCardIds(new Set(ids)); } }} className="flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--surface-muted)]"><Copy size={14} />{t("canvas.duplicate")}</button>
+            {selectedCardIds.size > 1 ? <div className="flex gap-1"><button type="button" onClick={() => arrangeCards([...selectedCardIds], "left")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.alignLeft")}</button><button type="button" onClick={() => arrangeCards([...selectedCardIds], "top")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.alignTop")}</button>{selectedCardIds.size > 2 ? <><button type="button" onClick={() => arrangeCards([...selectedCardIds], "horizontal")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.distributeHorizontal")}</button><button type="button" onClick={() => arrangeCards([...selectedCardIds], "vertical")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.distributeVertical")}</button></> : null}</div> : null}
             <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row xl:justify-end">
               <select
                 value={connectionTarget}
@@ -478,6 +525,13 @@ export function CanvasPage() {
                     </option>
                   ))}
               </select>
+              <input
+                value={connectionLabel}
+                onChange={(event) => setConnectionLabel(event.target.value.slice(0, 48))}
+                placeholder={t("canvas.connectionLabelPlaceholder")}
+                className="ws-input min-h-10 min-w-0 flex-1 rounded-full px-4 text-xs xl:max-w-[13rem]"
+                aria-label={t("canvas.connectionLabel")}
+              />
               <button
                 type="button"
                 onClick={connectSelected}
@@ -497,18 +551,14 @@ export function CanvasPage() {
                       ? connection.toCardId
                       : connection.fromCardId;
                   return (
-                    <button
+                    <span
                       key={connection.id}
-                      type="button"
-                      onClick={() => deleteConnection(connection.id)}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface-muted)] px-3 py-2 text-[0.68rem] text-[var(--text-muted)] hover:text-red-500"
-                      aria-label={t("canvas.removeConnection", {
-                        name: cardLabel(cardsById.get(otherId)),
-                      })}
+                      className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1 pl-3"
                     >
-                      <Unlink size={12} />
-                      {cardLabel(cardsById.get(otherId))}
-                    </button>
+                      <span className="max-w-24 truncate text-[0.68rem] text-[var(--text-faint)]">{cardLabel(cardsById.get(otherId))}</span>
+                      <input value={connection.label ?? ""} onChange={(event) => updateConnectionLabel(connection.id, event.target.value)} placeholder={t("canvas.connectionLabelShort")} className="w-24 bg-transparent px-1 text-[0.68rem] font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]" aria-label={t("canvas.connectionLabel")} />
+                      <button type="button" onClick={() => removeCanvasConnectionWithUndo(connection.id, cardLabel(cardsById.get(otherId)))} className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-faint)] hover:bg-red-500/10 hover:text-red-500" aria-label={t("canvas.removeConnection", { name: cardLabel(cardsById.get(otherId)) })}><Unlink size={12} /></button>
+                    </span>
                   );
                 })}
               </div>
@@ -520,8 +570,9 @@ export function CanvasPage() {
       <section className="relative overflow-hidden rounded-xl border border-[var(--border)]">
         <div
           ref={viewportRef}
-          className="h-[72vh] min-h-[32rem] overflow-auto bg-[var(--bg-subtle)]"
+          className="h-[68dvh] min-h-[28rem] overflow-auto bg-[var(--bg-subtle)] lg:h-[72vh] lg:min-h-[32rem]"
           aria-label={t("canvas.workspace")}
+          aria-describedby="canvas-keyboard-help"
         >
           <div
             style={{ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom }}
@@ -545,22 +596,40 @@ export function CanvasPage() {
                 className="pointer-events-none absolute inset-0"
                 aria-hidden="true"
               >
+                <defs>
+                  <marker id="canvas-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)" />
+                  </marker>
+                </defs>
                 {connections.map((connection) => {
-                  const from = cardsById.get(connection.fromCardId);
-                  const to = cardsById.get(connection.toCardId);
-                  if (!from || !to) return null;
+                  const storedFrom = cardsById.get(connection.fromCardId);
+                  const storedTo = cardsById.get(connection.toCardId);
+                  if (!storedFrom || !storedTo) return null;
+                  const from = { ...storedFrom, ...previewPositions[storedFrom.id] };
+                  const to = { ...storedTo, ...previewPositions[storedTo.id] };
+                  const x1 = from.x + CANVAS_CARD_WIDTH / 2;
+                  const y1 = from.y + CANVAS_CARD_CENTER_Y;
+                  const x2 = to.x + CANVAS_CARD_WIDTH / 2;
+                  const y2 = to.y + CANVAS_CARD_CENTER_Y;
+                  const label = connection.label?.trim();
+                  const labelWidth = Math.min(180, Math.max(42, (label?.length ?? 0) * 7 + 18));
                   return (
+                    <g key={connection.id}>
                     <line
-                      key={connection.id}
                       x1={from.x + CANVAS_CARD_WIDTH / 2}
                       y1={from.y + CANVAS_CARD_CENTER_Y}
                       x2={to.x + CANVAS_CARD_WIDTH / 2}
                       y2={to.y + CANVAS_CARD_CENTER_Y}
                       stroke="var(--accent)"
-                      strokeOpacity="0.52"
+                      strokeOpacity="0.68"
                       strokeWidth="2"
-                      strokeDasharray="6 6"
+                      markerEnd="url(#canvas-arrow)"
                     />
+                    {label ? <g transform={`translate(${(x1 + x2) / 2} ${(y1 + y2) / 2})`}>
+                      <rect x={-labelWidth / 2} y="-12" width={labelWidth} height="24" rx="12" fill="var(--surface-solid)" stroke="var(--border-strong)" />
+                      <text textAnchor="middle" dominantBaseline="central" fill="var(--text-muted)" fontSize="11" fontWeight="600">{label.length > 22 ? `${label.slice(0, 21)}…` : label}</text>
+                    </g> : null}
+                    </g>
                   );
                 })}
               </svg>
@@ -575,10 +644,31 @@ export function CanvasPage() {
                       : undefined
                   }
                   zoom={zoom}
-                  selected={selectedCardId === card.id}
-                  onSelect={() => {
-                    setSelectedCardId(card.id);
+                  selected={selectedCardIds.has(card.id)}
+                  onSelect={(additive = false) => {
+                    setSelectedCardIds((current) => {
+                      if (!additive) { setSelectedCardId(card.id); return new Set([card.id]); }
+                      const next = new Set(current);
+                      if (next.has(card.id)) next.delete(card.id); else next.add(card.id);
+                      setSelectedCardId(next.has(card.id) ? card.id : (next.values().next().value ?? null));
+                      return next;
+                    });
                     setConnectionTarget("");
+                  }}
+                  onPositionPreview={(position) => setPreviewPositions((current) => {
+                    if (position) return { ...current, [card.id]: position };
+                    const next = { ...current };
+                    delete next[card.id];
+                    return next;
+                  })}
+                  onDelete={() => {
+                    removeCanvasCardsWithUndo([card.id], cardLabel(card));
+                    setSelectedCardIds((current) => {
+                      const next = new Set(current);
+                      next.delete(card.id);
+                      return next;
+                    });
+                    if (selectedCardId === card.id) setSelectedCardId(null);
                   }}
                 />
               ))}
@@ -586,14 +676,11 @@ export function CanvasPage() {
             </div>
           </div>
         </div>
+        <p id="canvas-keyboard-help" className="sr-only">{t("canvas.keyboardHelp")}</p>
         {!cards.length ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center">
             <div className="w-full max-w-md">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                <GitBranch size={24} />
-              </span>
-              <h3 className="ws-display mt-5 text-3xl font-semibold text-[var(--text)]">{t("canvas.empty")}</h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{t("canvas.emptyHelp")}</p>
+              <h3 className="text-sm font-semibold text-[var(--text-muted)]">{t("canvas.empty")}</h3>
             </div>
           </div>
         ) : null}

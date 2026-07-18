@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Entry } from "../../features/entries/types";
-import { searchEntries } from "./searchEntries";
+import { getEntrySearchExcerpt, searchEntries } from "./searchEntries";
 
 const entries: Entry[] = [
   {
@@ -50,5 +50,10 @@ describe("searchEntries", () => {
   it("searches visible rich-text content without matching markup", () => {
     expect(searchEntries(entries, "stone shelves")[0]?.id).toBe("old-title");
     expect(searchEntries(entries, "<p>")).toEqual([]);
+  });
+
+  it("returns a readable excerpt around a body match", () => {
+    expect(getEntrySearchExcerpt(entries[0], "sealed")).toContain("sealed rooms");
+    expect(getEntrySearchExcerpt(entries[0], "library")).toBe("A quiet library.");
   });
 });

@@ -38,6 +38,8 @@ function createValidBackup(): WorkspaceBackup {
       timeline: {
         items: [],
         eras: [],
+        lanes: [{ id: "Other", name: "Other", color: "#777780" }],
+        yearFormat: { beforeSuffix: "BCE", afterSuffix: "", zeroLabel: "0" },
         viewport: { centerYear: 0, yearsPerScreen: 500 },
       },
       atlas: {
@@ -141,7 +143,7 @@ describe("parseWorkspaceBackup", () => {
       connections: [],
       viewport: { zoom: 1 },
     });
-    expect(parsed.data.world.name).toBe("The Ashen Archive");
+    expect(parsed.data.world.name).toBe("Untitled World");
   });
 
   it("migrates version 2 backups without a canvas", () => {
@@ -158,7 +160,7 @@ describe("parseWorkspaceBackup", () => {
 
     expect(parsed.version).toBe(WORKSPACE_BACKUP_VERSION);
     expect(parsed.data.canvas.cards).toEqual([]);
-    expect(parsed.data.world.name).toBe("The Ashen Archive");
+    expect(parsed.data.world.name).toBe("Untitled World");
   });
 
   it("migrates version 3 backups without world metadata", () => {
@@ -173,7 +175,7 @@ describe("parseWorkspaceBackup", () => {
     const parsed = parseWorkspaceBackup(JSON.stringify(legacy));
 
     expect(parsed.version).toBe(WORKSPACE_BACKUP_VERSION);
-    expect(parsed.data.world.name).toBe("The Ashen Archive");
+    expect(parsed.data.world.name).toBe("Untitled World");
   });
 
   it("migrates version 4 backups without revision history", () => {
@@ -269,6 +271,26 @@ describe("parseWorkspaceBackup", () => {
     );
   });
 
+  it("preserves asset metadata in internal snapshots that use IndexedDB files", () => {
+    const snapshot = createValidBackup();
+    snapshot.storage = "snapshot";
+    snapshot.data.assetLibrary.items.push({
+      id: "asset-1",
+      name: "portrait.png",
+      mediaType: "image/png",
+      kind: "image",
+      size: 10,
+      tags: ["portrait"],
+      createdAt: "2026-07-14T00:00:00.000Z",
+      updatedAt: "2026-07-14T00:00:00.000Z",
+    });
+
+    const parsed = parseWorkspaceBackup(JSON.stringify(snapshot));
+
+    expect(parsed.data.assetLibrary.items).toHaveLength(1);
+    expect(parsed.data.assetLibrary.files).toEqual([]);
+  });
+
   it("rejects canvas connections to missing cards", () => {
     const backup = createValidBackup();
     backup.data.canvas.cards.push({
@@ -316,6 +338,7 @@ describe("sanitizeWorkspaceData", () => {
     backup.data.timeline.items.push({
       id: "timeline-1",
       entryId: "missing-entry",
+      title: "Missing event",
       startYear: 1,
       endYear: null,
       description: "",

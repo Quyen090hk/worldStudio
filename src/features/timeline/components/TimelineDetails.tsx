@@ -2,6 +2,7 @@ import { Focus, Trash2, X } from "lucide-react";
 
 import { useI18n } from "../../../shared/i18n";
 import { formatWorldYear, type ResolvedTimelineItem } from "../timelineModel";
+import type { WorldYearFormat } from "../types";
 
 type RelationshipSummary = {
   id: string;
@@ -13,6 +14,8 @@ type RelationshipSummary = {
 
 export function TimelineDetails({
   item,
+  yearFormat,
+  laneName,
   relationships,
   deleteItem,
   close,
@@ -20,6 +23,8 @@ export function TimelineDetails({
   openGraph,
 }: {
   item: ResolvedTimelineItem;
+  yearFormat: WorldYearFormat;
+  laneName: string;
   relationships: RelationshipSummary[];
   deleteItem: (id: string) => void;
   close: () => void;
@@ -45,15 +50,15 @@ export function TimelineDetails({
               ? t("timeline.graphRelationship")
               : item.lane === "Relationships"
                 ? t("timeline.relationships")
-                : t(`timeline.category.${item.lane}`)}
+                : laneName}
           </p>
           <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
         </div>
         <button type="button" onClick={close} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-faint)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]" aria-label={t("common.close")} title={t("common.close")}><X size={16} /></button>
       </div>
       <p className="mt-4 text-sm font-semibold">
-        {formatWorldYear(item.startYear, locale)}
-        {item.endYear !== null ? ` — ${formatWorldYear(item.endYear, locale)}` : ""}
+        {formatWorldYear(item.startYear, locale, yearFormat)}
+        {item.endYear !== null ? ` — ${formatWorldYear(item.endYear, locale, yearFormat)}` : ""}
       </p>
       <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
         <div className="rounded-md bg-[var(--surface-muted)] px-3 py-2">
@@ -62,7 +67,7 @@ export function TimelineDetails({
         </div>
         <div className="rounded-md bg-[var(--surface-muted)] px-3 py-2">
           <span className="block text-[var(--text-faint)]">{t("timeline.status")}</span>
-          <b className="mt-1 block capitalize">{item.certainty}</b>
+          <b className="mt-1 block">{t(`timeline.${item.certainty}`)}</b>
         </div>
       </div>
       {item.entryType ? <p className="mt-2 text-[10px] text-[var(--text-faint)]">{t("timeline.canonicalSource", { type: t(`type.${item.entryType}`) })}</p> : null}

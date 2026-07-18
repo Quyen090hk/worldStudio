@@ -12,6 +12,7 @@ import {
 type WorldStore = {
   profile: WorldProfile;
   updateProfile: (name: string, description: string) => void;
+  updateMemo: (memo: string) => void;
 };
 
 export const useWorldStore = create<WorldStore>()(
@@ -29,6 +30,13 @@ export const useWorldStore = create<WorldStore>()(
           },
         }));
       },
+      updateMemo: (memo) => set((state) => ({
+        profile: {
+          ...state.profile,
+          memo,
+          updatedAt: new Date().toISOString(),
+        },
+      })),
     }),
     {
       name: "world-studio.profile.v1",

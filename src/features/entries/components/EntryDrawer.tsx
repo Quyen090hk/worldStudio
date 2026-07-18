@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Save, Trash2, X } from "lucide-react";
 
 import { useEntryStore } from "../stores/useEntryStore";
 import { deleteEntryCascade } from "../actions/deleteEntryCascade";
-import type { EntryType } from "../types";
+import type { EntryMedia, EntryProperty, EntryType } from "../types";
 import { EntryTypeBadge } from "./EntryTypeBadge";
 import { useI18n } from "../../../shared/i18n";
+import { useSoftDialog } from "../../../shared/components/softDialogContext";
+import { EntryPropertiesEditor } from "./EntryPropertiesEditor";
+import { EntryMediaEditor } from "./EntryMediaEditor";
 
 const entryTypes: EntryType[] = [
   "Character",
@@ -23,6 +26,8 @@ type EntryDrawerDraft = {
   type: EntryType;
   summary: string;
   tagsText: string;
+  properties: EntryProperty[];
+  media: EntryMedia;
 };
 
 function parseTags(value: string) {
@@ -44,7 +49,8 @@ export function EntryDrawer() {
   const closeDrawer = useEntryStore((state) => state.closeDrawer);
   const createEntry = useEntryStore((state) => state.createEntry);
   const updateEntry = useEntryStore((state) => state.updateEntry);
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
+  const dialog = useSoftDialog();
 
   const editingEntry = useMemo(
     () => entries.find((entry) => entry.id === editingEntryId),
@@ -60,10 +66,47 @@ export function EntryDrawer() {
     summary: drawerMode === "edit" ? (editingEntry?.summary ?? "") : "",
     tagsText:
       drawerMode === "edit" ? (editingEntry?.tags.join(", ") ?? "") : "",
+    properties: drawerMode === "edit" ? structuredClone(editingEntry?.properties ?? []) : [],
+    media: drawerMode === "edit" ? structuredClone(editingEntry?.media ?? {}) : {},
   };
   const [draft, setDraft] = useState<EntryDrawerDraft>(initialDraft);
+  const drawerRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const activeDraft = draft.key === draftKey ? draft : initialDraft;
-  const { title, type, summary, tagsText } = activeDraft;
+  const { title, type, summary, tagsText, properties, media } = activeDraft;
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKeyDown);
+      window.requestAnimationFrame(() => previousFocusRef.current?.focus({ preventScroll: true }));
+    };
+  }, [closeDrawer, drawerOpen]);
 
   function updateDraft(patch: Partial<Omit<EntryDrawerDraft, "key">>) {
     setDraft({ ...activeDraft, ...patch });
@@ -78,6 +121,8 @@ export function EntryDrawer() {
       summary: summary.trim(),
       content: drawerMode === "edit" && editingEntry ? editingEntry.content : "",
       tags: parseTags(tagsText),
+      properties,
+      media,
     };
 
     if (drawerMode === "edit" && editingEntry) {
@@ -88,12 +133,10 @@ export function EntryDrawer() {
     createEntry(input);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editingEntry) return;
 
-    const confirmed = window.confirm(
-      locale === "zh-CN" ? `确定删除“${editingEntry.title}”吗？` : `Delete "${editingEntry.title}"?`,
-    );
+    const confirmed = await dialog.confirm({ message: t("entry.deleteConfirm", { title: editingEntry.title }), danger: true, confirmLabel: t("common.delete") });
 
     if (confirmed) {
       deleteEntryCascade(editingEntry.id);
@@ -114,22 +157,26 @@ export function EntryDrawer() {
           />
 
           <motion.aside
+            ref={drawerRef}
             key="entry-drawer"
             initial={{ opacity: 0, x: 36 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 36 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-4 right-4 top-4 z-50 flex w-[min(31rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[var(--shadow-raised)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="entry-drawer-title"
+            className="fixed inset-2 z-50 flex flex-col overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[var(--shadow-raised)] sm:bottom-4 sm:left-auto sm:right-4 sm:top-4 sm:w-[min(40rem,calc(100vw-2rem))] sm:rounded-[2rem]"
           >
             <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-              <header className="border-b border-[var(--border)] px-6 py-5">
+              <header className="border-b border-[var(--border)] px-4 py-4 sm:px-6 sm:py-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="ws-eyebrow">
                       {drawerMode === "edit" ? t("entry.editEntry") : t("entry.newEntry")}
                     </p>
 
-                    <h2 className="ws-display mt-2 text-3xl font-semibold leading-tight text-[var(--text)]">
+                    <h2 id="entry-drawer-title" className="ws-display mt-2 text-2xl font-semibold leading-tight text-[var(--text)] sm:text-3xl">
                       {drawerMode === "edit"
                         ? editingEntry?.title ?? "Entry"
                         : t("entry.createLore")}
@@ -137,6 +184,7 @@ export function EntryDrawer() {
                   </div>
 
                   <button
+                    ref={closeButtonRef}
                     type="button"
                     onClick={closeDrawer}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
@@ -147,7 +195,7 @@ export function EntryDrawer() {
                 </div>
               </header>
 
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
                 <label className="block">
                   <div className="mb-2 text-sm font-semibold text-[var(--text)]">
                     {t("common.title")}
@@ -227,9 +275,14 @@ export function EntryDrawer() {
                     {t("entry.tagsHelp")}
                   </p>
                 </label>
+
+                {(type === "Character" || type === "Location" || type === "Organization") ? <>
+                  <EntryMediaEditor type={type} media={media} onChange={(value) => updateDraft({ media: value })} />
+                  <EntryPropertiesEditor type={type} properties={properties} entries={entries.filter((entry) => entry.id !== editingEntryId)} onChange={(value) => updateDraft({ properties: value })} />
+                </> : null}
               </div>
 
-              <footer className="flex items-center justify-between gap-3 border-t border-[var(--border)] px-6 py-4">
+              <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] px-4 py-3 sm:gap-3 sm:px-6 sm:py-4">
                 {drawerMode === "edit" ? (
                   <button
                     type="button"
@@ -243,7 +296,7 @@ export function EntryDrawer() {
                   <div />
                 )}
 
-                <div className="flex items-center gap-3">
+                <div className="ml-auto flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={closeDrawer}

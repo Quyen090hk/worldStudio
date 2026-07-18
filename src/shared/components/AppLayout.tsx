@@ -1,29 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { EntryDrawer } from "../../features/entries/components/EntryDrawer";
 import { useWorldStore } from "../../features/world/stores/useWorldStore";
+import { useWorldRegistryStore } from "../../features/world/stores/useWorldRegistryStore";
+import { WorldSetupPage } from "../../features/world/WorldSetupPage";
 import { useI18n } from "../i18n";
+import { moduleForPath } from "../navigation/modules";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
-import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { UndoToast } from "./UndoToast";
 
 export function AppLayout() {
   const { t } = useI18n();
-  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const location = useLocation();
   const worldName = useWorldStore((state) => state.profile.name);
-  const closeMobileNavigation = useCallback(() => {
-    setMobileNavigationOpen(false);
-    window.setTimeout(
-      () => document.getElementById("mobile-navigation-trigger")?.focus(),
-      0,
-    );
-  }, []);
+  const hasWorld = useWorldRegistryStore((state) => state.worlds.length > 0);
+  const initialRoute = useRef(true);
+  const currentModule = moduleForPath(location.pathname);
 
   useEffect(() => {
-    document.title = `${worldName} · World Studio`;
-  }, [worldName]);
+    document.title = worldName && hasWorld ? `${worldName} · World Studio` : "World Studio";
+  }, [hasWorld, worldName]);
+
+  useEffect(() => {
+    if (initialRoute.current) {
+      initialRoute.current = false;
+      return;
+    }
+    document.getElementById("main-content")?.focus({ preventScroll: true });
+  }, [location.pathname]);
+
+  if (!hasWorld) return <WorldSetupPage />;
 
   return (
     <div className="min-h-screen text-[var(--text)]">
@@ -34,30 +42,24 @@ export function AppLayout() {
         {t("navigation.skipToContent")}
       </a>
 
-      <div className="flex min-h-screen">
-        <Sidebar
-          mobileOpen={mobileNavigationOpen}
-          onMobileClose={closeMobileNavigation}
-        />
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {t(currentModule.label)}
+      </span>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar
-            navigationOpen={mobileNavigationOpen}
-            onOpenNavigation={() => setMobileNavigationOpen(true)}
-          />
+      <div className="flex min-h-screen flex-col">
+          <Topbar />
 
           <main
             id="main-content"
             tabIndex={-1}
             className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
           >
-            <div className="mx-auto w-full max-w-7xl">
+            <div className="mx-auto w-full max-w-[94rem]">
               <RouteErrorBoundary>
                 <Outlet />
               </RouteErrorBoundary>
             </div>
           </main>
-        </div>
       </div>
 
       <EntryDrawer />

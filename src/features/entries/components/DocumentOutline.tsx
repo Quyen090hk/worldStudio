@@ -53,14 +53,17 @@ export function DocumentOutline({ editor }: { editor: Editor }) {
     });
   }
 
+  // A one-item outline adds chrome without helping navigation. Reveal it only
+  // once the document has enough structure to navigate.
+  if (headings.length < 2) return null;
+
   return (
     <aside className="sticky top-20 hidden max-h-[calc(100vh-7rem)] self-start overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 xl:block">
       <div className="flex items-center gap-2 px-2 py-1 text-[.68rem] font-bold uppercase tracking-[.16em] text-[var(--text-faint)]">
         <ListTree size={14} />
         {t("editor.outline")}
       </div>
-      {headings.length ? (
-        <nav className="mt-2 space-y-0.5" aria-label={t("editor.outline")}>
+      <nav className="mt-2 space-y-0.5" aria-label={t("editor.outline")}>
           {headings.map((heading) => (
             <button
               key={heading.id}
@@ -73,12 +76,7 @@ export function DocumentOutline({ editor }: { editor: Editor }) {
               {heading.text || t("editor.untitledHeading")}
             </button>
           ))}
-        </nav>
-      ) : (
-        <p className="px-2 py-4 text-xs leading-5 text-[var(--text-faint)]">
-          {t("editor.outlineEmpty")}
-        </p>
-      )}
+      </nav>
     </aside>
   );
 }

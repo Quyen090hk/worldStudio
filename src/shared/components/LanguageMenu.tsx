@@ -1,68 +1,40 @@
-import { Check, ChevronDown, Languages } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { useI18n, type Locale } from "../i18n";
+import { Languages } from "lucide-react";
+import { motion } from "motion/react";
 
-const options: Array<{ value: Locale; label: string; short: string }> = [
-  { value: "en-US", label: "English", short: "EN" },
-  { value: "zh-CN", label: "中文", short: "中文" },
-];
+import { pressTap } from "../motion/presets";
+import { useI18n } from "../i18n";
 
-export function LanguageMenu() {
+/**
+ * Two-language quick toggle. The public component name stays stable so this
+ * can return to a menu when a third locale is introduced.
+ */
+export function LanguageMenu({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const current = locale === "zh-CN" ? "中文" : "EN";
+  const compactLabel = locale === "zh-CN" ? "中" : "EN";
+  const nextLocale = locale === "zh-CN" ? "en-US" : "zh-CN";
+  const currentLabel = locale === "zh-CN" ? "中文" : "English";
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
-  const current = options.find((option) => option.value === locale) ?? options[0];
   return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm font-semibold text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
-        aria-haspopup="menu"
-        aria-expanded={open}
+    <motion.button
+      type="button"
+      whileTap={pressTap}
+      onClick={() => setLocale(nextLocale)}
+      className={`flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--text)] ${compact ? "h-10 w-10 shrink-0 justify-center text-xs" : "h-10 w-full gap-3 px-3 text-sm"}`}
+      aria-label={`${t("topbar.language")}: ${currentLabel}`}
+      title={`${t("topbar.language")}: ${currentLabel}`}
+    >
+      {!compact ? <Languages size={18} strokeWidth={1.65} className="shrink-0" /> : null}
+      {!compact ? <span className="min-w-0 flex-1 text-left">{t("topbar.language")}</span> : null}
+      <motion.span
+        key={locale}
+        className={compact ? "flex h-5 w-6 items-center justify-center whitespace-nowrap" : "flex h-5 w-8 items-center justify-center whitespace-nowrap"}
+        initial={{ opacity: 0, rotateY: -80, scale: .88 }}
+        animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+        transition={{ duration: .28, ease: [0.22, 1, 0.36, 1] }}
       >
-        <Languages size={18} strokeWidth={1.65} />
-        <span className="flex-1 text-left">{t("topbar.language")}</span>
-        <span className="text-xs">{current.short}</span>
-        <ChevronDown size={14} className={`transition ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open ? (
-        <div role="menu" className="ws-popover-enter absolute bottom-[calc(100%+.5rem)] left-0 z-50 w-full rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-1.5 shadow-2xl">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={locale === option.value}
-              onClick={() => {
-                setLocale(option.value);
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-[var(--surface-muted)]"
-            >
-              <span className="flex-1 font-semibold">{option.label}</span>
-              {locale === option.value ? <Check size={15} className="text-[var(--accent)]" /> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+        {compact ? compactLabel : current}
+      </motion.span>
+    </motion.button>
   );
 }

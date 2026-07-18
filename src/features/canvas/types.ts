@@ -26,6 +26,7 @@ export type CanvasConnection = {
   id: string;
   fromCardId: string;
   toCardId: string;
+  label?: string;
   createdAt: string;
 };
 

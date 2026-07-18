@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { indexedDbStateStorage } from "../../../shared/storage/database";
-import { seedEntries } from "../data/seedEntries";
+import { normalizedEntryStateStorage } from "./normalizedEntryStateStorage";
 import type { Entry, EntryInput, EntryRevision } from "../types";
 
 type EntryDrawerMode = "create" | "edit";
@@ -38,7 +37,9 @@ function createId() {
 export const useEntryStore = create<EntryStore>()(
   persist(
     (set) => ({
-      entries: seedEntries,
+      // A new workspace starts empty. Example content belongs in an explicit
+      // sample world, never in a user's first real workspace.
+      entries: [],
       revisions: [],
 
       drawerOpen: false,
@@ -169,7 +170,16 @@ export const useEntryStore = create<EntryStore>()(
 
       deleteEntry: (entryId) => {
         set((state) => ({
-          entries: state.entries.filter((entry) => entry.id !== entryId),
+          entries: state.entries
+            .filter((entry) => entry.id !== entryId)
+            .map((entry) => ({
+              ...entry,
+              properties: entry.properties?.map((property) =>
+                property.type === "entryReference" && Array.isArray(property.value)
+                  ? { ...property, value: property.value.filter((id) => id !== entryId) }
+                  : property,
+              ),
+            })),
           revisions: state.revisions.filter((revision) => revision.entryId !== entryId),
           drawerOpen:
             state.editingEntryId === entryId ? false : state.drawerOpen,
@@ -180,7 +190,7 @@ export const useEntryStore = create<EntryStore>()(
     }),
     {
       name: "world-studio.entries.v1",
-      storage: createJSONStorage(() => indexedDbStateStorage),
+      storage: createJSONStorage(() => normalizedEntryStateStorage),
       partialize: (state) => ({
         entries: state.entries,
         revisions: state.revisions,

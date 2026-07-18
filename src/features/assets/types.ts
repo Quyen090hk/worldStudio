@@ -11,6 +11,7 @@ export type AssetRecord = {
   mediaType: string;
   kind: AssetKind;
   size: number;
+  fingerprint?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -8,11 +9,12 @@ import {
 } from "react";
 import {
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Eye,
   EyeOff,
   FileImage,
   ImageUp,
-  Layers3,
   MapPin,
   Minus,
   Plus,
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
 import { useMapStore } from "./stores/useMapStore";
 import type { MapScale, MarkerCategory } from "./types";
@@ -38,11 +41,14 @@ import {
   saveMapImage,
 } from "./utils/mapImageStorage";
 import { MapMarkerPanel } from "./components/MapMarkerPanel";
+import { useWorldRegistryStore } from "../world/stores/useWorldRegistryStore";
+import { isMapImageReferencedByStoredWorld } from "../world/worldResourceReferences";
 
 export function MapPage() {
   const store = useMapStore();
   const [searchParams] = useSearchParams();
   const { t } = useI18n();
+  const dialog = useSoftDialog();
   const viewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragRef = useRef<{
@@ -59,14 +65,31 @@ export function MapPage() {
     requestedMap ??
     store.maps.find((map) => map.id === store.activeMapId) ??
     store.maps[0];
-  const mapLayers = store.layers.filter(
-    (layer) => layer.mapId === activeMap.id,
+  const mapLayers = useMemo(
+    () => store.layers.filter((layer) => layer.mapId === activeMap.id),
+    [activeMap.id, store.layers],
   );
-  const mapMarkers = store.markers.filter(
-    (marker) => marker.mapId === activeMap.id,
+  const mapMarkers = useMemo(
+    () => store.markers.filter((marker) => marker.mapId === activeMap.id),
+    [activeMap.id, store.markers],
   );
-  const mapConnections = store.connections.filter(
-    (connection) => connection.mapId === activeMap.id,
+  const mapConnections = useMemo(
+    () => store.connections.filter((connection) => connection.mapId === activeMap.id),
+    [activeMap.id, store.connections],
+  );
+  const markerCountsByMap = useMemo(() => {
+    const counts = new Map<string, number>();
+    store.markers.forEach((marker) => counts.set(marker.mapId, (counts.get(marker.mapId) ?? 0) + 1));
+    return counts;
+  }, [store.markers]);
+  const markerCountsByLayer = useMemo(() => {
+    const counts = new Map<string, number>();
+    mapMarkers.forEach((marker) => counts.set(marker.layerId, (counts.get(marker.layerId) ?? 0) + 1));
+    return counts;
+  }, [mapMarkers]);
+  const markersById = useMemo(
+    () => new Map(mapMarkers.map((marker) => [marker.id, marker])),
+    [mapMarkers],
   );
   const deepLinkedMarkerId = mapMarkers.some(
     (marker) => marker.id === requestedMarkerId,
@@ -112,10 +135,11 @@ export function MapPage() {
     };
   }, [activeMap.id, activeMap.name, deepLinkedMarkerId, t]);
 
-  const visibleLayerIds = new Set(
-    mapLayers.filter((layer) => layer.visible).map((layer) => layer.id),
+  const visibleLayerIds = useMemo(
+    () => new Set(mapLayers.filter((layer) => layer.visible).map((layer) => layer.id)),
+    [mapLayers],
   );
-  const visibleMarkers = (() => {
+  const visibleMarkers = useMemo(() => {
     const term = query.trim().toLowerCase();
     const year = eraYear === "" ? null : Number(eraYear);
     return mapMarkers.filter((marker) => {
@@ -137,8 +161,20 @@ export function MapPage() {
         matchesEra
       );
     });
-  })();
-  const visibleIds = new Set(visibleMarkers.map((marker) => marker.id));
+  }, [categoryFilter, eraYear, mapMarkers, query, visibleLayerIds]);
+  const visibleIds = useMemo(
+    () => new Set(visibleMarkers.map((marker) => marker.id)),
+    [visibleMarkers],
+  );
+  const visibleConnections = useMemo(
+    () => mapConnections.flatMap((connection) => {
+      if (!visibleIds.has(connection.fromMarkerId) || !visibleIds.has(connection.toMarkerId)) return [];
+      const from = markersById.get(connection.fromMarkerId);
+      const to = markersById.get(connection.toMarkerId);
+      return from && to ? [{ connection, from, to }] : [];
+    }),
+    [mapConnections, markersById, visibleIds],
+  );
 
   function resetView() {
     setZoom(1);
@@ -149,13 +185,10 @@ export function MapPage() {
     setZoom(next);
     if (next === 1) setOffset({ x: 0, y: 0 });
   }
-  function createMap() {
-    const name = window.prompt(t("map.namePrompt"));
+  async function createMap() {
+    const name = await dialog.prompt({ message: t("map.namePrompt"), confirmLabel: t("common.create") });
     if (!name?.trim()) return;
-    const scale = window.prompt(
-      `${t("map.scalePrompt")}: ${scales.map((value) => t(`map.scale.${value}`)).join(", ")}`,
-      "Region",
-    ) as MapScale | null;
+    const scale = await dialog.prompt({ message: `${t("map.scalePrompt")}: ${scales.map((value) => t(`map.scale.${value}`)).join(", ")}`, defaultValue: "Region" }) as MapScale | null;
     store.createMap(
       name.trim(),
       scale && scales.includes(scale) ? scale : "Other",
@@ -169,7 +202,24 @@ export function MapPage() {
       setImageError(t("map.imageSizeError"));
       return;
     }
-    await saveMapImage(activeMap.id, file);
+    const activeWorldId = useWorldRegistryStore.getState().activeWorldId;
+    let mapId = activeMap.id;
+    if (await isMapImageReferencedByStoredWorld(mapId, activeWorldId)) {
+      const nextMapId = typeof crypto !== "undefined" && crypto.randomUUID
+        ? `map-${crypto.randomUUID()}`
+        : `map-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      await saveMapImage(nextMapId, file);
+      useMapStore.setState((state) => ({
+        maps: state.maps.map((map) => map.id === mapId ? { ...map, id: nextMapId } : map),
+        activeMapId: state.activeMapId === mapId ? nextMapId : state.activeMapId,
+        layers: state.layers.map((layer) => layer.mapId === mapId ? { ...layer, mapId: nextMapId } : layer),
+        markers: state.markers.map((marker) => marker.mapId === mapId ? { ...marker, mapId: nextMapId } : marker),
+        connections: state.connections.map((connection) => connection.mapId === mapId ? { ...connection, mapId: nextMapId } : connection),
+      }));
+      mapId = nextMapId;
+    } else {
+      await saveMapImage(mapId, file);
+    }
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(URL.createObjectURL(file));
     setImageName(file.name);
@@ -179,10 +229,13 @@ export function MapPage() {
   async function deleteActiveMap() {
     if (
       store.maps.length === 1 ||
-      !window.confirm(t("map.deleteMapConfirm", { name: activeMap.name }))
+      !await dialog.confirm({ message: t("map.deleteMapConfirm", { name: activeMap.name }), danger: true, confirmLabel: t("common.delete") })
     )
       return;
-    await removeMapImage(activeMap.id);
+    const activeWorldId = useWorldRegistryStore.getState().activeWorldId;
+    if (!await isMapImageReferencedByStoredWorld(activeMap.id, activeWorldId)) {
+      await removeMapImage(activeMap.id);
+    }
     store.deleteMap(activeMap.id);
   }
   function placeMarker(event: React.MouseEvent<HTMLDivElement>) {
@@ -234,7 +287,7 @@ export function MapPage() {
     setZoomSafe(zoom + (event.deltaY < 0 ? 0.15 : -0.15));
   }
   return (
-    <MotionPage className="space-y-5">
+    <MotionPage className="space-y-4">
       <input
         ref={fileInputRef}
         type="file"
@@ -242,19 +295,16 @@ export function MapPage() {
         onChange={upload}
         className="hidden"
       />
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="ws-eyebrow">{t("map.eyebrow")}</p>
-          <h2 className="ws-page-title mt-2 break-words">
-            {activeMap.name}
-          </h2>
-          <p className="ws-page-status">
+      <div className="ws-workbench flex-wrap">
+        <div className="min-w-0">
+          <p className="ws-workbench-name truncate">{activeMap.name}</p>
+          <p className="ws-workbench-meta mt-0.5">
             {t(`map.scale.${activeMap.scale}`)} · {mapMarkers.length}{" "}
             {t("map.markers")} · {mapConnections.length}{" "}
             {t("map.connectionsWord")}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <label className="ws-input flex h-11 items-center gap-2 rounded-full px-4 text-sm">
             <span className="text-[var(--text-faint)]">{t("map.era")}</span>
             <input
@@ -285,7 +335,7 @@ export function MapPage() {
             </button>
           ) : null}
         </div>
-      </header>
+      </div>
       {placing ? (
         <div className="rounded-[1.2rem] border border-[var(--border-strong)] bg-[var(--accent-soft)] px-4 py-3 text-sm">
           {t("map.placeHint")}
@@ -297,8 +347,8 @@ export function MapPage() {
         </div>
       ) : null}
 
-      <section className="grid min-h-[640px] gap-3 xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
-        <aside className="ws-compact-surface flex min-h-0 flex-col p-3">
+      <section className="grid min-h-[640px] gap-4 xl:grid-cols-[19rem_minmax(0,1fr)_20rem]">
+        <aside className="ws-compact-surface flex min-h-0 flex-col p-4">
           <div role="tablist" className="grid grid-cols-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1">
             <button
               type="button"
@@ -340,7 +390,7 @@ export function MapPage() {
                   <button
                     key={map.id}
                     onClick={() => store.setActiveMap(map.id)}
-                    className={`flex w-full items-center gap-3 rounded-[1.15rem] border p-3 text-left ${map.id === activeMap.id ? "border-[var(--border-strong)] bg-[var(--accent-soft)]" : "border-transparent hover:bg-[var(--surface-muted)]"}`}
+                    className={`flex w-full items-center gap-3 rounded-[1.15rem] border px-4 py-3.5 text-left ${map.id === activeMap.id ? "border-[var(--border-strong)] bg-[var(--accent-soft)]" : "border-transparent hover:bg-[var(--surface-muted)]"}`}
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)]">
                       <FileImage size={18} />
@@ -351,7 +401,7 @@ export function MapPage() {
                       </span>
                       <span className="mt-1 block text-xs text-[var(--text-faint)]">
                         {t(`map.scale.${map.scale}`)} ·{" "}
-                        {store.markers.filter((m) => m.mapId === map.id).length}{" "}
+                        {markerCountsByMap.get(map.id) ?? 0}{" "}
                         {t("map.markers")}
                       </span>
                     </span>
@@ -376,8 +426,8 @@ export function MapPage() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    const name = window.prompt(t("map.layerName"));
+                  onClick={async () => {
+                    const name = await dialog.prompt({ message: t("map.layerName"), confirmLabel: t("common.create") });
                     if (name) store.addLayer(activeMap.id, name);
                   }}
                   className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--surface-muted)]"
@@ -388,12 +438,12 @@ export function MapPage() {
                 </button>
               </div>
               <div className="mt-2 space-y-1">
-                {mapLayers.map((layer) => (
-                  <button
+                {mapLayers.map((layer, index) => (
+                  <div
                     key={layer.id}
-                    onClick={() => store.toggleLayer(layer.id)}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-[var(--surface-muted)]"
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left hover:bg-[var(--surface-muted)]"
                   >
+                    <button type="button" onClick={() => store.toggleLayer(layer.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                     {layer.visible ? (
                       <Eye size={16} />
                     ) : (
@@ -407,9 +457,14 @@ export function MapPage() {
                       {layer.name}
                     </span>
                     <span className="text-xs text-[var(--text-faint)]">
-                      {mapMarkers.filter((m) => m.layerId === layer.id).length}
+                      {markerCountsByLayer.get(layer.id) ?? 0}
                     </span>
-                  </button>
+                    </button>
+                    <span className="flex shrink-0">
+                      <button type="button" disabled={index === 0} onClick={() => store.moveLayer(layer.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-raised)] disabled:opacity-25" aria-label={t("map.moveLayerUp")}><ChevronUp size={13} /></button>
+                      <button type="button" disabled={index === mapLayers.length - 1} onClick={() => store.moveLayer(layer.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface-raised)] disabled:opacity-25" aria-label={t("map.moveLayerDown")}><ChevronDown size={13} /></button>
+                    </span>
+                  </div>
                 ))}
               </div>
             </>
@@ -454,15 +509,9 @@ export function MapPage() {
         >
           {!imageUrl ? (
             <div className="flex h-full min-h-[560px] flex-col items-center justify-center p-8 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-[1.7rem] bg-[var(--accent-soft)]">
-                <Layers3 size={34} />
-              </div>
-              <h3 className="ws-display mt-6 text-4xl font-semibold">
+              <h3 className="text-base font-semibold">
                 {t("map.addArtwork")}
               </h3>
-              <p className="mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-                {t("map.description")}
-              </p>
               <button
                 onClick={(event) => {
                   event.stopPropagation();
@@ -492,20 +541,7 @@ export function MapPage() {
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
               >
-                {mapConnections
-                  .filter(
-                    (c) =>
-                      visibleIds.has(c.fromMarkerId) &&
-                      visibleIds.has(c.toMarkerId),
-                  )
-                  .map((connection) => {
-                    const a = mapMarkers.find(
-                      (m) => m.id === connection.fromMarkerId,
-                    );
-                    const b = mapMarkers.find(
-                      (m) => m.id === connection.toMarkerId,
-                    );
-                    if (!a || !b) return null;
+                {visibleConnections.map(({ connection, from: a, to: b }) => {
                     return (
                       <g key={connection.id}>
                         <line

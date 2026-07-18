@@ -12,7 +12,7 @@ export function removeLegacyDefaultWorldDescription(description: string) {
 export function createDefaultWorldProfile(): WorldProfile {
   const now = new Date().toISOString();
   return {
-    name: "The Ashen Archive",
+    name: "Untitled World",
     description: "",
     createdAt: now,
     updatedAt: now,

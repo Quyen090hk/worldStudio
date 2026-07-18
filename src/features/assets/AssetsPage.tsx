@@ -1,5 +1,4 @@
 import {
-  Archive,
   Download,
   File,
   FileAudio,
@@ -24,6 +23,7 @@ import {
 } from "react";
 
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
 import { addAssetFile, deleteAssetFile } from "./actions/assetActions";
 import {
@@ -34,6 +34,7 @@ import {
 import { loadAssetFile } from "./assetStorage";
 import { useAssetStore } from "./stores/useAssetStore";
 import type { AssetKind, AssetRecord } from "./types";
+import { useEntryStore } from "../entries/stores/useEntryStore";
 
 const KIND_ICONS: Record<AssetKind, LucideIcon> = {
   image: FileImage,
@@ -98,11 +99,13 @@ function AssetEditor({
   const [tags, setTags] = useState(asset.tags.join(", "));
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    inputRef.current?.focus();
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -110,8 +113,10 @@ function AssetEditor({
 
     window.addEventListener("keydown", handleEscape);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = previousOverflow;
+      window.requestAnimationFrame(() => previousFocusRef.current?.focus({ preventScroll: true }));
     };
   }, [onClose]);
 
@@ -158,7 +163,7 @@ function AssetEditor({
         aria-modal="true"
         aria-labelledby="asset-editor-title"
         onKeyDown={trapFocus}
-        className="ws-surface-raised w-full max-w-lg rounded-[2rem] p-6 sm:p-7"
+        className="ws-surface-raised ws-panel-padding w-full max-w-lg rounded-[2rem]"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -227,9 +232,11 @@ function AssetEditor({
 }
 
 export function AssetsPage() {
+  const dialog = useSoftDialog();
   const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const assets = useAssetStore((state) => state.assets);
+  const entries = useEntryStore((state) => state.entries);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<AssetKind | "all">("all");
   const [busy, setBusy] = useState(false);
@@ -242,6 +249,20 @@ export function AssetsPage() {
     [assets, kind, query],
   );
   const totalSize = assets.reduce((sum, asset) => sum + asset.size, 0);
+  const referencedAssetIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const entry of entries) {
+      const media = entry.media;
+      if (media?.primaryAssetId) ids.add(media.primaryAssetId);
+      if (media?.bannerAssetId) ids.add(media.bannerAssetId);
+      media?.galleryAssetIds?.forEach((id) => ids.add(id));
+      for (const match of entry.content?.matchAll(/data-asset-id=["']([^"']+)["']/g) ?? []) {
+        if (match[1]) ids.add(match[1]);
+      }
+    }
+    return ids;
+  }, [entries]);
+  const unusedCount = assets.filter((asset) => !referencedAssetIds.has(asset.id)).length;
   const editingAsset = assets.find((asset) => asset.id === editingId) ?? null;
 
   async function importFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -253,11 +274,15 @@ export function AssetsPage() {
     setNotice(null);
     let imported = 0;
     let rejected = 0;
+    let duplicateName = "";
     for (const file of files) {
       try {
         await addAssetFile(file);
         imported += 1;
-      } catch {
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("asset-duplicate:")) {
+          duplicateName = error.message.slice("asset-duplicate:".length);
+        }
         rejected += 1;
       }
     }
@@ -271,7 +296,7 @@ export function AssetsPage() {
           : t("assets.importSuccess", { count: imported }),
       });
     } else {
-      setNotice({ tone: "error", message: t("assets.importFailed") });
+      setNotice({ tone: "error", message: duplicateName ? t("assets.duplicate", { name: duplicateName }) : t("assets.importFailed") });
     }
   }
 
@@ -294,7 +319,7 @@ export function AssetsPage() {
   }
 
   async function removeAsset(asset: AssetRecord) {
-    if (!window.confirm(t("assets.deleteConfirm", { name: asset.name }))) return;
+    if (!await dialog.confirm({ message: t("assets.deleteConfirm", { name: asset.name }), danger: true, confirmLabel: t("common.delete") })) return;
     setDeletingId(asset.id);
     setNotice(null);
     try {
@@ -308,13 +333,10 @@ export function AssetsPage() {
   }
 
   return (
-    <MotionPage className="space-y-6">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="ws-page-title">
-            {t("nav.assets")}
-          </h2>
-          <p className="ws-page-status">
+    <MotionPage className="space-y-5">
+      <div className="ws-workbench flex-wrap">
+        <div className="ws-workbench-meta">
+          <p>
             {t("assets.headerStatus", {
               count: assets.length,
               size: formatAssetSize(totalSize),
@@ -339,15 +361,16 @@ export function AssetsPage() {
             {busy ? t("assets.importing") : t("assets.add")}
           </button>
         ) : null}
-      </header>
+      </div>
 
-      <section className="grid border-y border-[var(--border)] sm:grid-cols-3">
+      <section className="grid border-y border-[var(--border)] sm:grid-cols-2 xl:grid-cols-4">
         {[
           [t("assets.totalFiles"), assets.length],
           [t("assets.images"), assets.filter((asset) => asset.kind === "image").length],
           [t("assets.storageUsed"), formatAssetSize(totalSize)],
+          [t("assets.unused"), unusedCount],
         ].map(([label, value], index) => (
-          <div key={label} className={`px-2 py-4 sm:px-5 ${index ? "border-t border-[var(--border)] sm:border-l sm:border-t-0" : ""}`}>
+          <div key={label} className={`px-4 py-4 sm:px-5 ${index ? "border-t border-[var(--border)] sm:border-l sm:border-t-0" : ""}`}>
             <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
               {label}
             </p>
@@ -358,9 +381,9 @@ export function AssetsPage() {
         ))}
       </section>
 
-      <section className="ws-compact-surface p-3">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <label className="ws-input flex h-10 flex-1 items-center gap-3 rounded-xl px-3 xl:max-w-md">
+      <section className="ws-compact-surface ws-panel-padding-compact">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <label className="ws-input ws-field flex flex-1 items-center gap-3 xl:max-w-md">
             <Search size={16} className="text-[var(--text-faint)]" />
             <input
               type="search"
@@ -479,16 +502,10 @@ export function AssetsPage() {
           })}
         </section>
       ) : (
-        <section className="ws-surface rounded-[2rem] px-6 py-16 text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-            <Archive size={24} />
-          </span>
-          <h3 className="ws-display mt-5 text-3xl font-semibold text-[var(--text)]">
+        <section className="border-y border-dashed border-[var(--border)] px-6 py-14 text-center">
+          <h3 className="text-base font-semibold text-[var(--text)]">
             {assets.length ? t("assets.noMatches") : t("assets.empty")}
           </h3>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-            {assets.length ? t("assets.noMatchesHelp") : t("assets.emptyHelp")}
-          </p>
           {!assets.length ? (
             <button
               type="button"

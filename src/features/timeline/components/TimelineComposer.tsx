@@ -3,13 +3,14 @@ import { useState } from "react";
 
 import { useI18n } from "../../../shared/i18n";
 import type { EntryType } from "../../entries/types";
-import { TIMELINE_CATEGORIES } from "../timelineModel";
-import type { TimelineCategory, TimelineCertainty } from "../types";
+import type { TimelineCategory, TimelineCertainty, TimelineLane } from "../types";
 
 type TimelineComposerProps = {
   entries: Array<{ id: string; title: string; type: EntryType }>;
+  lanes: TimelineLane[];
   createItem: (input: {
-    entryId: string;
+    entryId: string | null;
+    title: string;
     startYear: number;
     endYear: number | null;
     description: string;
@@ -24,31 +25,37 @@ type TimelineComposerProps = {
 
 export function TimelineComposer({
   entries,
+  lanes,
   createItem,
   close,
   created,
 }: TimelineComposerProps) {
   const { t } = useI18n();
   const [entryId, setEntryId] = useState(
-    entries.find((entry) => entry.type === "Event")?.id ?? entries[0]?.id ?? "",
+    "",
   );
+  const [title, setTitle] = useState("");
   const [startYear, setStartYear] = useState("0");
   const [endYear, setEndYear] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<TimelineCategory>("Other");
+  const [category, setCategory] = useState<TimelineCategory>(lanes[0]?.id ?? "Other");
+  const [color, setColor] = useState("");
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [certainty, setCertainty] = useState<TimelineCertainty>("canon");
 
   function submit() {
     const start = Number(startYear);
     const end = endYear.trim() ? Number(endYear) : null;
-    if (!entryId || !Number.isFinite(start) || (end !== null && !Number.isFinite(end))) return;
+    const linkedEntry = entries.find((entry) => entry.id === entryId);
+    const resolvedTitle = title.trim() || linkedEntry?.title || "";
+    if (!resolvedTitle || !Number.isFinite(start) || (end !== null && !Number.isFinite(end))) return;
     const id = createItem({
-      entryId,
+      entryId: entryId || null,
+      title: resolvedTitle,
       startYear: Math.min(start, end ?? start),
       endYear: end === null ? null : Math.max(start, end),
       description,
-      color: null,
+      color: color || null,
       category,
       importance,
       certainty,
@@ -68,8 +75,13 @@ export function TimelineComposer({
       <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">{t("timeline.composerHelp")}</p>
       <div className="mt-5 space-y-3">
         <label className="block text-[10px] text-[var(--text-faint)]">
-          {t("common.entries")}
+          {t("timeline.eventTitle")}
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("timeline.eventTitlePlaceholder")} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs" />
+        </label>
+        <label className="block text-[10px] text-[var(--text-faint)]">
+          {t("timeline.linkedEntry")}
           <select value={entryId} onChange={(event) => setEntryId(event.target.value)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
+            <option value="">{t("timeline.noLinkedEntry")}</option>
             {entries.map((entry) => <option key={entry.id} value={entry.id}>{entry.title} · {t(`type.${entry.type}`)}</option>)}
           </select>
         </label>
@@ -80,8 +92,12 @@ export function TimelineComposer({
         <label className="block text-[10px] text-[var(--text-faint)]">
           {t("timeline.threads")}
           <select value={category} onChange={(event) => setCategory(event.target.value as TimelineCategory)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
-            {TIMELINE_CATEGORIES.map((value) => <option key={value} value={value}>{t(`timeline.category.${value}`)}</option>)}
+            {lanes.map((lane) => <option key={lane.id} value={lane.id}>{lane.id === lane.name && ["Politics & Power", "Conflict", "Culture & Faith", "Exploration", "Catastrophe", "Lives", "Other"].includes(lane.id) ? t(`timeline.category.${lane.id}`) : lane.name}</option>)}
           </select>
+        </label>
+        <label className="flex items-center justify-between text-[10px] text-[var(--text-faint)]">
+          {t("timeline.eventColor")}
+          <span className="flex items-center gap-2"><button type="button" onClick={() => setColor("")} className="text-[10px] underline">{t("timeline.useLaneColor")}</button><input type="color" value={color || lanes.find((lane) => lane.id === category)?.color || "#777780"} onChange={(event) => setColor(event.target.value)} className="h-8 w-12 rounded border-0 bg-transparent" /></span>
         </label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">
@@ -98,7 +114,7 @@ export function TimelineComposer({
           </label>
         </div>
         <label className="block text-[10px] text-[var(--text-faint)]">{t("timeline.note")}<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="ws-input mt-1 w-full rounded-md p-2 text-xs" placeholder={t("timeline.contextPlaceholder")} /></label>
-        <button type="button" onClick={submit} disabled={!entryId || startYear === ""} className="ws-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"><Plus size={14} />{t("timeline.addToChronicle")}</button>
+        <button type="button" onClick={submit} disabled={(!title.trim() && !entryId) || startYear === ""} className="ws-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"><Plus size={14} />{t("timeline.addToChronicle")}</button>
       </div>
     </aside>
   );

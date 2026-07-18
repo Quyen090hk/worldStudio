@@ -18,6 +18,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { RichTextReadView } from "./components/RichTextReadView";
 import { deleteEntryCascade } from "./actions/deleteEntryCascade";
 import { useEntryStore } from "./stores/useEntryStore";
@@ -36,8 +37,11 @@ import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
 import { useMapStore } from "../map/stores/useMapStore";
 import { useTimelineStore } from "../timeline/stores/useTimelineStore";
 import { useCanvasStore } from "../canvas/stores/useCanvasStore";
+import { EntryGallery, EntryHeroMedia } from "./components/EntryMediaView";
+import { EntryPropertiesView } from "./components/EntryPropertiesView";
+import { readEntryDraft, writeEntryDraft } from "./entryDraftStorage";
 
-type SaveStatus = "idle" | "saving" | "saved";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 type PendingContentSave = { entryId: string; content: string };
 
 const RichTextEditor = lazy(() =>
@@ -83,6 +87,7 @@ export function EntryDetailPage() {
 function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   const navigate = useNavigate();
   const { locale, t } = useI18n();
+  const dialog = useSoftDialog();
 
   const entries = useEntryStore((state) => state.entries);
   const openEditEntry = useEntryStore((state) => state.openEditEntry);
@@ -159,6 +164,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
     entry ? "saved" : "idle",
   );
   const pendingContentSaveRef = useRef<PendingContentSave | null>(null);
+  const draftWriteSequenceRef = useRef(0);
 
   const writingStats = useMemo(
     () => getWritingStats(isEditingContent ? draftContent : entryContent),
@@ -166,6 +172,27 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   );
   const currentEntryId = entry?.id;
   const savedContent = entryContent;
+
+  useEffect(() => {
+    if (!currentEntryId) return;
+    let cancelled = false;
+    void readEntryDraft(currentEntryId).then(async (draft) => {
+      if (cancelled || !draft || draft.content === savedContent) return;
+      const restore = await dialog.confirm({
+        message: t("entry.restoreDraftConfirm"),
+        confirmLabel: t("entry.restoreDraft"),
+      });
+      if (cancelled || !restore) return;
+      setDraftContent(draft.content);
+      pendingContentSaveRef.current = {
+        entryId: currentEntryId,
+        content: draft.content,
+      };
+      setSaveStatus("saving");
+      setIsEditingContent(true);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [currentEntryId, dialog, savedContent, t]);
 
   useEffect(() => {
     if (!currentEntryId) return;
@@ -183,7 +210,14 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
       updateEntryContent(pending.entryId, pending.content);
       pendingContentSaveRef.current = null;
-      setSaveStatus("saved");
+      const sequence = ++draftWriteSequenceRef.current;
+      void writeEntryDraft(pending.entryId, pending.content)
+        .then(() => {
+          if (draftWriteSequenceRef.current === sequence) setSaveStatus("saved");
+        })
+        .catch(() => {
+          if (draftWriteSequenceRef.current === sequence) setSaveStatus("error");
+        });
     }, 800);
 
     return () => {
@@ -210,6 +244,30 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
     [],
   );
 
+  useEffect(() => {
+    function flushPending() {
+      const pending = pendingContentSaveRef.current;
+      if (!pending) return;
+      useEntryStore.getState().updateEntryContent(pending.entryId, pending.content);
+      void writeEntryDraft(pending.entryId, pending.content);
+      pendingContentSaveRef.current = null;
+    }
+    function handleVisibility() {
+      if (document.visibilityState === "hidden") flushPending();
+    }
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!pendingContentSaveRef.current) return;
+      flushPending();
+      event.preventDefault();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   function handleContentChange(content: string) {
     setDraftContent(content);
 
@@ -221,6 +279,14 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
     pendingContentSaveRef.current = { entryId: entry.id, content };
     setSaveStatus("saving");
+    const sequence = ++draftWriteSequenceRef.current;
+    void writeEntryDraft(entry.id, content)
+      .then(() => {
+        if (draftWriteSequenceRef.current === sequence) setSaveStatus("saved");
+      })
+      .catch(() => {
+        if (draftWriteSequenceRef.current === sequence) setSaveStatus("error");
+      });
   }
 
   function startEditingContent() {
@@ -231,11 +297,11 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
     setIsEditingContent(true);
   }
 
-  function handleRestoreRevision(revisionId: string) {
+  async function handleRestoreRevision(revisionId: string) {
     if (!entry) return;
     const revision = entryRevisions.find((item) => item.id === revisionId);
     if (!revision) return;
-    if (!window.confirm(t("entry.restoreRevisionConfirm"))) return;
+    if (!await dialog.confirm({ message: t("entry.restoreRevisionConfirm") })) return;
     restoreRevision(entry.id, revision.id);
     setDraftContent(revision.content);
     setHistoryOpen(false);
@@ -252,12 +318,10 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
     setIsEditingContent(false);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!entry) return;
 
-    const confirmed = window.confirm(
-      t("entry.deleteConfirm", { title: entry.title }),
-    );
+    const confirmed = await dialog.confirm({ message: t("entry.deleteConfirm", { title: entry.title }), danger: true, confirmLabel: t("common.delete") });
 
     if (confirmed) {
       pendingContentSaveRef.current = null;
@@ -278,7 +342,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           {t("entry.back")}
         </button>
 
-        <section className="ws-surface rounded-[2rem] p-8">
+        <section className="ws-surface rounded-[2rem] p-6 sm:p-8">
           <p className="ws-eyebrow">{t("entry.missingRecord")}</p>
 
           <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
@@ -334,6 +398,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           typeMeta.borderClassName,
         ].join(" ")}
       >
+        <EntryHeroMedia entry={entry} />
         <div className="relative">
           <div>
             <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -369,6 +434,10 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
                 </span>
               )}
             </div>
+            <div className="mt-7 max-w-4xl">
+              <EntryPropertiesView properties={entry.properties} entries={entries} />
+            </div>
+            <EntryGallery entry={entry} />
           </div>
 
         </div>
@@ -394,11 +463,16 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
             <div className="flex flex-wrap items-center gap-2">
               {isEditingContent ? (
-                <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--text-muted)]">
+                <span role="status" aria-live="polite" aria-atomic="true" className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--text-muted)]">
                   {saveStatus === "saving" ? (
                     <>
                       <Clock3 size={15} strokeWidth={1.8} />
                       {t("entry.saving")}
+                    </>
+                  ) : saveStatus === "error" ? (
+                    <>
+                      <Clock3 size={15} strokeWidth={1.8} />
+                      {t("entry.saveFailed")}
                     </>
                   ) : (
                     <>
@@ -509,14 +583,10 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           ) : entryContent ? (
             <RichTextReadView value={entryContent} />
           ) : (
-            <div className="rounded-[1.5rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-6 py-12 text-center">
-              <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+            <div className="border-y border-dashed border-[var(--border)] px-6 py-10 text-center">
+              <h3 className="text-base font-semibold text-[var(--text)]">
                 {t("common.noContent")}
               </h3>
-
-              <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-                {t("entry.addNotes")}
-              </p>
 
               <button
                 type="button"
@@ -530,9 +600,9 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           </div>
         </article>
 
-        <aside className={isEditingContent ? "hidden" : "space-y-6"}>
-          <section className="ws-compact-surface p-5">
-            <p className="ws-eyebrow">{t("common.tags")}</p>
+        <aside className={isEditingContent ? "hidden" : "ws-compact-surface divide-y divide-[var(--border)] px-5"}>
+          <section className="py-5">
+            <h2 className="text-xs font-semibold text-[var(--text-muted)]">{t("common.tags")}</h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {entry.tags.length > 0 ? (
@@ -550,9 +620,9 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
             </div>
           </section>
 
-          <section className="ws-compact-surface p-5">
+          <section className="py-5">
             <div className="flex items-center justify-between gap-3">
-              <p className="ws-eyebrow">{t("entry.backlinks")}</p>
+              <h2 className="text-xs font-semibold text-[var(--text-muted)]">{t("entry.backlinks")}</h2>
               <span className="rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)]">
                 {backlinks.length}
               </span>
@@ -587,8 +657,8 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
             )}
           </section>
 
-          <section className="ws-compact-surface p-5">
-            <p className="ws-eyebrow">{t("entry.linkedRecords")}</p>
+          <section className="py-5">
+            <h2 className="text-xs font-semibold text-[var(--text-muted)]">{t("entry.linkedRecords")}</h2>
 
             <div className="mt-4 space-y-2">
               {[

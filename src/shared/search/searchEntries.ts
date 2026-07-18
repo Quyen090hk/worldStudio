@@ -9,12 +9,39 @@ function normalize(value: string) {
     .trim();
 }
 
+function plainText(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function getEntrySearchExcerpt(entry: Entry, query: string, length = 110) {
+  const fallback = entry.summary || plainText(entry.content) || "";
+  const body = plainText(entry.content);
+  const token = normalize(query).split(" ").find(Boolean);
+  if (!token || !body.toLocaleLowerCase().includes(token)) return fallback;
+  const index = body.toLocaleLowerCase().indexOf(token);
+  const start = Math.max(0, index - Math.floor(length * 0.35));
+  const excerpt = body.slice(start, start + length).trim();
+  return `${start > 0 ? "…" : ""}${excerpt}${start + length < body.length ? "…" : ""}`;
+}
+
 function scoreEntry(entry: Entry, tokens: string[]) {
   const title = normalize(entry.title);
   const summary = normalize(entry.summary);
   const tags = entry.tags.map(normalize);
   const content = normalize(entry.content);
-  const searchable = [title, summary, tags.join(" "), content].join(" ");
+  const properties = (entry.properties ?? [])
+    .map((property) => `${property.label} ${Array.isArray(property.value) ? property.value.join(" ") : property.value}`)
+    .join(" ");
+  const searchable = [title, summary, tags.join(" "), properties, content].join(" ");
 
   if (!tokens.every((token) => searchable.includes(token))) return null;
 

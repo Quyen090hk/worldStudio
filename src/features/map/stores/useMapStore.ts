@@ -15,6 +15,7 @@ type MapStore = {
   deleteMap: (id: string) => void;
   addLayer: (mapId: string, name: string) => string;
   toggleLayer: (id: string) => void;
+  moveLayer: (id: string, direction: -1 | 1) => void;
   addMarker: (marker: Omit<MapMarker, "id">) => string;
   updateMarker: (id: string, patch: Partial<Omit<MapMarker, "id">>) => void;
   deleteMarker: (id: string) => void;
@@ -29,12 +30,11 @@ function createId(prefix: string) {
     : `${prefix}-${Date.now()}`;
 }
 
-const mapId = "map-ashen-continent";
+const mapId = "map-default";
 const defaultLayerId = "layer-places";
-const maps: WorldMap[] = [{ id: mapId, name: "The Ashen Continent", scale: "Continent", description: "The known lands of the Ashen Archive.", createdAt: new Date().toISOString() }];
+const maps: WorldMap[] = [{ id: mapId, name: "World Map", scale: "World", description: "", createdAt: new Date().toISOString() }];
 const layers: MapLayer[] = [
   { id: defaultLayerId, mapId, name: "Places", color: "#986e36", visible: true },
-  { id: "layer-history", mapId, name: "History & conflicts", color: "#925b52", visible: true },
 ];
 
 export const useMapStore = create<MapStore>()(
@@ -75,6 +75,16 @@ export const useMapStore = create<MapStore>()(
         return id;
       },
       toggleLayer: (id) => set((state) => ({ layers: state.layers.map((layer) => layer.id === id ? { ...layer, visible: !layer.visible } : layer) })),
+      moveLayer: (id, direction) => set((state) => {
+        const index = state.layers.findIndex((layer) => layer.id === id);
+        if (index < 0) return state;
+        const targetIndex = index + direction;
+        const target = state.layers[targetIndex];
+        if (!target || target.mapId !== state.layers[index].mapId) return state;
+        const layers = [...state.layers];
+        [layers[index], layers[targetIndex]] = [layers[targetIndex], layers[index]];
+        return { layers };
+      }),
       addMarker: (marker) => {
         const id = createId("marker");
         set((state) => ({ markers: [...state.markers, { ...marker, id }] }));

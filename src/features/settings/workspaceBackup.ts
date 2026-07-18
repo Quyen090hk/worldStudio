@@ -44,13 +44,14 @@ import {
   saveMapImage,
 } from "../map/utils/mapImageStorage";
 import type {
-  TimelineCategory,
   TimelineCertainty,
   TimelineEra,
   TimelineItem,
+  TimelineLane,
   TimelineViewport,
+  WorldYearFormat,
 } from "../timeline/types";
-import { TIMELINE_CATEGORIES } from "../timeline/timelineModel";
+import { DEFAULT_TIMELINE_LANES, DEFAULT_WORLD_YEAR_FORMAT } from "../timeline/timelineModel";
 import { useTimelineStore } from "../timeline/stores/useTimelineStore";
 import { useWorldStore } from "../world/stores/useWorldStore";
 import type { WorldProfile } from "../world/types";
@@ -62,7 +63,7 @@ import {
 } from "../world/worldModel";
 
 export const WORKSPACE_BACKUP_FORMAT = "world-studio-backup";
-export const WORKSPACE_BACKUP_VERSION = 5;
+export const WORKSPACE_BACKUP_VERSION = 6;
 export const MAX_BACKUP_FILE_BYTES = 250 * 1024 * 1024;
 const MAX_MAP_IMAGE_BYTES = 15 * 1024 * 1024;
 
@@ -87,6 +88,8 @@ export type WorkspaceBackupData = {
   timeline: {
     items: TimelineItem[];
     eras: TimelineEra[];
+    lanes: TimelineLane[];
+    yearFormat: WorldYearFormat;
     viewport: TimelineViewport;
   };
   atlas: {
@@ -112,6 +115,8 @@ export type WorkspaceBackupData = {
 export type WorkspaceBackup = {
   format: typeof WORKSPACE_BACKUP_FORMAT;
   version: typeof WORKSPACE_BACKUP_VERSION;
+  /** Snapshots reference binary object stores; portable backups embed them. */
+  storage?: "portable" | "snapshot";
   exportedAt: string;
   data: WorkspaceBackupData;
 };
@@ -227,7 +232,33 @@ function isEntry(value: unknown): value is Entry {
     typeof value.content === "string" &&
     isStringArray(value.tags) &&
     typeof value.createdAt === "string" &&
-    typeof value.updatedAt === "string"
+    typeof value.updatedAt === "string" &&
+    (value.properties === undefined ||
+      (Array.isArray(value.properties) && value.properties.every(isEntryProperty))) &&
+    (value.media === undefined || isEntryMedia(value.media))
+  );
+}
+
+function isEntryProperty(value: unknown) {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    ["text", "longText", "select", "entryReference"].includes(String(value.type)) &&
+    (typeof value.value === "string" || isStringArray(value.value))
+  );
+}
+
+function isEntryMedia(value: unknown) {
+  if (!isRecord(value)) return false;
+  return (
+    (value.primaryAssetId === undefined || typeof value.primaryAssetId === "string") &&
+    (value.bannerAssetId === undefined || typeof value.bannerAssetId === "string") &&
+    (value.galleryAssetIds === undefined || isStringArray(value.galleryAssetIds)) &&
+    (value.focalPoint === undefined ||
+      (isRecord(value.focalPoint) &&
+        isFiniteNumber(value.focalPoint.x) &&
+        isFiniteNumber(value.focalPoint.y)))
   );
 }
 
@@ -278,18 +309,26 @@ function isTimelineItem(value: unknown): value is TimelineItem {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
-    typeof value.entryId === "string" &&
+    (value.entryId === null || typeof value.entryId === "string") &&
+    typeof value.title === "string" &&
     isFiniteNumber(value.startYear) &&
     isNullableNumber(value.endYear) &&
     typeof value.description === "string" &&
     (value.color === null || typeof value.color === "string") &&
-    (value.category === undefined ||
-      TIMELINE_CATEGORIES.includes(value.category as TimelineCategory)) &&
+    (value.category === undefined || typeof value.category === "string") &&
     (value.importance === undefined ||
       ([1, 2, 3, 4, 5] as number[]).includes(value.importance as number)) &&
     (value.certainty === undefined ||
       TIMELINE_CERTAINTIES.includes(value.certainty as TimelineCertainty))
   );
+}
+
+function isTimelineLane(value: unknown): value is TimelineLane {
+  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string" && typeof value.color === "string";
+}
+
+function isWorldYearFormat(value: unknown): value is WorldYearFormat {
+  return isRecord(value) && typeof value.beforeSuffix === "string" && typeof value.afterSuffix === "string" && typeof value.zeroLabel === "string";
 }
 
 function isTimelineEra(value: unknown): value is TimelineEra {
@@ -482,12 +521,16 @@ function assertUniqueIds(items: Array<{ id: string }>, label: string) {
   }
 }
 
-function validateReferences(data: WorkspaceBackupData) {
+function validateReferences(
+  data: WorkspaceBackupData,
+  allowExternalAssetFiles = false,
+) {
   assertUniqueIds(data.entries, "Entries");
   assertUniqueIds(data.revisions, "Entry revisions");
   assertUniqueIds(data.relationships, "Relationships");
   assertUniqueIds(data.timeline.items, "Timeline items");
   assertUniqueIds(data.timeline.eras, "Timeline eras");
+  assertUniqueIds(data.timeline.lanes, "Timeline lanes");
   assertUniqueIds(data.atlas.maps, "Maps");
   assertUniqueIds(data.atlas.layers, "Map layers");
   assertUniqueIds(data.atlas.markers, "Map markers");
@@ -497,6 +540,7 @@ function validateReferences(data: WorkspaceBackupData) {
   assertUniqueIds(data.canvas.connections, "Canvas connections");
 
   const entryIds = new Set(data.entries.map((entry) => entry.id));
+  const timelineLaneIds = new Set(data.timeline.lanes.map((lane) => lane.id));
   const mapIds = new Set(data.atlas.maps.map((map) => map.id));
   const layersById = new Map(
     data.atlas.layers.map((layer) => [layer.id, layer]),
@@ -517,7 +561,10 @@ function validateReferences(data: WorkspaceBackupData) {
         !entryIds.has(relationship.sourceEntryId) ||
         !entryIds.has(relationship.targetEntryId),
     ) ||
-    data.timeline.items.some((item) => !entryIds.has(item.entryId)) ||
+    data.timeline.items.some((item) =>
+      (item.entryId !== null && !entryIds.has(item.entryId)) ||
+      (item.category !== undefined && !timelineLaneIds.has(item.category)),
+    ) ||
     data.revisions.some((revision) => !entryIds.has(revision.entryId))
   ) {
     throw new WorkspaceBackupError(
@@ -584,9 +631,9 @@ function validateReferences(data: WorkspaceBackupData) {
   if (
     new Set(fileAssetIds).size !== fileAssetIds.length ||
     fileAssetIds.some((assetId) => !assetIds.has(assetId)) ||
-    data.assetLibrary.items.some(
+    (!allowExternalAssetFiles && data.assetLibrary.items.some(
       (asset) => !fileAssetIds.includes(asset.id),
-    ) ||
+    )) ||
     data.assetLibrary.files.some((file) => {
       const asset = data.assetLibrary.items.find(
         (item) => item.id === file.assetId,
@@ -644,7 +691,7 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
     viewport: { zoom: 1 },
   };
   const defaultWorld = createDefaultWorldProfile();
-  const normalizedValue =
+  const migratedValue =
     value.version === 1 && isRecord(value.data)
       ? {
           ...value,
@@ -682,8 +729,33 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
               }
             : value;
 
+  const normalizedValue = isRecord(migratedValue.data) && isRecord(migratedValue.data.timeline)
+    ? {
+        ...migratedValue,
+        version: WORKSPACE_BACKUP_VERSION,
+        data: {
+          ...migratedValue.data,
+          timeline: {
+            ...migratedValue.data.timeline,
+            items: Array.isArray(migratedValue.data.timeline.items)
+              ? migratedValue.data.timeline.items.map((item) => isRecord(item) ? { title: "", ...item } : item)
+              : migratedValue.data.timeline.items,
+            lanes: Array.isArray(migratedValue.data.timeline.lanes)
+              ? migratedValue.data.timeline.lanes
+              : DEFAULT_TIMELINE_LANES.map((lane) => ({ ...lane })),
+            yearFormat: isRecord(migratedValue.data.timeline.yearFormat)
+              ? migratedValue.data.timeline.yearFormat
+              : { ...DEFAULT_WORLD_YEAR_FORMAT },
+          },
+        },
+      }
+    : migratedValue;
+
   if (
     typeof normalizedValue.exportedAt !== "string" ||
+    (normalizedValue.storage !== undefined &&
+      normalizedValue.storage !== "portable" &&
+      normalizedValue.storage !== "snapshot") ||
     !isRecord(normalizedValue.data)
   ) {
     throw new WorkspaceBackupError("invalid-data", "Invalid backup metadata");
@@ -703,6 +775,10 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
     !data.timeline.items.every(isTimelineItem) ||
     !Array.isArray(data.timeline.eras) ||
     !data.timeline.eras.every(isTimelineEra) ||
+    !Array.isArray(data.timeline.lanes) ||
+    !data.timeline.lanes.length ||
+    !data.timeline.lanes.every(isTimelineLane) ||
+    !isWorldYearFormat(data.timeline.yearFormat) ||
     !isTimelineViewport(data.timeline.viewport) ||
     !isRecord(data.atlas) ||
     !Array.isArray(data.atlas.maps) ||
@@ -736,7 +812,7 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
   }
 
   const backup = normalizedValue as WorkspaceBackup;
-  validateReferences(backup.data);
+  validateReferences(backup.data, backup.storage === "snapshot");
   return backup;
 }
 
@@ -776,6 +852,7 @@ function snapshotGraphSettings(): GraphSettings {
 
 export function sanitizeWorkspaceData(
   data: WorkspaceBackupData,
+  options: { preserveExternalAssetFiles?: boolean } = {},
 ): WorkspaceBackupData {
   const entryIds = new Set(data.entries.map((entry) => entry.id));
   const mapIds = new Set(data.atlas.maps.map((map) => map.id));
@@ -794,9 +871,9 @@ export function sanitizeWorkspaceData(
   const assetFileIds = new Set(
     data.assetLibrary.files.map((file) => file.assetId),
   );
-  const assetItems = data.assetLibrary.items.filter((asset) =>
-    assetFileIds.has(asset.id),
-  );
+  const assetItems = options.preserveExternalAssetFiles
+    ? data.assetLibrary.items
+    : data.assetLibrary.items.filter((asset) => assetFileIds.has(asset.id));
   const assetIds = new Set(assetItems.map((asset) => asset.id));
   const canvasCards = data.canvas.cards.filter(
     (card) => card.kind === "note" || entryIds.has(card.entryId),
@@ -813,7 +890,7 @@ export function sanitizeWorkspaceData(
     ),
     timeline: {
       ...data.timeline,
-      items: data.timeline.items.filter((item) => entryIds.has(item.entryId)),
+      items: data.timeline.items.filter((item) => item.entryId === null || entryIds.has(item.entryId)),
     },
     atlas: {
       ...data.atlas,
@@ -886,6 +963,8 @@ async function createWorkspacePackage(includeBinaryFiles: boolean): Promise<Work
     timeline: {
       items: timelineState.items,
       eras: timelineState.eras,
+      lanes: timelineState.lanes,
+      yearFormat: timelineState.yearFormat,
       viewport: timelineState.viewport,
     },
     atlas: {
@@ -906,11 +985,12 @@ async function createWorkspacePackage(includeBinaryFiles: boolean): Promise<Work
       viewport: canvasState.viewport,
     },
     graphSettings: snapshotGraphSettings(),
-  });
+  }, { preserveExternalAssetFiles: !includeBinaryFiles });
 
   return validateWorkspaceBackupObject({
     format: WORKSPACE_BACKUP_FORMAT,
     version: WORKSPACE_BACKUP_VERSION,
+    storage: includeBinaryFiles ? "portable" : "snapshot",
     exportedAt: new Date().toISOString(),
     data,
   });
@@ -1022,6 +1102,8 @@ function applyWorkspaceData(data: WorkspaceBackupData) {
   useTimelineStore.setState({
     items: data.timeline.items,
     eras: data.timeline.eras,
+    lanes: data.timeline.lanes,
+    yearFormat: data.timeline.yearFormat,
     viewport: data.timeline.viewport,
   });
   useMapStore.setState({
@@ -1063,6 +1145,8 @@ export async function restoreWorkspaceBackup(backup: WorkspaceBackup) {
     timeline: {
       items: useTimelineStore.getState().items,
       eras: useTimelineStore.getState().eras,
+      lanes: useTimelineStore.getState().lanes,
+      yearFormat: useTimelineStore.getState().yearFormat,
       viewport: useTimelineStore.getState().viewport,
     },
     atlas: {

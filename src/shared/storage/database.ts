@@ -1,18 +1,26 @@
 import type { StateStorage } from "zustand/middleware";
 
 export const DATABASE_NAME = "world-studio";
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 4;
 
 export const STORE_STATE = "state";
 export const STORE_WORKSPACES = "workspaces";
 export const STORE_MAP_IMAGES = "map-images";
 export const STORE_ASSET_FILES = "asset-files";
+export const STORE_ASSET_THUMBNAILS = "asset-thumbnails";
+export const STORE_ENTRY_DRAFTS = "entry-drafts";
+export const STORE_ENTRIES = "entries";
+export const STORE_ENTRY_REVISIONS = "entry-revisions";
 
 type StoreName =
   | typeof STORE_STATE
   | typeof STORE_WORKSPACES
   | typeof STORE_MAP_IMAGES
-  | typeof STORE_ASSET_FILES;
+  | typeof STORE_ASSET_FILES
+  | typeof STORE_ASSET_THUMBNAILS
+  | typeof STORE_ENTRY_DRAFTS
+  | typeof STORE_ENTRIES
+  | typeof STORE_ENTRY_REVISIONS;
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 const memoryFallback = new Map<string, unknown>();
@@ -36,6 +44,10 @@ export function openDatabase() {
         STORE_WORKSPACES,
         STORE_MAP_IMAGES,
         STORE_ASSET_FILES,
+        STORE_ASSET_THUMBNAILS,
+        STORE_ENTRY_DRAFTS,
+        STORE_ENTRIES,
+        STORE_ENTRY_REVISIONS,
       ]) {
         if (!request.result.objectStoreNames.contains(storeName)) {
           request.result.createObjectStore(storeName);
@@ -74,6 +86,21 @@ export async function readRecord<T>(storeName: StoreName, key: IDBValidKey) {
       .objectStore(storeName)
       .get(key);
     request.onsuccess = () => resolve(request.result as T | undefined);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function readAllRecords<T>(storeName: StoreName) {
+  if (typeof indexedDB === "undefined") {
+    const prefix = `${storeName}:`;
+    return [...memoryFallback.entries()]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, value]) => value as T);
+  }
+  const database = await openDatabase();
+  return new Promise<T[]>((resolve, reject) => {
+    const request = database.transaction(storeName, "readonly").objectStore(storeName).getAll();
+    request.onsuccess = () => resolve(request.result as T[]);
     request.onerror = () => reject(request.error);
   });
 }

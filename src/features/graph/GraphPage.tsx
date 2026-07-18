@@ -57,6 +57,7 @@ import type {
   RelationshipStatus,
   RelationshipType,
 } from "./types";
+import { removeRelationshipWithUndo } from "../../shared/undo/workspaceUndoActions";
 
 cytoscape.use(fcose);
 
@@ -201,9 +202,6 @@ export function GraphPage() {
   const createRelationship = useRelationshipStore(
     (state) => state.createRelationship,
   );
-  const deleteRelationship = useRelationshipStore(
-    (state) => state.deleteRelationship,
-  );
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Core | null>(null);
   const physicsControllerRef = useRef<DragPhysicsController | null>(null);
@@ -248,7 +246,9 @@ export function GraphPage() {
     linkElasticity,
     centerGravity,
     animationDuration,
+    nodePositions,
   } = graphSettings;
+  const nodePositionsRef = useRef(nodePositions ?? {});
   const physicsOptionsRef = useRef<GraphPhysicsOptions>({
     centerForce: centerGravity,
     repelForce: nodeRepulsion,
@@ -261,6 +261,10 @@ export function GraphPage() {
   useEffect(() => {
     animationDurationRef.current = animationDuration;
   }, [animationDuration]);
+
+  useEffect(() => {
+    nodePositionsRef.current = nodePositions ?? {};
+  }, [nodePositions]);
 
   const year = eraYear === "" ? null : Number(eraYear);
   const projection = useMemo(
@@ -307,6 +311,14 @@ export function GraphPage() {
       )
     : [];
 
+  function handleDeleteRelationship(id: string) {
+    const relationship = relationships.find((item) => item.id === id);
+    if (!relationship) return;
+    const source = entries.find((entry) => entry.id === relationship.sourceEntryId)?.title;
+    const target = entries.find((entry) => entry.id === relationship.targetEntryId)?.title;
+    removeRelationshipWithUndo(id, [source, target].filter(Boolean).join(" — ") || t("graph.relationship"));
+  }
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -336,6 +348,17 @@ export function GraphPage() {
       if (!graph.$(":selected").length) graph.elements().removeClass("faded");
     });
     graph.on("zoom", () => updateLabelVisibility(graph));
+    graph.on("dragfree", "node", (event) => {
+      const node = event.target;
+      const position = node.position();
+      const settings = useGraphSettingsStore.getState();
+      settings.patch({
+        nodePositions: {
+          ...(settings.nodePositions ?? {}),
+          [node.id()]: { x: position.x, y: position.y },
+        },
+      });
+    });
     graph.on("tap", "node", (event) => {
       const node = event.target;
       graph.elements().addClass("faded");
@@ -389,6 +412,10 @@ export function GraphPage() {
       revealTimer = window.setTimeout(() => setGraphReady(true), 1200);
       graph.one("layoutstop", () => {
         if (graph.destroyed()) return;
+        graph.nodes().forEach((node) => {
+          const saved = nodePositionsRef.current[node.id()];
+          if (saved) node.position(saved);
+        });
         fitGraph(graph);
         updateLabelVisibility(graph);
         physicsController = attachDragPhysics(
@@ -532,20 +559,21 @@ export function GraphPage() {
   }
 
   return (
-    <MotionPage className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="ws-page-title">
-          {t("nav.graph")}
-          </h2>
-        </div>
-        <div className="pb-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+    <MotionPage className="space-y-3">
+      <div className="ws-workbench">
+        <div className="flex items-center gap-2 ws-workbench-meta">
           <span>{visibleEntries.length} {t("graph.notes")}</span>
           <span>·</span>
           <span>{visibleRelationships.length} {t("graph.links")}</span>
         </div>
-      </header>
-      <section className="relative h-[calc(100vh-10.5rem)] min-h-[620px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]">
+      </div>
+      <details className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] lg:hidden">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("graph.accessibleList", { count: visibleEntries.length })}</summary>
+        <div className="max-h-56 divide-y divide-[var(--border)] overflow-y-auto border-t border-[var(--border)]">
+          {visibleEntries.map((entry) => <button key={entry.id} type="button" onClick={() => { setSelectedId(entry.id); setSelectedRelationshipId(null); }} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-[var(--surface-raised)]"><span className="min-w-0 truncate font-semibold">{entry.title}</span><span className="shrink-0 text-xs text-[var(--text-faint)]">{t(`type.${entry.type}`)}</span></button>)}
+        </div>
+      </details>
+      <section className="relative h-[72dvh] min-h-[30rem] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
         <div
           className="pointer-events-none absolute inset-0 opacity-35"
           style={{
@@ -637,7 +665,7 @@ export function GraphPage() {
             status={status}
             setStatus={setStatus}
             addRelationship={addRelationship}
-            deleteRelationship={deleteRelationship}
+            deleteRelationship={handleDeleteRelationship}
             close={() => {
               setSelectedId(null);
               graphRef.current?.elements().removeClass("faded");
@@ -655,7 +683,7 @@ export function GraphPage() {
             entries={entries}
             close={() => setSelectedRelationshipId(null)}
             remove={() => {
-              deleteRelationship(selectedRelationship.id);
+              handleDeleteRelationship(selectedRelationship.id);
               setSelectedRelationshipId(null);
             }}
           />
@@ -720,7 +748,7 @@ function GraphControls(props: ControlsProps) {
           <ChevronDown size={13} />
           {t("graph.filters")}
         </summary>
-        <div className="space-y-3 px-4 pb-4">
+        <div className="space-y-4 px-4 pb-5">
           <div className="grid grid-cols-2 rounded-lg bg-[var(--surface-muted)] p-1">
             <button
               type="button"
@@ -744,7 +772,7 @@ function GraphControls(props: ControlsProps) {
               <select
                 value={props.focusId ?? ""}
                 onChange={(event) => props.setFocusId(event.target.value)}
-                className="ws-input h-9 w-full rounded-md px-2 text-xs outline-none"
+                className="ws-input ws-field w-full text-xs outline-none"
               >
                 {props.entries.map((entry) => (
                   <option key={entry.id} value={entry.id}>
@@ -770,7 +798,7 @@ function GraphControls(props: ControlsProps) {
               value={props.eraYear}
               onChange={(event) => props.setEraYear(event.target.value)}
               placeholder={t("graph.anyEra")}
-              className="ws-input h-9 w-full rounded-md px-2 text-xs outline-none"
+              className="ws-input ws-field w-full text-xs outline-none"
             />
           </label>
           <Toggle
@@ -807,7 +835,7 @@ function GraphControls(props: ControlsProps) {
           <ChevronDown size={13} />
           {t("graph.groups")}
         </summary>
-        <div className="space-y-2 px-3 pb-3">
+        <div className="space-y-3 px-4 pb-4">
           {settings.groups.map((group) => (
             <GroupEditor
               key={group.id}
@@ -831,7 +859,7 @@ function GraphControls(props: ControlsProps) {
           <ChevronDown size={13} />
           {t("graph.forces")}
         </summary>
-        <div className="space-y-4 px-4 pb-4">
+        <div className="space-y-5 px-4 pb-5">
           <DeferredRange
             label={t("graph.centerForce")}
             value={settings.centerGravity}
@@ -1166,7 +1194,7 @@ function NodePanel(props: NodePanelProps) {
           <select
             value={props.targetId}
             onChange={(event) => props.setTargetId(event.target.value)}
-            className="ws-input h-9 w-full rounded-md px-2 text-xs"
+            className="ws-input ws-field w-full text-xs"
           >
             <option value="">{t("graph.chooseNote")}</option>
             {props.entries
@@ -1182,7 +1210,7 @@ function NodePanel(props: NodePanelProps) {
             onChange={(event) =>
               props.setRelationType(event.target.value as RelationshipType)
             }
-            className="ws-input h-9 w-full rounded-md px-2 text-xs"
+            className="ws-input ws-field w-full text-xs"
           >
             {RELATIONSHIP_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -1196,7 +1224,7 @@ function NodePanel(props: NodePanelProps) {
               onChange={(event) =>
                 props.setDirection(event.target.value as RelationshipDirection)
               }
-              className="ws-input h-9 rounded-md px-2 text-xs"
+              className="ws-input ws-field text-xs"
             >
               <option value="directed">{t("graph.directed")}</option>
               <option value="mutual">{t("graph.mutual")}</option>
@@ -1206,7 +1234,7 @@ function NodePanel(props: NodePanelProps) {
               onChange={(event) =>
                 props.setStatus(event.target.value as RelationshipStatus)
               }
-              className="ws-input h-9 rounded-md px-2 text-xs"
+              className="ws-input ws-field text-xs"
             >
               <option value="current">{t("graph.current")}</option>
               <option value="former">{t("graph.former")}</option>

@@ -1,10 +1,24 @@
 import { motion } from "motion/react";
-import { BookOpen, CheckCircle2, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Boxes,
+  GitBranch,
+  Image,
+  Map,
+  Check,
+  PencilLine,
+  Plus,
+  Timer,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import { DailyQuote } from "../../shared/components/DailyQuote";
 import { MotionPage } from "../../shared/components/MotionPage";
-import { listContainer, listItem, pressTap } from "../../shared/motion/presets";
 import { useI18n } from "../../shared/i18n";
+import { pressTap } from "../../shared/motion/presets";
+import { useAssetStore } from "../assets/stores/useAssetStore";
+import { useCanvasStore } from "../canvas/stores/useCanvasStore";
 import { EntryTypeBadge } from "../entries/components/EntryTypeBadge";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import { formatEntryDate } from "../entries/utils/formatEntryDate";
@@ -16,136 +30,94 @@ import { useWorldStore } from "../world/stores/useWorldStore";
 export function DashboardPage() {
   const entries = useEntryStore((state) => state.entries);
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
-  const mapMarkerCount = useMapStore((state) => state.markers.length);
-  const relationshipCount = useRelationshipStore(
-    (state) => state.relationships.length,
-  );
-  const timelineEventCount = useTimelineStore((state) => state.items.length);
+  const markers = useMapStore((state) => state.markers);
+  const relationships = useRelationshipStore((state) => state.relationships);
+  const timelineItems = useTimelineStore((state) => state.items);
+  const canvasCards = useCanvasStore((state) => state.cards);
+  const assets = useAssetStore((state) => state.assets);
   const profile = useWorldStore((state) => state.profile);
+  const updateMemo = useWorldStore((state) => state.updateMemo);
   const navigate = useNavigate();
   const { t, locale } = useI18n();
 
   const recentEntries = [...entries]
-    .sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    )
-    .slice(0, 5);
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 4);
   const latestEntry = recentEntries[0] ?? null;
-  const stats = [
-    { label: t("dashboard.entries"), value: entries.length, path: "/entries" },
-    { label: t("dashboard.mapMarkers"), value: mapMarkerCount, path: "/map" },
-    { label: t("dashboard.relations"), value: relationshipCount, path: "/graph" },
-    { label: t("dashboard.timelineEvents"), value: timelineEventCount, path: "/timeline" },
+  const modules = [
+    { icon: BookOpen, label: t("nav.entries"), value: entries.length, detail: t("dashboard.entries"), path: "/entries" },
+    { icon: Map, label: t("nav.map"), value: markers.length, detail: t("dashboard.mapMarkers"), path: "/map" },
+    { icon: GitBranch, label: t("nav.graph"), value: relationships.length, detail: t("dashboard.relations"), path: "/graph" },
+    { icon: Timer, label: t("nav.timeline"), value: timelineItems.length, detail: t("dashboard.timelineEvents"), path: "/timeline" },
+    { icon: Boxes, label: t("nav.canvas"), value: canvasCards.length, detail: t("settings.canvasCards"), path: "/canvas" },
+    { icon: Image, label: t("nav.assets"), value: assets.length, detail: t("settings.assets"), path: "/assets" },
   ];
 
   return (
-    <MotionPage className="space-y-10">
-      <header className="flex flex-col gap-6 pt-2 sm:flex-row sm:items-end sm:justify-between">
+    <MotionPage className="space-y-12 pb-12 pt-4">
+      <header className="grid items-end gap-8 border-b border-[var(--border)] pb-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0">
-          <p className="ws-eyebrow mb-3 truncate">{profile.name}</p>
-          <h2 className="ws-page-title">
-            {latestEntry
-              ? t("dashboard.continueTitle")
-              : t("dashboard.readyTitle")}
-          </h2>
+          <p className="mb-3 truncate text-sm font-medium text-[var(--text-muted)]">{profile.name}</p>
+          <h1 className="ws-page-title">{latestEntry ? t("dashboard.continueTitle") : t("dashboard.readyTitle")}</h1>
           <p className="ws-page-status">
             {latestEntry
-              ? t("dashboard.resumeEntry", {
-                  title: latestEntry.title,
-                  date: formatEntryDate(latestEntry.updatedAt, locale),
-                })
+              ? t("dashboard.resumeEntry", { title: latestEntry.title, date: formatEntryDate(latestEntry.updatedAt, locale) })
               : t("dashboard.readyDescription")}
           </p>
-          <div className="mt-5 flex flex-wrap items-center gap-2.5">
+          <div className="mt-6 flex flex-wrap gap-2.5">
             {latestEntry ? (
-              <motion.button
-                type="button"
-                whileTap={pressTap}
-                onClick={() => navigate(`/entries/${latestEntry.id}`)}
-                className="ws-button-primary flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
-              >
-                <BookOpen size={16} strokeWidth={1.8} />
-                {t("dashboard.continueEntry")}
+              <motion.button type="button" whileTap={pressTap} onClick={() => navigate(`/entries/${latestEntry.id}`)} className="ws-button-primary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold">
+                <BookOpen size={16} />{t("dashboard.continueEntry")}
               </motion.button>
             ) : null}
-            <button
-              type="button"
-              onClick={openCreateEntry}
-              className="flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-            >
-              <Plus size={16} strokeWidth={1.8} />
-              {t("topbar.newEntry")}
-            </button>
+            <button type="button" onClick={openCreateEntry} className="ws-button-secondary flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"><Plus size={16} />{t("topbar.newEntry")}</button>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2 pb-1 text-xs text-[var(--text-faint)]">
-          <CheckCircle2 size={15} strokeWidth={1.7} />
-          {t("entry.savedLocally")}
-        </div>
+        <DailyQuote compact />
       </header>
 
-      <nav
-        aria-label={t("dashboard.workspaceStatus")}
-        className="grid border-y border-[var(--border)] sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {stats.map((stat, index) => (
-          <button
-            key={stat.label}
-            type="button"
-            onClick={() => navigate(stat.path)}
-            className={`flex items-baseline justify-between gap-4 px-1 py-4 text-left transition hover:text-[var(--accent)] sm:px-5 ${index ? "border-t border-[var(--border)] sm:border-t-0 lg:border-l" : ""} ${index === 2 ? "sm:border-l-0 lg:border-l" : "sm:border-l"}`}
-          >
-            <span className="ws-display text-3xl font-semibold">{stat.value}</span>
-            <span className="text-xs font-medium text-[var(--text-muted)]">{stat.label}</span>
-          </button>
-        ))}
-      </nav>
+      <section>
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <h2 className="ws-display text-3xl font-semibold">{t("dashboard.exploreWorld")}</h2>
+        </div>
+        <div className="grid border-y border-[var(--border)] md:grid-cols-2">
+          {modules.map((item, index) => {
+            const Icon = item.icon;
+            return <motion.button type="button" key={item.path} onClick={() => navigate(item.path)} whileHover={{ y: -3 }} whileTap={pressTap} transition={{ duration: .2, ease: [0.22, 1, 0.36, 1] }} className={`group relative flex items-center gap-4 overflow-hidden py-5 text-left transition-colors hover:bg-[var(--surface-muted)] hover:shadow-[0_12px_28px_-22px_var(--shadow-color)] md:px-5 ${index > 0 ? "border-t border-[var(--border)]" : ""} ${index === 1 ? "md:border-t-0" : ""} ${index % 2 ? "md:border-l" : ""}`}>
+              <span className="absolute inset-y-3 left-0 w-0.5 origin-center scale-y-0 rounded-full bg-[var(--accent)] transition-transform duration-300 group-hover:scale-y-100" />
+              <Icon size={19} className="text-[var(--accent)] transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3" />
+              <span className="min-w-0 flex-1"><b className="block text-sm">{item.label}</b><small className="mt-1 block text-[var(--text-faint)]">{item.value} {item.detail}</small></span>
+              <ArrowRight size={15} className="text-[var(--text-faint)] transition group-hover:translate-x-1 group-hover:text-[var(--text)]" />
+            </motion.button>;
+          })}
+        </div>
+      </section>
 
-      {recentEntries.length ? (
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,.7fr)]">
         <section>
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <h3 className="ws-display text-2xl font-semibold text-[var(--text)]">
-              {t("dashboard.recentlyUpdated")}
-            </h3>
-            <button
-              type="button"
-              onClick={() => navigate("/entries")}
-              className="rounded-lg px-2.5 py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
-            >
-              {t("common.browseArchive")}
-            </button>
-          </div>
-          <motion.div
-            variants={listContainer}
-            initial="initial"
-            animate="animate"
-            className="ws-compact-surface divide-y divide-[var(--border)] overflow-hidden"
-          >
-            {recentEntries.map((entry) => (
-              <motion.article
-                key={entry.id}
-                variants={listItem}
-                onClick={() => navigate(`/entries/${entry.id}`)}
-                className="grid cursor-pointer gap-2 px-4 py-4 transition-colors hover:bg-[var(--surface-muted)] sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4"
-              >
-                <EntryTypeBadge type={entry.type} />
-                <div className="min-w-0">
-                  <h4 className="truncate text-sm font-semibold text-[var(--text)]">
-                    {entry.title}
-                  </h4>
-                  <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
-                    {entry.summary || t("common.noSummary")}
-                  </p>
-                </div>
-                <time className="text-xs text-[var(--text-faint)]">
-                  {formatEntryDate(entry.updatedAt, locale)}
-                </time>
-              </motion.article>
-            ))}
-          </motion.div>
+          <div className="mb-4 flex items-center justify-between"><h2 className="ws-display text-3xl font-semibold">{t("dashboard.recentlyUpdated")}</h2><button type="button" onClick={() => navigate("/entries")} className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text)]">{t("common.browseArchive")}</button></div>
+          {recentEntries.length ? <div className="divide-y divide-[var(--border)] border-y border-[var(--border)]">{recentEntries.map((entry) => <button type="button" key={entry.id} onClick={() => navigate(`/entries/${entry.id}`)} className="group relative grid w-full gap-2 px-3 py-4 text-left transition-colors hover:bg-[var(--surface-muted)] sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4"><span className="absolute inset-y-3 left-0 w-0.5 origin-center scale-y-0 rounded-full bg-[var(--accent)] transition-transform group-hover:scale-y-100" /><EntryTypeBadge type={entry.type} /><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="mt-1 block truncate text-[var(--text-faint)]">{entry.summary || t("common.noSummary")}</small></span><time className="text-xs text-[var(--text-faint)]">{formatEntryDate(entry.updatedAt, locale)}</time></button>)}</div> : <button type="button" onClick={openCreateEntry} className="w-full border-y border-dashed border-[var(--border)] py-12 text-sm text-[var(--text-muted)]">{t("dashboard.readyDescription")}</button>}
         </section>
-      ) : null}
+
+        <aside className="rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_48%,transparent)] p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><PencilLine size={15} /></span>
+              <div><h2 className="ws-display text-xl font-semibold">{t("dashboard.memoTitle")}</h2><p className="mt-1 text-xs leading-5 text-[var(--text-faint)]">{t("dashboard.memoHint")}</p></div>
+            </div>
+            <span className="flex shrink-0 items-center gap-1 text-[0.68rem] text-emerald-600 dark:text-emerald-300"><Check size={12} />{t("dashboard.memoSaved")}</span>
+          </div>
+          <textarea
+            value={profile.memo ?? ""}
+            onChange={(event) => updateMemo(event.target.value)}
+            placeholder={t("dashboard.memoPlaceholder")}
+            rows={8}
+            className="mt-4 w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] px-4 py-3 text-sm leading-7 text-[var(--text)] shadow-inner outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
+            aria-label={t("dashboard.memoTitle")}
+          />
+          <p className="mt-2 text-right text-[0.68rem] text-[var(--text-faint)]">{t("dashboard.memoCount", { count: (profile.memo ?? "").length })}</p>
+        </aside>
+      </div>
     </MotionPage>
   );
 }

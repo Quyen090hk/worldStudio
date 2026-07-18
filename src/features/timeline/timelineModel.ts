@@ -4,6 +4,8 @@ import type {
   TimelineCategory,
   TimelineCertainty,
   TimelineItem,
+  TimelineLane,
+  WorldYearFormat,
 } from "./types";
 import type { Locale } from "../../shared/i18n";
 
@@ -15,25 +17,30 @@ export const TIMELINE_TYPE_COLORS: Record<EntryType, string> = {
   Event: "#c67368",
 };
 
-export const TIMELINE_CATEGORIES: TimelineCategory[] = [
-  "Politics & Power",
-  "Conflict",
-  "Culture & Faith",
-  "Exploration",
-  "Catastrophe",
-  "Lives",
-  "Other",
+export const DEFAULT_TIMELINE_LANES: TimelineLane[] = [
+  { id: "Politics & Power", name: "Politics & Power", color: "#8e78a8" },
+  { id: "Conflict", name: "Conflict", color: "#b75b57" },
+  { id: "Culture & Faith", name: "Culture & Faith", color: "#b08a52" },
+  { id: "Exploration", name: "Exploration", color: "#668f98" },
+  { id: "Catastrophe", name: "Catastrophe", color: "#8f665d" },
+  { id: "Lives", name: "Lives", color: "#78906a" },
+  { id: "Other", name: "Other", color: "#777780" },
 ];
 
-export const TIMELINE_CATEGORY_COLORS: Record<TimelineCategory, string> = {
-  "Politics & Power": "#8e78a8",
-  Conflict: "#b75b57",
-  "Culture & Faith": "#b08a52",
-  Exploration: "#668f98",
-  Catastrophe: "#8f665d",
-  Lives: "#78906a",
-  Other: "#777780",
+export const DEFAULT_WORLD_YEAR_FORMAT: WorldYearFormat = {
+  beforeSuffix: "BCE",
+  afterSuffix: "",
+  zeroLabel: "0",
 };
+
+export function isDefaultTimelineLane(lane: Pick<TimelineLane, "id" | "name">) {
+  return lane.id === lane.name && DEFAULT_TIMELINE_LANES.some((item) => item.id === lane.id);
+}
+
+export const TIMELINE_CATEGORIES = DEFAULT_TIMELINE_LANES.map((lane) => lane.id);
+export const TIMELINE_CATEGORY_COLORS = Object.fromEntries(
+  DEFAULT_TIMELINE_LANES.map((lane) => [lane.id, lane.color]),
+) as Record<string, string>;
 
 function defaultCategory(type: EntryType): TimelineCategory {
   if (type === "Character") return "Lives";
@@ -64,30 +71,31 @@ export function resolveTimelineItems(
   items: TimelineItem[],
   entries: Entry[],
   relationships: EntryRelationship[],
+  lanes: TimelineLane[] = DEFAULT_TIMELINE_LANES,
 ): ResolvedTimelineItem[] {
   const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
+  const laneColors = new Map(lanes.map((lane) => [lane.id, lane.color]));
   const entryItems = items.flatMap<ResolvedTimelineItem>((item) => {
-    const entry = entriesById.get(item.entryId);
-    if (!entry) return [];
+    const entry = item.entryId ? entriesById.get(item.entryId) : undefined;
+    if (item.entryId && !entry) return [];
+    const category = item.category ?? (entry ? defaultCategory(entry.type) : "Other");
     return [
       {
         id: item.id,
         source: "entry",
-        entryId: entry.id,
+        entryId: entry?.id ?? null,
         relationshipId: null,
-        focusEntryId: entry.id,
-        title: entry.title,
-        summary: item.description || entry.summary,
-        tags: entry.tags,
-        entryType: entry.type,
-        lane: item.category ?? defaultCategory(entry.type),
+        focusEntryId: entry?.id ?? null,
+        title: item.title.trim() || entry?.title || "Untitled event",
+        summary: item.description || entry?.summary || "",
+        tags: entry?.tags ?? [],
+        entryType: entry?.type ?? null,
+        lane: category,
         startYear: item.startYear,
         endYear: item.endYear,
         color:
           item.color ??
-          TIMELINE_CATEGORY_COLORS[
-            item.category ?? defaultCategory(entry.type)
-          ],
+          laneColors.get(category) ?? TIMELINE_CATEGORY_COLORS.Other,
         importance: item.importance ?? 3,
         certainty: item.certainty ?? "canon",
       },
@@ -142,15 +150,16 @@ export function niceYearStep(yearsPerScreen: number) {
   return multiple * power;
 }
 
-export function formatWorldYear(year: number, locale: Locale = "en-US") {
-  if (Math.abs(year) < 0.001) return "0";
+export function formatWorldYear(
+  year: number,
+  locale: Locale = "en-US",
+  format: WorldYearFormat = DEFAULT_WORLD_YEAR_FORMAT,
+) {
+  if (Math.abs(year) < 0.001) return format.zeroLabel || "0";
   const absolute = Math.abs(year);
   const formatted = Number.isInteger(absolute)
     ? absolute.toLocaleString(locale)
     : absolute.toLocaleString(locale, { maximumFractionDigits: 2 });
-  return year < 0
-    ? locale === "zh-CN"
-      ? `${formatted} BCE`
-      : `${formatted} BCE`
-    : formatted;
+  const suffix = year < 0 ? format.beforeSuffix.trim() : format.afterSuffix.trim();
+  return suffix ? `${formatted} ${suffix}` : formatted;
 }

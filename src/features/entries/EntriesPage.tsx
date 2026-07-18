@@ -20,8 +20,10 @@ import { deleteEntryCascade } from "./actions/deleteEntryCascade";
 import { formatEntryDate } from "./utils/formatEntryDate";
 import type { EntryType } from "./types";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
+import { EntryCardVisual } from "./components/EntryMediaView";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
 import { useI18n } from "../../shared/i18n";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 
 type EntryTypeFilter = EntryType | "All";
 
@@ -45,6 +47,7 @@ export function EntriesPage() {
 
   const navigate = useNavigate();
   const { locale, t } = useI18n();
+  const dialog = useSoftDialog();
 
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<EntryTypeFilter>("All");
@@ -96,10 +99,8 @@ export function EntriesPage() {
     setSelectedTag("All");
   }
 
-  function handleDelete(entryId: string, entryTitle: string) {
-    const confirmed = window.confirm(
-      locale === "zh-CN" ? `确定删除“${entryTitle}”吗？` : `Delete "${entryTitle}"?`,
-    );
+  async function handleDelete(entryId: string, entryTitle: string) {
+    const confirmed = await dialog.confirm({ message: t("entry.deleteConfirm", { title: entryTitle }), danger: true, confirmLabel: t("common.delete") });
 
     if (confirmed) {
       deleteEntryCascade(entryId);
@@ -107,20 +108,16 @@ export function EntriesPage() {
   }
 
   return (
-    <MotionPage className="space-y-6">
-      <section className="space-y-2">
-        <h2 className="ws-page-title">
-          {t("nav.entries")}
-        </h2>
-
-        <p className="ws-page-status">
+    <MotionPage className="space-y-5">
+      <div className="ws-workbench">
+        <p className="ws-workbench-meta">
           {t("entries.headerStatus", { count: entries.length })}
         </p>
-      </section>
+      </div>
 
-      <section className="ws-compact-surface p-3 md:p-4">
-        <div className="grid gap-3 xl:grid-cols-[1fr_12rem_12rem_auto]">
-          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
+      <section className="ws-compact-surface ws-panel-padding-compact">
+        <div className="grid gap-4 xl:grid-cols-[1fr_12rem_12rem_auto]">
+          <label className="ws-input ws-field flex items-center gap-3">
             <Search
               size={17}
               strokeWidth={1.7}
@@ -147,7 +144,7 @@ export function EntriesPage() {
             ) : null}
           </label>
 
-          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
+          <label className="ws-input ws-field flex items-center gap-3">
             <SlidersHorizontal
               size={16}
               strokeWidth={1.7}
@@ -169,7 +166,7 @@ export function EntriesPage() {
             </select>
           </label>
 
-          <label className="ws-input flex h-10 items-center gap-3 rounded-xl px-3">
+          <label className="ws-input ws-field flex items-center gap-3">
             <select
               value={selectedTag}
               onChange={(event) => setSelectedTag(event.target.value)}
@@ -190,7 +187,7 @@ export function EntriesPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="ws-button-secondary h-10 rounded-xl px-4 text-sm font-medium"
+                className="ws-button-secondary min-h-11 rounded-xl px-4 text-sm font-medium"
               >
                 {t("common.clearFilters")}
               </button>
@@ -198,7 +195,7 @@ export function EntriesPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--border)] pt-4">
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--border)] pt-5">
           <span className="text-sm font-medium text-[var(--text-muted)]">
             {t("entries.showing", {
               shown: filteredEntries.length,
@@ -224,14 +221,10 @@ export function EntriesPage() {
         </div>
 
         {entries.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+          <div className="px-6 py-12 text-center">
+            <h3 className="text-base font-semibold text-[var(--text)]">
               {t("dashboard.noEntries")}
             </h3>
-
-            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-              {t("dashboard.startFirst")}
-            </p>
 
             <button
               type="button"
@@ -242,14 +235,10 @@ export function EntriesPage() {
             </button>
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <h3 className="ws-display text-3xl font-semibold text-[var(--text)]">
+          <div className="px-6 py-12 text-center">
+            <h3 className="text-base font-semibold text-[var(--text)]">
               {t("entries.noMatching")}
             </h3>
-
-            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[var(--text-muted)]">
-              {t("entries.tryAnother")}
-            </p>
 
             <button
               type="button"
@@ -286,7 +275,8 @@ export function EntriesPage() {
                     ].join(" ")}
                   />
 
-                  <div className="grid gap-4 lg:grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto] lg:items-center">
+                  <div className={`grid gap-4 ${entry.media?.primaryAssetId ? "lg:grid-cols-[4rem_1.5fr_0.78fr_1fr_0.72fr_auto]" : "lg:grid-cols-[1.5fr_0.78fr_1fr_0.72fr_auto]"} lg:items-center`}>
+                    {entry.media?.primaryAssetId ? <div className="hidden lg:block"><EntryCardVisual entry={entry} /></div> : null}
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-semibold text-[var(--text)]">
                         {entry.title}
