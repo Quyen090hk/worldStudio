@@ -14,7 +14,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { MotionPage } from "../../shared/components/MotionPage";
@@ -27,8 +27,7 @@ import {
   formatEntryRelative,
 } from "./utils/formatEntryDate";
 import { EntryTypeBadge } from "./components/EntryTypeBadge";
-import { EditorRecoveryBoundary } from "./components/EditorRecoveryBoundary";
-import { RecoveryContentEditor } from "./components/RecoveryContentEditor";
+import { AdvancedEditorSurface } from "./components/AdvancedEditorSurface";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
 import { normalizeEntryContent } from "./utils/normalizeEntryContent";
 import { getReferencedEntryIds } from "./utils/entryReferences";
@@ -44,12 +43,6 @@ import { readEntryDraft, writeEntryDraft } from "./entryDraftStorage";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 type PendingContentSave = { entryId: string; content: string };
 
-const RichTextEditor = lazy(() =>
-  import("./components/RichTextEditor").then((module) => ({
-    default: module.RichTextEditor,
-  })),
-);
-
 function htmlToPlainText(html: string) {
   if (!html) return "";
 
@@ -60,7 +53,7 @@ function htmlToPlainText(html: string) {
 }
 
 function getWritingStats(html: string) {
-  const text = htmlToPlainText(html).trim();
+  const text = htmlToPlainText(normalizeEntryContent(html)).trim();
 
   const cjkCount = text.match(/[\u4e00-\u9fff]/g)?.length ?? 0;
   const englishWordCount =
@@ -108,7 +101,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
     [entries, entryId]
   );
   const entryContent = useMemo(
-    () => normalizeEntryContent(entry?.content),
+    () => entry?.content ?? "",
     [entry?.content],
   );
   const referenceEntries = useMemo(
@@ -360,7 +353,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
   const typeMeta = getEntryTypeMeta(entry.type);
 
   return (
-    <MotionPage className="space-y-6">
+    <MotionPage className={isEditingContent ? "space-y-4" : "space-y-6"}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
@@ -371,7 +364,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           {t("entry.back")}
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className={isEditingContent ? "hidden" : "flex items-center gap-2"}>
           <button
             type="button"
             onClick={() => openEditEntry(entry.id)}
@@ -394,14 +387,15 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
 
       <section
         className={[
-          "relative border-b border-[var(--border)] px-1 pb-8 pt-2",
+          "relative border-b border-[var(--border)] px-1",
+          isEditingContent ? "pb-4 pt-0" : "pb-8 pt-2",
           typeMeta.borderClassName,
         ].join(" ")}
       >
-        <EntryHeroMedia entry={entry} />
+        {!isEditingContent ? <EntryHeroMedia entry={entry} /> : null}
         <div className="relative">
           <div>
-            <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className={isEditingContent ? "mb-3 flex flex-wrap items-center gap-3" : "mb-5 flex flex-wrap items-center gap-3"}>
               <EntryTypeBadge type={entry.type} />
 
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]">
@@ -410,34 +404,37 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
               </span>
             </div>
 
-            <h1 className="ws-display-tight max-w-4xl text-4xl font-semibold leading-[1.02] text-[var(--text)] md:text-5xl">
+            <h1 className={[
+              "ws-display-tight max-w-4xl font-semibold leading-[1.02] text-[var(--text)]",
+              isEditingContent ? "text-2xl md:text-3xl" : "text-4xl md:text-5xl",
+            ].join(" ")}>
               {entry.title}
             </h1>
 
-            <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
-              {entry.summary || t("common.noSummary")}
-            </p>
+            {!isEditingContent ? (
+              <>
+                <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
+                  {entry.summary || t("common.noSummary")}
+                </p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {entry.tags.length > 0 ? (
-                entry.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]"
-                  >
-                    #{tag}
-                  </span>
-                ))
-              ) : (
-                <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-faint)]">
-                  {t("common.noTags")}
-                </span>
-              )}
-            </div>
-            <div className="mt-7 max-w-4xl">
-              <EntryPropertiesView properties={entry.properties} entries={entries} />
-            </div>
-            <EntryGallery entry={entry} />
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {entry.tags.length > 0 ? (
+                    entry.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]"
+                      >
+                        #{tag}
+                      </span>
+                    ))
+                  ) : null}
+                </div>
+                <div className="mt-7 max-w-4xl">
+                  <EntryPropertiesView properties={entry.properties} entries={entries} />
+                </div>
+                <EntryGallery entry={entry} />
+              </>
+            ) : null}
           </div>
 
         </div>
@@ -446,13 +443,16 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
       <section className={isEditingContent ? "block" : "grid gap-6 xl:grid-cols-[1fr_20rem]"}>
         <article
           className={isEditingContent
-            ? "rounded-[2rem] bg-transparent p-2 md:p-4"
+            ? "bg-transparent p-0"
             : "ws-compact-surface p-5 md:p-6"}
         >
           <div>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="ws-display text-3xl font-semibold text-[var(--text)] sm:text-4xl">
+              <h2 className={[
+                "ws-display font-semibold text-[var(--text)]",
+                isEditingContent ? "text-xl sm:text-2xl" : "text-3xl sm:text-4xl",
+              ].join(" ")}>
                 {t("entry.mainText")}
               </h2>
 
@@ -555,31 +555,13 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           ) : null}
 
           {isEditingContent ? (
-            <EditorRecoveryBoundary
-              fallback={
-                <RecoveryContentEditor
-                  value={draftContent}
-                  onChange={handleContentChange}
-                />
-              }
-            >
-              <Suspense
-                fallback={
-                  <RecoveryContentEditor
-                    value={draftContent}
-                    onChange={handleContentChange}
-                  />
-                }
-              >
-                <RichTextEditor
-                  value={draftContent}
-                  onChange={handleContentChange}
-                  editable
-                  placeholder={t("entry.writePlaceholder")}
-                  referenceEntries={referenceEntries}
-                />
-              </Suspense>
-            </EditorRecoveryBoundary>
+            <AdvancedEditorSurface
+              entryId={entry.id}
+              value={draftContent}
+              onChange={handleContentChange}
+              placeholder={t("entry.writePlaceholder")}
+              referenceEntries={referenceEntries}
+            />
           ) : entryContent ? (
             <RichTextReadView value={entryContent} />
           ) : (
@@ -601,25 +583,6 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
         </article>
 
         <aside className={isEditingContent ? "hidden" : "ws-compact-surface divide-y divide-[var(--border)] px-5"}>
-          <section className="py-5">
-            <h2 className="text-xs font-semibold text-[var(--text-muted)]">{t("common.tags")}</h2>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {entry.tags.length > 0 ? (
-                entry.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)]"
-                  >
-                    #{tag}
-                  </span>
-                ))
-              ) : (
-                <p className="text-sm text-[var(--text-muted)]">{t("common.noTags")}</p>
-              )}
-            </div>
-          </section>
-
           <section className="py-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xs font-semibold text-[var(--text-muted)]">{t("entry.backlinks")}</h2>

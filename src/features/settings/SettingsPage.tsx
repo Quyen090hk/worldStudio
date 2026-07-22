@@ -1,12 +1,13 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
+  Activity,
   AlertTriangle,
   CheckCircle2,
   Database,
   Download,
   FileJson,
+  Globe2,
   ShieldCheck,
-  Upload,
 } from "lucide-react";
 
 import { MotionPage } from "../../shared/components/MotionPage";
@@ -35,6 +36,8 @@ import {
   serializeWorkspaceBackup,
 } from "./workspaceBackup";
 import { DataHealthPanel } from "./components/DataHealthPanel";
+import { ContentImportWizard } from "./components/ContentImportWizard";
+import { DataTransferCenter } from "./components/DataTransferCenter";
 
 type BusyAction = "export" | "import" | null;
 type Notice = { tone: "success" | "error"; message: string };
@@ -65,7 +68,7 @@ function WorldProfileForm({
   }
 
   return (
-    <form onSubmit={saveProfile} className="mt-6 grid gap-4">
+    <form onSubmit={saveProfile} className="mt-5 grid gap-4">
       <label className="block">
         <span className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--text-faint)]">
           {t("settings.worldName")}
@@ -78,7 +81,7 @@ function WorldProfileForm({
             onDirty();
           }}
           required
-          className="ws-input mt-2 w-full rounded-[1rem] px-4 py-3 text-sm"
+          className="ws-input mt-2 h-11 w-full rounded-xl px-4 text-sm"
           placeholder={t("settings.worldNamePlaceholder")}
         />
       </label>
@@ -95,7 +98,7 @@ function WorldProfileForm({
             onDirty();
           }}
           rows={3}
-          className="ws-input mt-2 w-full resize-none rounded-[1rem] px-4 py-3 text-sm leading-6"
+          className="ws-input mt-2 w-full resize-none rounded-xl px-4 py-3 text-sm leading-6"
           placeholder={t("settings.worldDescriptionPlaceholder")}
         />
         <span className="mt-1 block text-right text-[0.68rem] text-[var(--text-faint)]">
@@ -107,7 +110,7 @@ function WorldProfileForm({
         <button
           type="submit"
           disabled={!name.trim()}
-          className="ws-button-primary min-h-11 rounded-full px-5 text-sm font-semibold"
+          className="ws-button-primary h-11 rounded-full px-5 text-sm font-semibold"
         >
           {t("settings.saveWorldProfile")}
         </button>
@@ -214,104 +217,67 @@ export function SettingsPage() {
   }
 
   return (
-    <MotionPage className="space-y-5">
-      <section className="ws-compact-surface ws-panel-padding">
-        <div>
-          <div className="min-w-0">
-            <h3 className="ws-display text-2xl font-semibold text-[var(--text)]">
-              {t("settings.worldProfile")}
-            </h3>
-          </div>
+    <MotionPage className="space-y-10 pb-12 pt-2">
+      <header className="border-b border-[var(--border)] pb-6">
+        <p className="ws-eyebrow">{t("settings.eyebrow")}</p>
+        <div className="mt-2 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div><h1 className="ws-display text-3xl font-semibold">{t("nav.settings")}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{t("settings.pageDescription")}</p></div>
+          <nav aria-label={t("settings.sectionNavigation")} className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-[var(--text-muted)]">
+            <a href="#workspace" className="border-b border-transparent py-1 transition hover:border-[var(--accent)] hover:text-[var(--text)]">{t("settings.worldProfile")}</a>
+            <a href="#worlds" className="border-b border-transparent py-1 transition hover:border-[var(--accent)] hover:text-[var(--text)]">{t("worlds.title")}</a>
+            <a href="#data-transfer" className="border-b border-transparent py-1 transition hover:border-[var(--accent)] hover:text-[var(--text)]">{t("transfer.title")}</a>
+            <a href="#data-safety" className="border-b border-transparent py-1 transition hover:border-[var(--accent)] hover:text-[var(--text)]">{t("settings.dataSafety")}</a>
+          </nav>
+        </div>
+      </header>
+
+      <section id="workspace" className="grid scroll-mt-24 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,.8fr)]">
+        <div className="ws-compact-surface ws-panel-padding">
+          <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]"><Globe2 size={18} /></span><div><h2 className="ws-display text-2xl font-semibold">{t("settings.worldProfile")}</h2><p className="mt-1 text-xs leading-5 text-[var(--text-faint)]">{t("settings.worldProfileHelp")}</p></div></div>
+          <WorldProfileForm key={worldProfile.updatedAt} profile={worldProfile} onDirty={() => setProfileSaved(false)} onSaved={() => setProfileSaved(true)} />
+          <p role="status" className={`mt-3 min-h-5 text-xs transition-opacity ${profileSaved ? "text-emerald-600 opacity-100 dark:text-emerald-300" : "opacity-0"}`}>{profileSaved ? t("settings.worldProfileSaved") : " "}</p>
         </div>
 
-        <WorldProfileForm
-          key={worldProfile.updatedAt}
-          profile={worldProfile}
-          onDirty={() => setProfileSaved(false)}
-          onSaved={() => setProfileSaved(true)}
-        />
-        {profileSaved ? (
-          <p role="status" className="mt-3 text-sm text-emerald-600 dark:text-emerald-300">
-            {t("settings.worldProfileSaved")}
-          </p>
-        ) : null}
-      </section>
-
-      <WorldManagementPanel />
-
-      <div>
-        <h3 className="ws-display text-2xl font-semibold text-[var(--text)]">{t("settings.overviewTitle")}</h3>
-      </div>
-
-      <section className="grid border-y border-[var(--border)] md:grid-cols-3 xl:grid-cols-6">
-        {[
-          [t("settings.entries"), entryCount],
-          [t("settings.relationships"), relationshipCount],
-          [t("settings.timelineRecords"), timelineCount],
-          [t("settings.maps"), mapCount],
-          [t("settings.assets"), assetCount],
-          [t("settings.canvasCards"), canvasCardCount],
-        ].map(([label, value], index) => (
-          <div key={label} className={`px-4 py-4 ${index ? "border-t border-[var(--border)] md:border-l md:border-t-0" : ""} ${index === 3 ? "md:border-l-0 xl:border-l" : ""}`}>
-            <p className="text-xs font-semibold uppercase tracking-[.16em] text-[var(--text-faint)]">
-              {label}
-            </p>
-            <p className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
-              {value}
-            </p>
+        <div className="ws-compact-surface ws-panel-padding">
+          <div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-muted)]"><Activity size={18} /></span><h2 className="ws-display text-2xl font-semibold">{t("settings.overviewTitle")}</h2></div>
+          <div className="mt-5 grid grid-cols-2 border-y border-[var(--border)]">
+            {[[t("settings.entries"), entryCount], [t("settings.relationships"), relationshipCount], [t("settings.timelineRecords"), timelineCount], [t("settings.maps"), mapCount], [t("settings.assets"), assetCount], [t("settings.canvasCards"), canvasCardCount]].map(([label, value], index) => <div key={label} className={`px-3 py-3.5 ${index > 1 ? "border-t border-[var(--border)]" : ""} ${index % 2 ? "border-l border-[var(--border)]" : ""}`}><p className="text-[0.68rem] text-[var(--text-faint)]">{label}</p><p className="ws-display mt-1 text-xl font-semibold">{value}</p></div>)}
           </div>
-        ))}
+        </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+      <div id="data-transfer" className="scroll-mt-24"><DataTransferCenter /></div>
+
+      <div id="worlds" className="scroll-mt-24"><WorldManagementPanel /></div>
+
+      <div id="content-import" className="scroll-mt-24"><ContentImportWizard /></div>
+
+      <section id="data-safety" className="grid scroll-mt-24 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(24rem,.85fr)]">
         <div className="ws-compact-surface ws-panel-padding">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-[var(--accent-soft)] text-[var(--accent)]">
-              <Database size={21} strokeWidth={1.7} />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+              <Database size={18} strokeWidth={1.7} />
             </span>
             <div>
               <p className="ws-eyebrow">{t("settings.dataSafety")}</p>
-              <h3 className="ws-display mt-2 text-2xl font-semibold text-[var(--text)]">
+              <h2 className="ws-display mt-1 text-2xl font-semibold text-[var(--text)]">
                 {t("settings.workspaceBackup")}
-              </h3>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-muted)]">
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-muted)]">
                 {t("settings.backupDescription")}
               </p>
             </div>
           </div>
 
           <input
+            id="ws-import-current-world"
             ref={fileInputRef}
             type="file"
             accept="application/json,.json"
             onChange={importBackup}
             className="hidden"
           />
-
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={exportBackup}
-              disabled={busy !== null}
-              className="ws-button-primary flex min-h-12 items-center justify-center gap-2 rounded-[1.15rem] px-5 text-sm font-semibold disabled:opacity-50"
-            >
-              <Download size={17} />
-              {busy === "export"
-                ? t("settings.exporting")
-                : t("settings.exportBackup")}
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={busy !== null}
-              className="ws-button-secondary flex min-h-12 items-center justify-center gap-2 rounded-[1.15rem] px-5 text-sm font-semibold disabled:opacity-50"
-            >
-              <Upload size={17} />
-              {busy === "import"
-                ? t("settings.importing")
-                : t("settings.importBackup")}
-            </button>
-          </div>
+          <button id="ws-export-current-world" type="button" onClick={exportBackup} disabled={busy !== null} className="hidden"><Download size={17} />{t("settings.exportBackup")}</button>
 
           {notice ? (
             <div
@@ -330,16 +296,7 @@ export function SettingsPage() {
               <span>{notice.message}</span>
             </div>
           ) : null}
-        </div>
-
-        <aside className="ws-compact-surface ws-panel-padding">
-          <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[var(--surface-muted)] text-[var(--text-muted)]">
-            <ShieldCheck size={20} strokeWidth={1.7} />
-          </div>
-          <h3 className="ws-display mt-5 text-2xl font-semibold text-[var(--text)]">
-            {t("settings.backupContents")}
-          </h3>
-          <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--text-muted)]">
+          <details className="group mt-5 border-t border-[var(--border)] pt-4"><summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold text-[var(--text-muted)]"><ShieldCheck size={15} className="text-[var(--accent)]" />{t("settings.backupContents")}</summary><ul className="mt-4 grid gap-x-5 gap-y-2 text-xs leading-5 text-[var(--text-muted)] sm:grid-cols-2">
             {[
               t("settings.contentWorld"),
               t("settings.contentEntries"),
@@ -353,19 +310,18 @@ export function SettingsPage() {
               <li key={item} className="flex gap-2">
                 <FileJson
                   size={15}
-                  className="mt-1 shrink-0 text-[var(--accent)]"
+                  className="mt-0.5 shrink-0 text-[var(--accent)]"
                 />
                 <span>{item}</span>
               </li>
             ))}
-          </ul>
-          <p className="mt-6 border-t border-[var(--border)] pt-5 text-xs leading-6 text-[var(--text-faint)]">
+          </ul></details>
+          <p className="mt-5 border-t border-[var(--border)] pt-4 text-xs leading-5 text-[var(--text-faint)]">
             {t("settings.localReminder")}
           </p>
-        </aside>
+        </div>
+        <DataHealthPanel />
       </section>
-
-      <DataHealthPanel />
     </MotionPage>
   );
 }

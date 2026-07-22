@@ -43,6 +43,38 @@ test("creates an entry, edits its notes, and keeps them after reload", async ({ 
   await expect(page.getByText(notes, { exact: true })).toBeVisible();
 });
 
+test("converts structured plain-text HTML when pasted into the editor", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "Desktop editor flow");
+  const title = `Pasted document ${Date.now()}`;
+
+  await openWorkspace(page);
+  await page.getByRole("button", { name: "New Entry" }).click();
+  await page.getByPlaceholder("Entry title").fill(title);
+  await page.getByRole("button", { name: "Create Entry" }).click();
+  await page.goto("/entries");
+  await page.getByText(title, { exact: true }).first().click();
+  await page.getByRole("button", { name: "Edit Notes" }).click();
+
+  const editor = page.locator('[contenteditable="true"]');
+  await expect(editor).toBeVisible();
+  await editor.focus();
+  await page.evaluate(() => {
+    const event = new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: new DataTransfer(),
+    });
+    event.clipboardData?.setData("text/plain", "<h2>Imported heading</h2><p>Imported body</p>");
+    document.activeElement?.dispatchEvent(event);
+  });
+
+  await expect(editor.locator("h2")).toHaveText("Imported heading");
+  await expect(editor.locator("p")).toContainText("Imported body");
+  await page.getByRole("button", { name: "Done" }).click();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Imported heading" })).toBeVisible();
+});
+
 test("exports the active world as a backup", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "Desktop backup flow");
   await openWorkspace(page, "/settings");

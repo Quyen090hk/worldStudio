@@ -27,7 +27,8 @@
       #opening-screen::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 50% 42%,rgba(151,112,63,.09),transparent 44%),radial-gradient(rgba(75,55,34,.09) .65px,transparent .65px);background-size:auto,7px 7px;pointer-events:none}
       .opening-inner{position:relative;width:min(38rem,calc(100vw - 3rem));text-align:center;animation:opening-arrive .72s cubic-bezier(.22,1,.36,1) both}
       .opening-mark{display:grid;width:2.75rem;height:2.75rem;margin:0 auto 2rem;place-items:center;border:1px solid rgba(107,78,43,.28);border-radius:1rem;font:500 1.1rem Georgia,"Songti SC",serif;color:#8c6539}
-      .opening-quote{margin:0;font:500 clamp(1.55rem,3vw,2.5rem)/1.55 Georgia,"Songti SC","STSong",serif;letter-spacing:.015em;text-wrap:balance;view-transition-name:daily-quote}
+      .opening-quote-block{view-transition-name:daily-quote}
+      .opening-quote{margin:0;font:500 clamp(1.55rem,3vw,2.5rem)/1.55 Georgia,"Songti SC","STSong",serif;letter-spacing:.015em;text-wrap:balance}
       .opening-source{margin-top:1.2rem;font:600 .68rem/1.4 system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.48}
       .opening-status{margin-top:3.5rem;font:500 .7rem/1.4 system-ui,sans-serif;letter-spacing:.12em;opacity:.42}
       .opening-status::after{content:"";display:inline-block;width:1.4rem;height:1px;margin-left:.65rem;vertical-align:middle;background:currentColor;transform-origin:left;animation:opening-progress 1.25s ease-in-out infinite}
@@ -44,13 +45,13 @@
       @keyframes opening-progress{0%,100%{transform:scaleX(.2);opacity:.35}50%{transform:scaleX(1);opacity:.8}}
       @keyframes opening-ready{0%,100%{transform:scale(1);opacity:.25}50%{transform:scale(1.35);opacity:.75}}
       @keyframes app-arrive{from{opacity:0}to{opacity:1}}
-      ::view-transition-group(daily-quote){animation-duration:.78s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
-      ::view-transition-old(daily-quote){animation:opening-quote-out .46s cubic-bezier(.4,0,1,1) both}
-      ::view-transition-new(daily-quote){animation:opening-quote-in .78s cubic-bezier(.22,1,.36,1) both}
+      ::view-transition-group(daily-quote){z-index:10000;animation-duration:1.05s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
+      ::view-transition-old(daily-quote){animation:opening-quote-out .72s cubic-bezier(.4,0,.2,1) both}
+      ::view-transition-new(daily-quote){animation:opening-quote-in 1.05s cubic-bezier(.22,1,.36,1) both}
       ::view-transition-old(root){animation:opening-root-out .56s ease both}
       ::view-transition-new(root){animation:opening-root-in .68s ease both}
-      @keyframes opening-quote-out{to{opacity:.14;filter:blur(2px)}}
-      @keyframes opening-quote-in{from{opacity:.18;filter:blur(3px)}to{opacity:1;filter:blur(0)}}
+      @keyframes opening-quote-out{0%,42%{opacity:1;filter:blur(0)}100%{opacity:.28;filter:blur(1px)}}
+      @keyframes opening-quote-in{0%,24%{opacity:.12;filter:blur(2px)}68%,100%{opacity:1;filter:blur(0)}}
       @keyframes opening-root-out{to{opacity:0}}
       @keyframes opening-root-in{from{opacity:0}to{opacity:1}}
       @media(prefers-reduced-motion:reduce){.opening-inner,.opening-status::after,#root.app-entering{animation:none}#opening-screen{transition:opacity .18s linear}::view-transition-group(daily-quote),::view-transition-old(daily-quote),::view-transition-new(daily-quote),::view-transition-old(root),::view-transition-new(root){animation-duration:.01ms}}
@@ -61,14 +62,18 @@
       <div class="opening-inner">
         <div class="opening-mark" aria-hidden="true">✦</div>
         <div class="opening-zh">
-          <blockquote class="opening-quote" data-opening-quote>天地有大美而不言。</blockquote>
-          <p class="opening-source" data-opening-source>《庄子·知北游》</p>
+          <div class="opening-quote-block">
+            <blockquote class="opening-quote" data-opening-quote>天地有大美而不言。</blockquote>
+            <p class="opening-source" data-opening-source>《庄子·知北游》</p>
+          </div>
           <p class="opening-status" data-opening-status data-loading-text="正在展开世界" data-ready-text="按任意键进入">正在展开世界</p>
           <div class="opening-error"><p>世界暂时未能展开</p><button class="opening-retry" type="button" onclick="location.reload()">重新尝试</button></div>
         </div>
         <div class="opening-en">
-          <blockquote class="opening-quote" data-opening-quote>The world was all before them.</blockquote>
-          <p class="opening-source" data-opening-source>John Milton · Paradise Lost</p>
+          <div class="opening-quote-block">
+            <blockquote class="opening-quote" data-opening-quote>The world was all before them.</blockquote>
+            <p class="opening-source" data-opening-source>John Milton · Paradise Lost</p>
+          </div>
           <p class="opening-status" data-opening-status data-loading-text="Opening your world" data-ready-text="Press any key to enter">Opening your world</p>
           <div class="opening-error"><p>Your world could not be opened.</p><button class="opening-retry" type="button" onclick="location.reload()">Try again</button></div>
         </div>

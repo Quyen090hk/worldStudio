@@ -1,3 +1,5 @@
+import { entryContentToHtml } from "./entryDocument";
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -31,7 +33,7 @@ function extractDocumentText(value: unknown): string[] {
 }
 
 export function normalizeEntryContent(value: unknown): string {
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return entryContentToHtml(value);
   if (!value || typeof value !== "object") return "";
 
   const record = value as Record<string, unknown>;

@@ -11,7 +11,6 @@ import { useI18n } from "../i18n";
 export function LanguageMenu({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, t } = useI18n();
   const current = locale === "zh-CN" ? "中文" : "EN";
-  const compactLabel = locale === "zh-CN" ? "中" : "EN";
   const nextLocale = locale === "zh-CN" ? "en-US" : "zh-CN";
   const currentLabel = locale === "zh-CN" ? "中文" : "English";
 
@@ -26,15 +25,26 @@ export function LanguageMenu({ compact = false }: { compact?: boolean }) {
     >
       {!compact ? <Languages size={18} strokeWidth={1.65} className="shrink-0" /> : null}
       {!compact ? <span className="min-w-0 flex-1 text-left">{t("topbar.language")}</span> : null}
-      <motion.span
-        key={locale}
-        className={compact ? "flex h-5 w-6 items-center justify-center whitespace-nowrap" : "flex h-5 w-8 items-center justify-center whitespace-nowrap"}
-        initial={{ opacity: 0, rotateY: -80, scale: .88 }}
-        animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-        transition={{ duration: .28, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {compact ? compactLabel : current}
-      </motion.span>
+      {compact ? (
+        <motion.span
+          className="flex h-5 w-5 items-center justify-center"
+          initial={false}
+          animate={{ rotate: locale === "zh-CN" ? 180 : 0 }}
+          transition={{ duration: .22, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Languages size={17} strokeWidth={1.65} />
+        </motion.span>
+      ) : (
+        <motion.span
+          key={locale}
+          className="flex h-5 w-8 items-center justify-center whitespace-nowrap"
+          initial={{ opacity: 0, rotate: -90 }}
+          animate={{ opacity: 1, rotate: 0 }}
+          transition={{ duration: .22, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {current}
+        </motion.span>
+      )}
     </motion.button>
   );
 }

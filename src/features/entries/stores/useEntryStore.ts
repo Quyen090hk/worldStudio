@@ -19,6 +19,7 @@ type EntryStore = {
   closeDrawer: () => void;
 
   createEntry: (input: EntryInput) => void;
+  importEntries: (inputs: EntryInput[]) => number;
   updateEntry: (entryId: string, input: EntryInput) => void;
   updateEntryContent: (entryId: string, content: string) => void;
   createRevision: (entryId: string, content: string) => void;
@@ -87,6 +88,31 @@ export const useEntryStore = create<EntryStore>()(
           drawerOpen: false,
           editingEntryId: null,
         }));
+      },
+
+      importEntries: (inputs) => {
+        const now = new Date().toISOString();
+        const entries: Entry[] = inputs.map((input) => ({
+          id: createId(),
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        }));
+        const revisions: EntryRevision[] = entries
+          .filter((entry) => entry.content)
+          .map((entry) => ({
+            id: createId(),
+            entryId: entry.id,
+            content: entry.content,
+            createdAt: now,
+          }));
+        set((state) => ({
+          entries: [...entries, ...state.entries],
+          revisions: [...revisions, ...state.revisions],
+          drawerOpen: false,
+          editingEntryId: null,
+        }));
+        return entries.length;
       },
 
       updateEntry: (entryId, input) => {

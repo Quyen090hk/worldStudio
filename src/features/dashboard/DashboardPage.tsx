@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -6,10 +8,12 @@ import {
   GitBranch,
   Image,
   Map,
-  Check,
-  PencilLine,
+  CalendarDays,
+  CheckCircle2,
+  Circle,
   Plus,
   Timer,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +32,7 @@ import { useTimelineStore } from "../timeline/stores/useTimelineStore";
 import { useWorldStore } from "../world/stores/useWorldStore";
 
 export function DashboardPage() {
+  const [taskDraft, setTaskDraft] = useState("");
   const entries = useEntryStore((state) => state.entries);
   const openCreateEntry = useEntryStore((state) => state.openCreateEntry);
   const markers = useMapStore((state) => state.markers);
@@ -36,9 +41,29 @@ export function DashboardPage() {
   const canvasCards = useCanvasStore((state) => state.cards);
   const assets = useAssetStore((state) => state.assets);
   const profile = useWorldStore((state) => state.profile);
-  const updateMemo = useWorldStore((state) => state.updateMemo);
+  const addDailyTask = useWorldStore((state) => state.addDailyTask);
+  const toggleDailyTask = useWorldStore((state) => state.toggleDailyTask);
+  const deleteDailyTask = useWorldStore((state) => state.deleteDailyTask);
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const todayKey = useMemo(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60_000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+  }, []);
+  const todayTasks = profile.dailyTasks?.[todayKey] ?? [];
+  const completedTasks = todayTasks.filter((task) => task.completed).length;
+  const todayLabel = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date(`${todayKey}T12:00:00`));
+  const submitTask = (event: FormEvent) => {
+    event.preventDefault();
+    if (!taskDraft.trim()) return;
+    addDailyTask(todayKey, taskDraft);
+    setTaskDraft("");
+  };
 
   const recentEntries = [...entries]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -99,23 +124,28 @@ export function DashboardPage() {
           {recentEntries.length ? <div className="divide-y divide-[var(--border)] border-y border-[var(--border)]">{recentEntries.map((entry) => <button type="button" key={entry.id} onClick={() => navigate(`/entries/${entry.id}`)} className="group relative grid w-full gap-2 px-3 py-4 text-left transition-colors hover:bg-[var(--surface-muted)] sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4"><span className="absolute inset-y-3 left-0 w-0.5 origin-center scale-y-0 rounded-full bg-[var(--accent)] transition-transform group-hover:scale-y-100" /><EntryTypeBadge type={entry.type} /><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="mt-1 block truncate text-[var(--text-faint)]">{entry.summary || t("common.noSummary")}</small></span><time className="text-xs text-[var(--text-faint)]">{formatEntryDate(entry.updatedAt, locale)}</time></button>)}</div> : <button type="button" onClick={openCreateEntry} className="w-full border-y border-dashed border-[var(--border)] py-12 text-sm text-[var(--text-muted)]">{t("dashboard.readyDescription")}</button>}
         </section>
 
-        <aside className="rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_48%,transparent)] p-4 sm:p-5">
+        <aside className="self-start rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_48%,transparent)] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><PencilLine size={15} /></span>
-              <div><h2 className="ws-display text-xl font-semibold">{t("dashboard.memoTitle")}</h2><p className="mt-1 text-xs leading-5 text-[var(--text-faint)]">{t("dashboard.memoHint")}</p></div>
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><CalendarDays size={15} /></span>
+              <div><h2 className="ws-display text-xl font-semibold">{t("dashboard.todayPlan")}</h2><p className="mt-1 text-xs leading-5 text-[var(--text-faint)]">{todayLabel}</p></div>
             </div>
-            <span className="flex shrink-0 items-center gap-1 text-[0.68rem] text-emerald-600 dark:text-emerald-300"><Check size={12} />{t("dashboard.memoSaved")}</span>
+            <span className="shrink-0 rounded-full bg-[var(--surface-muted)] px-2 py-1 text-[0.68rem] text-[var(--text-faint)]">{t("dashboard.taskProgress", { completed: completedTasks, total: todayTasks.length })}</span>
           </div>
-          <textarea
-            value={profile.memo ?? ""}
-            onChange={(event) => updateMemo(event.target.value)}
-            placeholder={t("dashboard.memoPlaceholder")}
-            rows={8}
-            className="mt-4 w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] px-4 py-3 text-sm leading-7 text-[var(--text)] shadow-inner outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
-            aria-label={t("dashboard.memoTitle")}
-          />
-          <p className="mt-2 text-right text-[0.68rem] text-[var(--text-faint)]">{t("dashboard.memoCount", { count: (profile.memo ?? "").length })}</p>
+          <p className="mt-3 text-xs leading-5 text-[var(--text-faint)]">{t("dashboard.todayPlanHint")}</p>
+          <form onSubmit={submitTask} className="mt-4 flex gap-2">
+            <input value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} maxLength={160} placeholder={t("dashboard.taskPlaceholder")} className="min-w-0 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] px-3 py-2.5 text-sm outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]" />
+            <motion.button type="submit" whileTap={pressTap} disabled={!taskDraft.trim()} className="ws-button-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl disabled:cursor-not-allowed disabled:opacity-40" aria-label={t("dashboard.addTask")} title={t("dashboard.addTask")}><Plus size={16} /></motion.button>
+          </form>
+          <div className="mt-4 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+            {todayTasks.length ? todayTasks.map((task) => (
+              <div key={task.id} className="group flex items-start gap-2 py-3">
+                <button type="button" onClick={() => toggleDailyTask(todayKey, task.id)} className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--accent)]" aria-label={task.completed ? t("dashboard.markIncomplete") : t("dashboard.markComplete")}>{task.completed ? <CheckCircle2 size={17} className="text-[var(--accent)]" /> : <Circle size={17} />}</button>
+                <span className={`min-w-0 flex-1 text-sm leading-5 ${task.completed ? "text-[var(--text-faint)] line-through" : "text-[var(--text)]"}`}>{task.text}</span>
+                <button type="button" onClick={() => deleteDailyTask(todayKey, task.id)} className="shrink-0 rounded-md p-1 text-[var(--text-faint)] opacity-60 transition hover:bg-red-500/10 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" aria-label={t("dashboard.deleteTask")} title={t("dashboard.deleteTask")}><Trash2 size={14} /></button>
+              </div>
+            )) : <p className="py-6 text-center text-xs leading-5 text-[var(--text-faint)]">{t("dashboard.noTasksToday")}</p>}
+          </div>
         </aside>
       </div>
     </MotionPage>

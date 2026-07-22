@@ -9,7 +9,7 @@ export function DailyQuote({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
   const { quote, index, next, favorite, toggleFavorite } = useOpeningQuotes();
   return (
-    <section className={compact ? "py-1" : "ws-compact-surface p-5 sm:p-6"}>
+    <section data-opening-quote-target className={compact ? "py-1" : "ws-compact-surface p-5 sm:p-6"}>
       <div className="flex items-center justify-between gap-3">
         <p className="ws-eyebrow">{t("inspiration.today")}</p>
         <div className="flex items-center gap-1">
@@ -23,10 +23,17 @@ export function DailyQuote({ compact = false }: { compact?: boolean }) {
       </div>
       <div className={compact ? "min-h-[11.5rem]" : "min-h-[13rem]"}>
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={index} initial={{ opacity: 0, y: 10, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -8, filter: "blur(3px)" }} transition={{ duration: .28, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div
+            key={index}
+            data-opening-quote-content
+            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -8, filter: "blur(3px)" }}
+            transition={{ duration: .28, ease: [0.22, 1, 0.36, 1] }}
+            style={{ viewTransitionName: "daily-quote" }}
+          >
           <blockquote
             className={`${compact ? "mt-3 text-xl" : "mt-5 text-2xl sm:text-3xl"} ws-display leading-relaxed text-[var(--text)]`}
-            style={{ viewTransitionName: "daily-quote" }}
           >
             {quote.text}
           </blockquote>

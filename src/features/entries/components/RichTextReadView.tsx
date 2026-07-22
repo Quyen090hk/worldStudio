@@ -28,6 +28,12 @@ const ALLOWED_TAGS = new Set([
   "mark",
   "br",
   "a",
+  "table",
+  "tbody",
+  "thead",
+  "tr",
+  "th",
+  "td",
 ]);
 
 function safeHref(value: string | null) {
@@ -156,6 +162,11 @@ function renderNode(
   if (tag === "blockquote") {
     const callout = node.getAttribute("data-callout");
     if (callout === "note" || callout === "warning") props["data-callout"] = callout;
+  }
+  if (tag === "ul" && node.getAttribute("data-type") === "taskList") props["data-type"] = "taskList";
+  if (tag === "li" && node.getAttribute("data-type") === "taskItem") {
+    props["data-type"] = "taskItem";
+    props["data-checked"] = node.getAttribute("data-checked") === "true" ? "true" : "false";
   }
   if (tag === "a") {
     const href = safeHref(node.getAttribute("href"));

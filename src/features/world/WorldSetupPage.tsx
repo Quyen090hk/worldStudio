@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { useI18n } from "../../shared/i18n";
 import { LanguageMenu } from "../../shared/components/LanguageMenu";
+import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { pressTap } from "../../shared/motion/presets";
 import { useOpeningQuotes } from "../../shared/opening/useOpeningQuotes";
 import { useTheme } from "../../shared/theme/ThemeContext";
@@ -15,6 +16,7 @@ import { createWorld, createWorldFromBackup } from "./worldWorkspace";
 
 export function WorldSetupPage() {
   const { t } = useI18n();
+  const dialog = useSoftDialog();
   const { theme, setTheme } = useTheme();
   const { quote } = useOpeningQuotes();
   const ThemeIcon = theme === "dark" ? Moon : Sun;
@@ -49,7 +51,17 @@ export function WorldSetupPage() {
     setBusy("import");
     setError("");
     try {
-      await createWorldFromBackup(parseWorkspaceBackup(await file.text()));
+      const backup = parseWorkspaceBackup(await file.text());
+      const confirmed = await dialog.confirm({
+        message: t("worldSetup.importConfirm", {
+          world: backup.data.world.name,
+          entries: backup.data.entries.length,
+          maps: backup.data.atlas.maps.length,
+          assets: backup.data.assetLibrary.items.length,
+        }),
+      });
+      if (!confirmed) return;
+      await createWorldFromBackup(backup);
     } catch {
       setError(t("settings.invalidBackup"));
     } finally {

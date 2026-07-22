@@ -1,6 +1,28 @@
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
+#root.app-entering [data-opening-quote-target] {
+  animation: opening-quote-target-arrive 1.25s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes opening-quote-target-arrive {
+  0%, 58% {
+    filter: none;
+  }
+  76% {
+    filter: drop-shadow(0 0 0.65rem color-mix(in srgb, var(--accent) 22%, transparent));
+  }
+  100% {
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root.app-entering [data-opening-quote-target] {
+    animation: none;
+  }
+}
+
 :root,
 [data-theme="light"] {
   color-scheme: light;
@@ -676,6 +698,45 @@ select:disabled {
   padding: 1rem;
 }
 .rich-text-content a { color: var(--accent); text-decoration: underline; }
+.rich-text-editor .ProseMirror table,
+.rich-text-content table {
+  width: 100%;
+  margin: 1.25rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.rich-text-editor .ProseMirror th,
+.rich-text-editor .ProseMirror td,
+.rich-text-content th,
+.rich-text-content td {
+  min-width: 5rem;
+  border: 1px solid var(--border-strong);
+  padding: .65rem .75rem;
+  vertical-align: top;
+  text-align: left;
+}
+.rich-text-editor .ProseMirror th,
+.rich-text-content th { background: var(--surface-muted); font-weight: 700; }
+.rich-text-editor .ProseMirror .selectedCell::after { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.rich-text-editor .ProseMirror ul[data-type="taskList"],
+.rich-text-content ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.rich-text-editor .ProseMirror li[data-type="taskItem"],
+.rich-text-content li[data-type="taskItem"] { display: flex; align-items: flex-start; gap: .65rem; }
+.rich-text-editor .ProseMirror li[data-type="taskItem"] > label { margin-top: .45rem; }
+.rich-text-content li[data-type="taskItem"]::before {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  margin-top: .45rem;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  border-radius: .3rem;
+}
+.rich-text-content li[data-type="taskItem"][data-checked="true"]::before {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--surface-solid);
+}
 .rich-text-content a.entry-reference,
 .rich-text-editor .ProseMirror a[href^="/entries/"] {
   display: inline-flex;

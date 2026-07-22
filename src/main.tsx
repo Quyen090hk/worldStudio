@@ -59,11 +59,13 @@ async function bootstrap() {
       "startViewTransition" in document;
 
     if (canShareQuote) {
+      rootElement.classList.add("app-entering");
       const transition = document.startViewTransition(() => {
         document.getElementById("opening-screen")?.remove();
         renderApplication();
       });
       await transition.finished;
+      window.setTimeout(() => rootElement.classList.remove("app-entering"), 260);
     } else {
       renderApplication();
       revealApplication();

@@ -13,6 +13,9 @@ type WorldStore = {
   profile: WorldProfile;
   updateProfile: (name: string, description: string) => void;
   updateMemo: (memo: string) => void;
+  addDailyTask: (dateKey: string, text: string) => void;
+  toggleDailyTask: (dateKey: string, taskId: string) => void;
+  deleteDailyTask: (dateKey: string, taskId: string) => void;
 };
 
 export const useWorldStore = create<WorldStore>()(
@@ -34,6 +37,56 @@ export const useWorldStore = create<WorldStore>()(
         profile: {
           ...state.profile,
           memo,
+          updatedAt: new Date().toISOString(),
+        },
+      })),
+      addDailyTask: (dateKey, text) => {
+        const normalized = text.trim();
+        if (!normalized) return;
+        set((state) => {
+          const tasks = state.profile.dailyTasks?.[dateKey] ?? [];
+          const now = new Date().toISOString();
+          return {
+            profile: {
+              ...state.profile,
+              dailyTasks: {
+                ...state.profile.dailyTasks,
+                [dateKey]: [
+                  ...tasks,
+                  {
+                    id: crypto.randomUUID(),
+                    text: normalized.slice(0, 160),
+                    completed: false,
+                    createdAt: now,
+                  },
+                ],
+              },
+              updatedAt: now,
+            },
+          };
+        });
+      },
+      toggleDailyTask: (dateKey, taskId) => set((state) => ({
+        profile: {
+          ...state.profile,
+          dailyTasks: {
+            ...state.profile.dailyTasks,
+            [dateKey]: (state.profile.dailyTasks?.[dateKey] ?? []).map((task) =>
+              task.id === taskId ? { ...task, completed: !task.completed } : task,
+            ),
+          },
+          updatedAt: new Date().toISOString(),
+        },
+      })),
+      deleteDailyTask: (dateKey, taskId) => set((state) => ({
+        profile: {
+          ...state.profile,
+          dailyTasks: {
+            ...state.profile.dailyTasks,
+            [dateKey]: (state.profile.dailyTasks?.[dateKey] ?? []).filter(
+              (task) => task.id !== taskId,
+            ),
+          },
           updatedAt: new Date().toISOString(),
         },
       })),
