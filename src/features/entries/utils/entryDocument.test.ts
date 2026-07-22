@@ -6,6 +6,7 @@ import {
   entryContentToHtml,
   importedContentToDocument,
   importedValueToDocument,
+  measureEntryDocument,
   parseEntryDocument,
   sanitizeEntryDocument,
   structuredClipboardTextToDocument,
@@ -97,5 +98,12 @@ describe("entry document codec", () => {
       }],
     });
     expect(parseEntryDocument(stored)?.html).toBe("<p>Safe</p>");
+  });
+
+  it("measures document size and nesting before an editor transaction is saved", () => {
+    expect(measureEntryDocument({
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "Lore" }] }],
+    })).toEqual({ nodes: 3, text: 4, depth: 2, withinLimits: true });
   });
 });

@@ -112,6 +112,16 @@ export const useTimelineStore = create<TimelineStore>()(
       name: "world-studio.timeline.v1",
       storage: createJSONStorage(() => indexedDbStateStorage),
       version: 3,
+      // This release intentionally starts the redesigned timeline from a clean
+      // state. Returning the new data shape also prevents Zustand from treating
+      // an older snapshot as a failed migration during hydration.
+      migrate: () => ({
+        items: [],
+        eras: [],
+        lanes: DEFAULT_TIMELINE_LANES.map((lane) => ({ ...lane })),
+        yearFormat: { ...DEFAULT_WORLD_YEAR_FORMAT },
+        viewport: { centerYear: 0, yearsPerScreen: 500 },
+      }),
     },
   ),
 );

@@ -614,15 +614,13 @@ select:disabled {
 }
 
 .rich-text-editor-toolbar {
-  opacity: .56;
-  transform: translateY(-2px);
-  transition: opacity 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  opacity: 1;
+  transform: none;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .rich-text-editor-toolbar:hover,
 .rich-text-editor-toolbar:focus-within {
-  opacity: 1;
-  transform: translateY(0);
   box-shadow: var(--shadow-soft);
 }
 
@@ -632,8 +630,8 @@ select:disabled {
 }
 
 .rich-text-editor .ProseMirror-focused > .writing-focus-muted {
-  opacity: .38;
-  filter: saturate(.72);
+  opacity: .66;
+  filter: saturate(.86);
 }
 
 .rich-text-editor .ProseMirror-focused > .writing-focus-active {
