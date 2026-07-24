@@ -26,10 +26,22 @@ export const useWorldRegistryStore = create<WorldRegistryStore>()(
       name: "world-studio.world-registry.v1",
       storage: createJSONStorage(() => indexedDbStateStorage),
       version: 3,
-      // Existing registry snapshots are deliberately discarded in this release:
-      // an empty registry must open the first-world setup instead of recreating
-      // the former seeded workspace.
-      migrate: () => ({ activeWorldId: "", worlds: [] }),
+      migrate: (persisted) => {
+        const state = persisted && typeof persisted === "object"
+          ? persisted as Partial<WorldRegistryStore>
+          : {};
+        const worlds = Array.isArray(state.worlds)
+          ? state.worlds.filter((world): world is WorldRecord =>
+            Boolean(world && typeof world.id === "string" && typeof world.name === "string"))
+          : [];
+        const requestedActiveId = typeof state.activeWorldId === "string" ? state.activeWorldId : "";
+        return {
+          worlds,
+          activeWorldId: worlds.some((world) => world.id === requestedActiveId)
+            ? requestedActiveId
+            : worlds[0]?.id ?? "",
+        };
+      },
     },
   ),
 );

@@ -4,6 +4,7 @@ import { useI18n } from "../../../shared/i18n";
 import { EditorRecoveryBoundary } from "./EditorRecoveryBoundary";
 import { RecoveryContentEditor } from "./RecoveryContentEditor";
 import type { ReferenceEntry } from "./EntryReferenceMenu";
+import type { EntryType } from "../types";
 
 type AdvancedEditorSurfaceProps = {
   entryId: string;
@@ -11,6 +12,7 @@ type AdvancedEditorSurfaceProps = {
   onChange: (value: string) => void;
   placeholder: string;
   referenceEntries: ReferenceEntry[];
+  entryType: EntryType;
 };
 
 function createLazyEditor() {
@@ -31,6 +33,7 @@ export function AdvancedEditorSurface({
   onChange,
   placeholder,
   referenceEntries,
+  entryType,
 }: AdvancedEditorSurfaceProps) {
   const { t } = useI18n();
   const [attempt, setAttempt] = useState(0);
@@ -70,6 +73,7 @@ export function AdvancedEditorSurface({
           editable
           placeholder={placeholder}
           referenceEntries={referenceEntries}
+          entryType={entryType}
         />
       </Suspense>
     </EditorRecoveryBoundary>

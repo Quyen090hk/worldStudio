@@ -24,6 +24,7 @@ import { EntryCardVisual } from "./components/EntryMediaView";
 import { getEntryTypeMeta } from "./utils/entryTypeMeta";
 import { useI18n } from "../../shared/i18n";
 import { useSoftDialog } from "../../shared/components/softDialogContext";
+import { SelectMenu } from "../../shared/components/SelectMenu";
 
 type EntryTypeFilter = EntryType | "All";
 
@@ -144,43 +145,30 @@ export function EntriesPage() {
             ) : null}
           </label>
 
-          <label className="ws-input ws-field flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <SlidersHorizontal
               size={16}
               strokeWidth={1.7}
               className="text-[var(--text-faint)]"
             />
 
-            <select
+            <SelectMenu
               value={selectedType}
-              onChange={(event) =>
-                setSelectedType(event.target.value as EntryTypeFilter)
-              }
-              className="h-full min-w-0 flex-1 appearance-none bg-transparent text-sm text-[var(--text)] outline-none"
-            >
-              {entryTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type === "All" ? t("entries.allTypes") : t(`type.${type}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setSelectedType}
+              ariaLabel={t("entries.allTypes")}
+              options={entryTypes.map((type) => ({ value: type, label: type === "All" ? t("entries.allTypes") : t(`type.${type}`) }))}
+              className="min-w-0 flex-1"
+            />
+          </div>
 
-          <label className="ws-input ws-field flex items-center gap-3">
-            <select
+          <div>
+            <SelectMenu
               value={selectedTag}
-              onChange={(event) => setSelectedTag(event.target.value)}
-              className="h-full min-w-0 flex-1 appearance-none bg-transparent text-sm text-[var(--text)] outline-none"
-            >
-              <option value="All">{t("entries.allTags")}</option>
-
-              {allTags.map((tag) => (
-                <option key={tag} value={tag}>
-                  #{tag}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setSelectedTag}
+              ariaLabel={t("entries.allTags")}
+              options={[{ value: "All", label: t("entries.allTags") }, ...allTags.map((tag) => ({ value: tag, label: `#${tag}` }))]}
+            />
+          </div>
 
           <div className="flex justify-end">
             {hasFilters ? (
@@ -221,7 +209,7 @@ export function EntriesPage() {
         </div>
 
         {entries.length === 0 ? (
-          <div className="px-6 py-12 text-center">
+          <div className="ws-empty-state">
             <h3 className="text-base font-semibold text-[var(--text)]">
               {t("dashboard.noEntries")}
             </h3>
@@ -235,7 +223,7 @@ export function EntriesPage() {
             </button>
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="px-6 py-12 text-center">
+          <div className="ws-empty-state">
             <h3 className="text-base font-semibold text-[var(--text)]">
               {t("entries.noMatching")}
             </h3>

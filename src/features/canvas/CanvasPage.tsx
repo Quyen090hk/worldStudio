@@ -17,6 +17,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
 import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
+import { SelectMenu } from "../../shared/components/SelectMenu";
 import { useEntryStore } from "../entries/stores/useEntryStore";
 import type { Entry } from "../entries/types";
 import { AssetThumbnail } from "../assets/components/AssetThumbnail";
@@ -128,13 +129,13 @@ function CanvasCardView({
         width: CANVAS_CARD_WIDTH,
         borderTopColor: CARD_COLORS[card.color],
       }}
-      className={`group absolute overflow-hidden rounded-[1.25rem] border border-t-[3px] bg-[var(--surface-solid)] shadow-[0_12px_36px_rgba(0,0,0,.13)] transition-shadow ${
+      className={`ws-card-interactive group absolute overflow-hidden border-t-[3px] ${
         selected
           ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]"
-          : "hover:shadow-[0_22px_60px_rgba(0,0,0,.22)]"
+          : ""
       }`}
     >
-      <div className={`absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_92%,transparent)] p-1 shadow-md backdrop-blur transition-opacity ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}>
+      <div className={`ws-floating-control absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full p-1 transition-opacity ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}>
         <button
           type="button"
           onPointerDown={startDrag}
@@ -440,19 +441,13 @@ export function CanvasPage() {
       <section className="ws-compact-surface p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-            <select
+            <SelectMenu
               value={entryToAdd}
-              onChange={(event) => setEntryToAdd(event.target.value)}
-              className="ws-input h-10 min-w-0 flex-1 rounded-xl px-3 text-sm xl:max-w-sm"
-              aria-label={t("canvas.chooseEntry")}
-            >
-              <option value="">{t("canvas.chooseEntry")}</option>
-              {entries.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.title}
-                </option>
-              ))}
-            </select>
+              onChange={setEntryToAdd}
+              className="h-10 min-w-0 flex-1 xl:max-w-sm"
+              ariaLabel={t("canvas.chooseEntry")}
+              options={[{ value: "", label: t("canvas.chooseEntry") }, ...entries.map((entry) => ({ value: entry.id, label: entry.title }))]}
+            />
             <button
               type="button"
               onClick={createEntryCard}
@@ -510,21 +505,16 @@ export function CanvasPage() {
             <button type="button" onClick={() => { const ids = [...selectedCardIds].map((id) => duplicateCard(id)).filter((id): id is string => Boolean(id)); if (ids.length) { setSelectedCardId(ids.at(-1)!); setSelectedCardIds(new Set(ids)); } }} className="flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--surface-muted)]"><Copy size={14} />{t("canvas.duplicate")}</button>
             {selectedCardIds.size > 1 ? <div className="flex gap-1"><button type="button" onClick={() => arrangeCards([...selectedCardIds], "left")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.alignLeft")}</button><button type="button" onClick={() => arrangeCards([...selectedCardIds], "top")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.alignTop")}</button>{selectedCardIds.size > 2 ? <><button type="button" onClick={() => arrangeCards([...selectedCardIds], "horizontal")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.distributeHorizontal")}</button><button type="button" onClick={() => arrangeCards([...selectedCardIds], "vertical")} className="h-9 rounded-lg px-2 text-[0.68rem] hover:bg-[var(--surface-muted)]">{t("canvas.distributeVertical")}</button></> : null}</div> : null}
             <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row xl:justify-end">
-              <select
+              <SelectMenu
                 value={connectionTarget}
-                onChange={(event) => setConnectionTarget(event.target.value)}
-                className="ws-input min-h-10 min-w-0 flex-1 rounded-full px-4 text-xs xl:max-w-xs"
-                aria-label={t("canvas.connectTo")}
-              >
-                <option value="">{t("canvas.connectTo")}</option>
-                {cards
+                onChange={setConnectionTarget}
+                className="min-h-10 min-w-0 flex-1 xl:max-w-xs"
+                ariaLabel={t("canvas.connectTo")}
+                buttonClassName="rounded-full px-4 text-xs"
+                options={[{ value: "", label: t("canvas.connectTo") }, ...cards
                   .filter((card) => card.id !== selectedCard.id)
-                  .map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {cardLabel(card)}
-                    </option>
-                  ))}
-              </select>
+                  .map((card) => ({ value: card.id, label: cardLabel(card) }))]}
+              />
               <input
                 value={connectionLabel}
                 onChange={(event) => setConnectionLabel(event.target.value.slice(0, 48))}
@@ -567,7 +557,7 @@ export function CanvasPage() {
         ) : null}
       </section>
 
-      <section className="relative overflow-hidden rounded-xl border border-[var(--border)]">
+      <section className="ws-viewport">
         <div
           ref={viewportRef}
           className="h-[68dvh] min-h-[28rem] overflow-auto bg-[var(--bg-subtle)] lg:h-[72vh] lg:min-h-[32rem]"
@@ -679,7 +669,7 @@ export function CanvasPage() {
         <p id="canvas-keyboard-help" className="sr-only">{t("canvas.keyboardHelp")}</p>
         {!cards.length ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center">
-            <div className="w-full max-w-md">
+            <div className="ws-empty-state w-full max-w-md">
               <h3 className="text-sm font-semibold text-[var(--text-muted)]">{t("canvas.empty")}</h3>
             </div>
           </div>

@@ -6,7 +6,7 @@ import {
   GitBranch,
   Feather,
   Images,
-  LayoutDashboard,
+  LibraryBig,
   Map,
   MapPin,
   Plus,
@@ -62,10 +62,10 @@ const destinations: Array<{
   icon: LucideIcon;
 }> = [
   {
-    path: "/dashboard",
-    label: "nav.dashboard",
-    description: "search.pageDashboard",
-    icon: LayoutDashboard,
+    path: "/manuscript",
+    label: "nav.manuscript",
+    description: "search.pageManuscript",
+    icon: LibraryBig,
   },
   {
     path: "/entries",
@@ -326,7 +326,7 @@ export function GlobalSearch() {
           <div
             role="search"
             aria-labelledby={`${listId}-title`}
-            className="ws-surface-raised w-full overflow-hidden rounded-[1.25rem] border border-[var(--border-strong)] shadow-2xl"
+            className="ws-dropdown-surface w-full overflow-hidden"
           >
             <h2 id={`${listId}-title`} className="sr-only">
               {t("search.title")}
@@ -400,7 +400,7 @@ export function GlobalSearch() {
               ) : (
                 <div
                   role="status"
-                  className="px-5 py-12 text-center text-sm text-[var(--text-muted)]"
+                  className="px-5 py-8 text-center text-sm text-[var(--text-muted)]"
                 >
                   <p className="font-semibold text-[var(--text)]">
                     {t("search.noResults")}

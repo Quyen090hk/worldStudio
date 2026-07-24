@@ -1,11 +1,11 @@
-import { Check, ChevronDown, Plus, Search, Settings2 } from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus, Search, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../shared/i18n";
 import { useSoftDialog } from "../../../shared/components/softDialogContext";
 import { useWorldRegistryStore } from "../stores/useWorldRegistryStore";
 import { useWorldStore } from "../stores/useWorldStore";
-import { createWorld, initializeWorldRegistry, switchWorld } from "../worldWorkspace";
+import { createWorld, initializeWorldRegistry, saveActiveWorld, switchWorld } from "../worldWorkspace";
 
 export function WorldSwitcher() {
   const { t } = useI18n();
@@ -95,6 +95,21 @@ export function WorldSwitcher() {
     }
   }
 
+  async function renameActiveWorld() {
+    if (!active) return;
+    const name = await dialog.prompt({
+      title: t("worlds.renameWorld"),
+      message: t("worlds.renameWorldPrompt"),
+      defaultValue: activeName,
+      confirmLabel: t("common.rename"),
+    });
+    if (!name?.trim() || name.trim() === activeName) return;
+    useWorldStore.getState().updateProfile(name.trim(), profile.description);
+    useWorldRegistryStore.getState().upsert({ ...active, name: name.trim(), updatedAt: new Date().toISOString() });
+    await saveActiveWorld();
+    setOpen(false);
+  }
+
   const active = worlds.find((world) => world.id === activeWorldId);
   const activeName = active?.name ?? profile.name;
   const available = worlds
@@ -125,7 +140,7 @@ export function WorldSwitcher() {
       </button>
 
       {open ? (
-        <div ref={menuRef} role="menu" aria-label={t("worlds.switchWorld")} onKeyDown={handleMenuKeyDown} className="ws-popover-enter fixed left-2 right-2 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-solid)] p-1.5 shadow-2xl md:absolute md:left-0 md:right-auto md:top-[calc(100%+.55rem)] md:w-80">
+        <div ref={menuRef} role="menu" aria-label={t("worlds.switchWorld")} onKeyDown={handleMenuKeyDown} className="ws-dropdown-surface ws-popover-enter fixed left-2 right-2 top-[4.25rem] z-50 overflow-hidden p-1.5 md:absolute md:left-0 md:right-auto md:top-[calc(100%+.55rem)] md:w-80">
           <p className="px-3 py-2 text-[.65rem] font-bold uppercase tracking-[.18em] text-[var(--text-faint)]">{t("worlds.switchWorld")}</p>
           {worlds.filter((world) => !world.archived).length > 5 ? <label className="mx-2 mb-1 flex h-9 items-center gap-2 rounded-xl bg-[var(--surface-muted)] px-3"><Search size={14} className="text-[var(--text-faint)]" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("worlds.search")} className="min-w-0 flex-1 bg-transparent text-xs outline-none" /></label> : null}
           {error ? <p role="alert" className="mx-2 mb-1 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-300">{error}</p> : null}
@@ -137,7 +152,7 @@ export function WorldSwitcher() {
                 role="menuitemradio"
                 aria-checked={world.id === activeWorldId}
                 onClick={() => void change(world.id)}
-                className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--surface-muted)]"
+                className="ws-dropdown-item flex w-full items-start gap-3 px-3 py-2.5 text-left"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-xs font-semibold text-[var(--accent-strong)]">{world.name.trim().slice(0, 1).toLocaleUpperCase() || "·"}</span>
                 <span className="min-w-0 flex-1">
@@ -149,12 +164,15 @@ export function WorldSwitcher() {
             ))}
             {!available.length ? <p className="px-3 py-6 text-center text-xs text-[var(--text-faint)]">{t("worlds.noMatches")}</p> : null}
           </div>
-          <div className="mt-1 grid grid-cols-2 gap-1 border-t border-[var(--border)] pt-1.5">
-            <button type="button" onClick={() => void add()} className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-[var(--surface-muted)]">
-              <Plus size={14} /> {t("worlds.createWorld")}
+          <div className="mt-1 grid grid-cols-3 gap-1 border-t border-[var(--border)] pt-1.5">
+            <button type="button" onClick={() => void add()} aria-label={t("worlds.createWorld")} className="group ws-dropdown-item relative flex h-10 items-center justify-center">
+              <Plus size={15} /><span className="ws-icon-tooltip">{t("worlds.createWorld")}</span>
             </button>
-            <button type="button" onClick={() => { setOpen(false); navigate("/settings"); }} className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-[var(--surface-muted)]">
-              <Settings2 size={14} /> {t("worlds.title")}
+            <button type="button" onClick={() => void renameActiveWorld()} aria-label={t("worlds.renameWorld")} className="group ws-dropdown-item relative flex h-10 items-center justify-center">
+              <Pencil size={15} /><span className="ws-icon-tooltip">{t("worlds.renameWorld")}</span>
+            </button>
+            <button type="button" onClick={() => { setOpen(false); navigate("/settings"); }} aria-label={t("worlds.title")} className="group ws-dropdown-item relative flex h-10 items-center justify-center">
+              <Settings2 size={15} /><span className="ws-icon-tooltip">{t("worlds.title")}</span>
             </button>
           </div>
         </div>

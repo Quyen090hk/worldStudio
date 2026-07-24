@@ -9,16 +9,16 @@
       (() => {
         let locale = null;
         let theme = "light";
-        let openingShown = false;
         try {
           locale = localStorage.getItem("world-studio-locale");
           theme = localStorage.getItem("world-studio-theme") || "light";
-          openingShown = sessionStorage.getItem("world-studio-opening-shown") === "true";
         } catch {}
         document.documentElement.lang = locale === "zh-CN" ? "zh-CN" : "en-US";
         document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
         document.documentElement.style.colorScheme = theme === "dark" ? "dark" : "light";
-        if (openingShown) document.documentElement.dataset.skipOpening = "true";
+        // The frontispiece is now an idle experience inside the application,
+        // rather than a gate shown on every launch.
+        document.documentElement.dataset.skipOpening = "true";
       })();
     </script>
     <style>

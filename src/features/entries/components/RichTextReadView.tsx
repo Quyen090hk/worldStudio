@@ -89,7 +89,7 @@ function InternalEntryLink({
       <span
         id={tooltipId}
         role="tooltip"
-        className="pointer-events-none absolute bottom-[calc(100%+.55rem)] left-1/2 z-30 hidden w-64 -translate-x-1/2 rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-3 text-left no-underline shadow-2xl group-hover/reference:block group-focus-within/reference:block"
+        className="ws-overlay-surface pointer-events-none absolute bottom-[calc(100%+.55rem)] left-1/2 z-30 hidden w-64 -translate-x-1/2 p-3 text-left no-underline group-hover/reference:block group-focus-within/reference:block"
       >
         {entry ? (
           <>

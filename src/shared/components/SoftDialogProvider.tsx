@@ -62,8 +62,8 @@ export function SoftDialogProvider({ children }: { children: ReactNode }) {
   return <SoftDialogContext.Provider value={{ confirm, prompt }}>
     {children}
     {request ? createPortal(
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[color-mix(in_srgb,#211a12_34%,transparent)] p-4 backdrop-blur-[3px]" onMouseDown={(event) => { if (event.target === event.currentTarget) close(request.kind === "confirm" ? false : null); }}>
-        <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="soft-dialog-title" aria-describedby="soft-dialog-description" className="ws-popover-enter w-full max-w-md rounded-[1.75rem] border border-[var(--border-strong)] bg-[var(--surface-solid)] p-5 shadow-[0_28px_90px_rgba(35,27,17,.24)] sm:p-6">
+      <div className="ws-backdrop-enter fixed inset-0 z-[200] flex items-center justify-center bg-[color-mix(in_srgb,#211a12_34%,transparent)] p-4 backdrop-blur-[3px]" onMouseDown={(event) => { if (event.target === event.currentTarget) close(request.kind === "confirm" ? false : null); }}>
+        <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="soft-dialog-title" aria-describedby="soft-dialog-description" className="ws-dialog-surface ws-popover-enter w-full max-w-md p-5 sm:p-6">
           <div className="flex items-start gap-4">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${request.danger ? "bg-red-500/10 text-red-500" : "bg-[var(--accent-soft)] text-[var(--accent)]"}`}>
               {request.danger ? <AlertTriangle size={18} /> : <MessageCircle size={18} />}

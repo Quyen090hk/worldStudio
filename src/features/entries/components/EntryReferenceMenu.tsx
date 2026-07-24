@@ -147,7 +147,7 @@ export function EntryReferenceMenu({
     <div
       role="listbox"
       aria-label={t("editor.referenceEntries")}
-      className="ws-popover-enter fixed z-[100] w-72 overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-1.5 shadow-2xl"
+      className="ws-overlay-surface ws-popover-enter fixed z-[100] w-72 overflow-hidden p-1.5"
       style={{ top: match.top, left: Math.max(12, match.left) }}
     >
       <p className="px-3 py-2 text-[.68rem] font-bold uppercase tracking-[.16em] text-[var(--text-faint)]">

@@ -12,6 +12,11 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              name: "tiptap-core",
+              test: /node_modules[\\/]@tiptap[\\/](?:core|pm|starter-kit|extension-(?:blockquote|bold|bullet-list|code|code-block|document|dropcursor|gapcursor|hard-break|heading|horizontal-rule|italic|link|list|list-item|ordered-list|paragraph|strike|table|text|trailing-node|underline))[\\/]/,
+              priority: 3,
+            },
+            {
               name: "cytoscape",
               test: /node_modules[\\/]cytoscape[\\/]/,
               priority: 2,

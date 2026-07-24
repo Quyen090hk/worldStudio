@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
+import { SelectMenu } from "../../shared/components/SelectMenu";
 import { useSoftDialog } from "../../shared/components/softDialogContext";
 import { useI18n } from "../../shared/i18n";
 import { useMapStore } from "./stores/useMapStore";
@@ -479,20 +480,14 @@ export function MapPage() {
                 className="min-w-0 flex-1 bg-transparent text-xs outline-none"
               />
             </label>
-            <select
+            <SelectMenu
               value={categoryFilter}
-              onChange={(event) =>
-                setCategoryFilter(event.target.value as MarkerCategory | "All")
-              }
-              className="ws-input mt-2 h-10 w-full rounded-full px-3 text-xs"
-            >
-              <option value="All">{t("type.All")}</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {t(`map.category.${category}`)}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setCategoryFilter(value as MarkerCategory | "All")}
+              ariaLabel={t("map.category")}
+              className="mt-2 h-10 w-full"
+              buttonClassName="rounded-full px-3 text-xs"
+              options={[{ value: "All", label: t("type.All") }, ...categories.map((category) => ({ value: category, label: t(`map.category.${category}`) }))]}
+            />
           </div>
         </aside>
 
@@ -505,10 +500,10 @@ export function MapPage() {
             dragRef.current = null;
           }}
           onWheel={wheel}
-          className={`relative min-h-[560px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] touch-none ${placing ? "cursor-crosshair" : zoom > 1 ? "cursor-grab" : ""}`}
+          className={`ws-viewport min-h-[560px] bg-[var(--surface-solid)] touch-none ${placing ? "cursor-crosshair" : zoom > 1 ? "cursor-grab" : ""}`}
         >
           {!imageUrl ? (
-            <div className="flex h-full min-h-[560px] flex-col items-center justify-center p-8 text-center">
+            <div className="ws-empty-state flex h-full min-h-[560px] flex-col items-center justify-center">
               <h3 className="text-base font-semibold">
                 {t("map.addArtwork")}
               </h3>
@@ -603,7 +598,7 @@ export function MapPage() {
           )}
           {imageUrl ? (
             <>
-              <div className="absolute bottom-4 right-4 flex overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface-solid)] shadow">
+              <div className="ws-floating-control absolute bottom-4 right-4 flex overflow-hidden rounded-full">
                 <button
                   type="button"
                   onClick={(e) => {

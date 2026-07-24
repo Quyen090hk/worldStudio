@@ -166,7 +166,7 @@ export function EntryDrawer() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="entry-drawer-title"
-            className="fixed inset-2 z-50 flex flex-col overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[var(--shadow-raised)] sm:bottom-4 sm:left-auto sm:right-4 sm:top-4 sm:w-[min(40rem,calc(100vw-2rem))] sm:rounded-[2rem]"
+            className="ws-dialog-surface fixed inset-2 z-50 flex flex-col overflow-hidden sm:bottom-4 sm:left-auto sm:right-4 sm:top-4 sm:w-[min(40rem,calc(100vw-2rem))]"
           >
             <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
               <header className="border-b border-[var(--border)] px-4 py-4 sm:px-6 sm:py-5">
@@ -187,7 +187,7 @@ export function EntryDrawer() {
                     ref={closeButtonRef}
                     type="button"
                     onClick={closeDrawer}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text)]"
+                    className="ws-icon-button"
                     aria-label={t("entry.closeDrawer")}
                   >
                     <X size={18} strokeWidth={1.8} />
@@ -205,7 +205,7 @@ export function EntryDrawer() {
                     value={title}
                     onChange={(event) => updateDraft({ title: event.target.value })}
                     placeholder={t("entry.entryTitle")}
-                    className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
+                    className="ws-input h-12 w-full px-4 text-sm"
                   />
                 </label>
 
@@ -224,7 +224,7 @@ export function EntryDrawer() {
                           type="button"
                           onClick={() => updateDraft({ type: entryType })}
                           className={[
-                            "rounded-[1.15rem] border px-3 py-3 text-left transition",
+                            "rounded-[var(--radius-control)] border px-3 py-3 text-left transition",
                             selected
                               ? "border-[color-mix(in_srgb,var(--accent)_42%,transparent)] bg-[var(--accent-soft)]"
                               : "border-[var(--border)] bg-[var(--surface-muted)] hover:border-[var(--border-strong)]",
@@ -253,7 +253,7 @@ export function EntryDrawer() {
                     }
                     placeholder={t("entry.summaryPlaceholder")}
                     rows={4}
-                    className="ws-input w-full resize-none rounded-[1.15rem] px-4 py-3 text-sm leading-6"
+                    className="ws-input w-full resize-none px-4 py-3 text-sm leading-6"
                   />
                 </label>
 
@@ -268,7 +268,7 @@ export function EntryDrawer() {
                       updateDraft({ tagsText: event.target.value })
                     }
                     placeholder={t("entry.tagsPlaceholder")}
-                    className="ws-input h-12 w-full rounded-[1.15rem] px-4 text-sm"
+                    className="ws-input h-12 w-full px-4 text-sm"
                   />
 
                   <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
@@ -287,7 +287,7 @@ export function EntryDrawer() {
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="flex h-11 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-4 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
+                    className="ws-danger-button flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold"
                   >
                     <Trash2 size={16} strokeWidth={1.75} />
                     {t("common.delete")}

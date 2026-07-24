@@ -2,7 +2,7 @@ import {
   BookOpen,
   Boxes,
   GitBranch,
-  Home,
+  LibraryBig,
   Image,
   Map,
   Settings,
@@ -23,9 +23,9 @@ import { LanguageMenu } from "./LanguageMenu";
 
 const navItems = [
   {
-    label: "nav.dashboard",
-    path: "/dashboard",
-    icon: Home,
+    label: "nav.manuscript",
+    path: "/manuscript",
+    icon: LibraryBig,
   },
   {
     label: "nav.entries",

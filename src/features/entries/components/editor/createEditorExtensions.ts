@@ -10,6 +10,7 @@ import { ImmersiveFocusExtension } from "../ImmersiveFocusExtension";
 import { MissingReferenceExtension } from "../MissingReferenceExtension";
 import { SearchHighlightExtension } from "../SearchHighlightExtension";
 import { TextHighlight } from "../TextHighlightExtension";
+import { WorldbuildingBlock } from "../WorldbuildingBlock";
 
 type EditorExtensionOptions = {
   placeholder: string;
@@ -36,6 +37,7 @@ export function createEditorExtensions({
     MissingReferenceExtension,
     SearchHighlightExtension,
     ImmersiveFocusExtension,
+    WorldbuildingBlock,
     TaskList,
     TaskItem.configure({
       nested: true,

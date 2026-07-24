@@ -20,7 +20,7 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-[45] border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_86%,transparent)] px-2 py-2.5 backdrop-blur-2xl sm:px-4 lg:px-8">
       <div className="mx-auto flex w-full max-w-[94rem] items-center gap-1.5 sm:gap-3 lg:gap-5">
-        <Link to="/dashboard" className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--accent)] md:flex" aria-label="World Studio">
+        <Link to="/manuscript" className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--accent)] md:flex" aria-label="World Studio">
           <Sparkles size={19} strokeWidth={1.65} />
         </Link>
         <WorldSwitcher />

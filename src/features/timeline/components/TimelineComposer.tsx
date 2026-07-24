@@ -2,6 +2,7 @@ import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { useI18n } from "../../../shared/i18n";
+import { SelectMenu } from "../../../shared/components/SelectMenu";
 import type { EntryType } from "../../entries/types";
 import type { TimelineCategory, TimelineCertainty, TimelineLane } from "../types";
 
@@ -78,40 +79,31 @@ export function TimelineComposer({
           {t("timeline.eventTitle")}
           <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("timeline.eventTitlePlaceholder")} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs" />
         </label>
-        <label className="block text-[10px] text-[var(--text-faint)]">
+        <div className="text-[10px] text-[var(--text-faint)]">
           {t("timeline.linkedEntry")}
-          <select value={entryId} onChange={(event) => setEntryId(event.target.value)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
-            <option value="">{t("timeline.noLinkedEntry")}</option>
-            {entries.map((entry) => <option key={entry.id} value={entry.id}>{entry.title} · {t(`type.${entry.type}`)}</option>)}
-          </select>
-        </label>
+          <SelectMenu value={entryId} onChange={setEntryId} ariaLabel={t("timeline.linkedEntry")} className="mt-1 h-10 w-full" buttonClassName="rounded-md px-2 text-xs" options={[{ value: "", label: t("timeline.noLinkedEntry") }, ...entries.map((entry) => ({ value: entry.id, label: `${entry.title} · ${t(`type.${entry.type}`)}` }))]} />
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[10px] text-[var(--text-faint)]">{t("timeline.startYear")}<input type="number" value={startYear} onChange={(event) => setStartYear(event.target.value)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs" /></label>
           <label className="block text-[10px] text-[var(--text-faint)]">{t("timeline.endYear")}<input type="number" value={endYear} onChange={(event) => setEndYear(event.target.value)} placeholder={t("timeline.point")} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs" /></label>
         </div>
-        <label className="block text-[10px] text-[var(--text-faint)]">
+        <div className="text-[10px] text-[var(--text-faint)]">
           {t("timeline.threads")}
-          <select value={category} onChange={(event) => setCategory(event.target.value as TimelineCategory)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
-            {lanes.map((lane) => <option key={lane.id} value={lane.id}>{lane.id === lane.name && ["Politics & Power", "Conflict", "Culture & Faith", "Exploration", "Catastrophe", "Lives", "Other"].includes(lane.id) ? t(`timeline.category.${lane.id}`) : lane.name}</option>)}
-          </select>
-        </label>
+          <SelectMenu value={category} onChange={(value) => setCategory(value as TimelineCategory)} ariaLabel={t("timeline.threads")} className="mt-1 h-10 w-full" buttonClassName="rounded-md px-2 text-xs" options={lanes.map((lane) => ({ value: lane.id, label: lane.id === lane.name && ["Politics & Power", "Conflict", "Culture & Faith", "Exploration", "Catastrophe", "Lives", "Other"].includes(lane.id) ? t(`timeline.category.${lane.id}`) : lane.name }))} />
+        </div>
         <label className="flex items-center justify-between text-[10px] text-[var(--text-faint)]">
           {t("timeline.eventColor")}
           <span className="flex items-center gap-2"><button type="button" onClick={() => setColor("")} className="text-[10px] underline">{t("timeline.useLaneColor")}</button><input type="color" value={color || lanes.find((lane) => lane.id === category)?.color || "#777780"} onChange={(event) => setColor(event.target.value)} className="h-8 w-12 rounded border-0 bg-transparent" /></span>
         </label>
         <div className="grid grid-cols-2 gap-2">
-          <label className="block text-[10px] text-[var(--text-faint)]">
+          <div className="text-[10px] text-[var(--text-faint)]">
             {t("timeline.significance")}
-            <select value={importance} onChange={(event) => setImportance(Number(event.target.value) as 1 | 2 | 3 | 4 | 5)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
-              <option value={1}>1 · {t("timeline.footnote")}</option><option value={2}>2 · {t("timeline.minor")}</option><option value={3}>3 · {t("timeline.notable")}</option><option value={4}>4 · {t("timeline.major")}</option><option value={5}>5 · {t("timeline.worldShaping")}</option>
-            </select>
-          </label>
-          <label className="block text-[10px] text-[var(--text-faint)]">
+            <SelectMenu value={String(importance)} onChange={(value) => setImportance(Number(value) as 1 | 2 | 3 | 4 | 5)} ariaLabel={t("timeline.significance")} className="mt-1 h-10 w-full" buttonClassName="rounded-md px-2 text-xs" options={[1, 2, 3, 4, 5].map((value) => ({ value: String(value), label: `${value} · ${t(value === 1 ? "timeline.footnote" : value === 2 ? "timeline.minor" : value === 3 ? "timeline.notable" : value === 4 ? "timeline.major" : "timeline.worldShaping")}` }))} />
+          </div>
+          <div className="text-[10px] text-[var(--text-faint)]">
             {t("timeline.status")}
-            <select value={certainty} onChange={(event) => setCertainty(event.target.value as TimelineCertainty)} className="ws-input mt-1 h-10 w-full rounded-md px-2 text-xs">
-              <option value="canon">{t("timeline.canon")}</option><option value="rumored">{t("timeline.rumored")}</option><option value="legendary">{t("timeline.legendary")}</option>
-            </select>
-          </label>
+            <SelectMenu value={certainty} onChange={(value) => setCertainty(value as TimelineCertainty)} ariaLabel={t("timeline.status")} className="mt-1 h-10 w-full" buttonClassName="rounded-md px-2 text-xs" options={["canon", "rumored", "legendary"].map((value) => ({ value: value as TimelineCertainty, label: t(`timeline.${value}`) }))} />
+          </div>
         </div>
         <label className="block text-[10px] text-[var(--text-faint)]">{t("timeline.note")}<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="ws-input mt-1 w-full rounded-md p-2 text-xs" placeholder={t("timeline.contextPlaceholder")} /></label>
         <button type="button" onClick={submit} disabled={(!title.trim() && !entryId) || startYear === ""} className="ws-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-md text-xs font-semibold disabled:opacity-40"><Plus size={14} />{t("timeline.addToChronicle")}</button>

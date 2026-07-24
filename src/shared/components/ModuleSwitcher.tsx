@@ -85,7 +85,7 @@ export function ModuleSwitcher() {
         </span>
       </button>
       {open ? (
-        <div ref={menuRef} role="menu" aria-label={t("navigation.primary")} onKeyDown={handleMenuKeyDown} className="ws-module-menu-enter fixed left-2 right-2 top-[4.25rem] z-50 grid grid-cols-2 gap-1 rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-solid)] p-2 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-[calc(100%+.55rem)] sm:w-[min(31rem,calc(100vw-2rem))] sm:grid-cols-3">
+        <div ref={menuRef} role="menu" aria-label={t("navigation.primary")} onKeyDown={handleMenuKeyDown} className="ws-dropdown-surface ws-module-menu-enter fixed left-2 right-2 top-[4.25rem] z-50 grid grid-cols-2 gap-1 p-2 sm:absolute sm:left-0 sm:right-auto sm:top-[calc(100%+.55rem)] sm:w-[min(31rem,calc(100vw-2rem))] sm:grid-cols-3">
           {workspaceModules.map((item) => {
             const Icon = item.icon;
             const active = item.path === current.path;
@@ -99,7 +99,7 @@ export function ModuleSwitcher() {
                   navigate(item.path);
                   setOpen(false);
                 }}
-                className="flex items-center gap-2.5 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-[var(--surface-muted)]"
+                className="ws-dropdown-item flex items-center gap-2.5 px-3 py-3 text-left text-sm"
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center"><Icon size={17} className={active ? "text-[var(--accent)]" : "text-[var(--text-faint)]"} /></span>
                 <span className="min-w-0 flex-1 truncate font-semibold">{t(item.label)}</span>

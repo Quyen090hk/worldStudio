@@ -18,12 +18,12 @@ function render(path: string) {
 describe("AppRoutes", () => {
   it("shows world setup instead of inventing a default world", () => {
     useWorldRegistryStore.setState({ worlds: [], activeWorldId: "" });
-    expect(render("/dashboard")).toContain("Create your first world");
+    expect(render("/manuscript")).toContain("Create your first world");
   });
 
   it("renders a recoverable not-found destination", () => {
     const html = renderToString(<I18nProvider><MemoryRouter><NotFoundPage /></MemoryRouter></I18nProvider>);
     expect(html).toContain("Page not found");
-    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('href="/manuscript"');
   });
 });

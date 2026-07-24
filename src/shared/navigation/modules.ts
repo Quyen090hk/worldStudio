@@ -3,7 +3,7 @@ import {
   Boxes,
   Feather,
   GitBranch,
-  Home,
+  LibraryBig,
   Image,
   Map,
   Settings,
@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 export const workspaceModules = [
-  { label: "nav.dashboard", path: "/dashboard", icon: Home },
+  { label: "nav.manuscript", path: "/manuscript", icon: LibraryBig },
   { label: "nav.entries", path: "/entries", icon: BookOpen },
   { label: "nav.map", path: "/map", icon: Map },
   { label: "nav.graph", path: "/graph", icon: GitBranch },

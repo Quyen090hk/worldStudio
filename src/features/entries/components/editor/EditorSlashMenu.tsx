@@ -1,12 +1,20 @@
 import type { Editor } from "@tiptap/react";
 import { Code, Heading1, Heading2, Heading3, Highlighter, List, ListChecks, ListOrdered, Pilcrow, Quote, SeparatorHorizontal, ShieldAlert, Table2, type LucideIcon } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useI18n } from "../../../../shared/i18n";
+import { insertWorldBlock } from "./insertWorldBlock";
 
 type SlashMatch = { from: number; to: number; query: string; top: number; left: number };
 type SlashItem = { id: string; label: string; description: string; icon: LucideIcon; run: (editor: Editor) => void };
+type SlashCategory = "world" | "structure" | "basic";
+
+function categoryOf(item: SlashItem): SlashCategory {
+  if (item.id.startsWith("world")) return "world";
+  if (["heading1", "heading2", "heading3", "bulletList", "orderedList", "taskList", "table", "horizontalRule"].includes(item.id)) return "structure";
+  return "basic";
+}
 
 export function EditorSlashMenu({ editor }: { editor: Editor }) {
   const { t } = useI18n();
@@ -26,13 +34,23 @@ export function EditorSlashMenu({ editor }: { editor: Editor }) {
     { id: "quote", label: t("editor.quote"), description: t("editor.commandQuoteHelp"), icon: Quote, run: (instance) => { instance.chain().focus().toggleBlockquote().run(); } },
     { id: "calloutNote", label: t("editor.calloutNote"), description: t("editor.calloutNoteHelp"), icon: Highlighter, run: (instance) => { instance.chain().focus().setBlockquote().updateAttributes("blockquote", { callout: "note" }).run(); } },
     { id: "calloutWarning", label: t("editor.calloutWarning"), description: t("editor.calloutWarningHelp"), icon: ShieldAlert, run: (instance) => { instance.chain().focus().setBlockquote().updateAttributes("blockquote", { callout: "warning" }).run(); } },
+    { id: "worldCanon", label: t("editor.worldCanon"), description: t("editor.worldCanonHelp"), icon: Highlighter, run: (instance) => insertWorldBlock(instance, "canon", t("editor.worldCanon"), t("editor.worldCanonPrompt")) },
+    { id: "worldVoice", label: t("editor.worldVoice"), description: t("editor.worldVoiceHelp"), icon: Quote, run: (instance) => insertWorldBlock(instance, "voice", t("editor.worldVoice"), t("editor.worldVoicePrompt")) },
+    { id: "worldSensory", label: t("editor.worldSensory"), description: t("editor.worldSensoryHelp"), icon: Pilcrow, run: (instance) => insertWorldBlock(instance, "sensory", t("editor.worldSensory"), t("editor.worldSensoryPrompt")) },
+    { id: "worldCausality", label: t("editor.worldCausality"), description: t("editor.worldCausalityHelp"), icon: SeparatorHorizontal, run: (instance) => insertWorldBlock(instance, "causality", t("editor.worldCausality"), t("editor.worldCausalityPrompt")) },
+    { id: "worldMystery", label: t("editor.worldMystery"), description: t("editor.worldMysteryHelp"), icon: ShieldAlert, run: (instance) => insertWorldBlock(instance, "mystery", t("editor.worldMystery"), t("editor.worldMysteryPrompt")) },
+    { id: "worldFaction", label: t("editor.worldFaction"), description: t("editor.worldFactionHelp"), icon: List, run: (instance) => insertWorldBlock(instance, "faction", t("editor.worldFaction"), t("editor.worldFactionPrompt")) },
+    { id: "worldArtifact", label: t("editor.worldArtifact"), description: t("editor.worldArtifactHelp"), icon: Code, run: (instance) => insertWorldBlock(instance, "artifact", t("editor.worldArtifact"), t("editor.worldArtifactPrompt")) },
+    { id: "worldCulture", label: t("editor.worldCulture"), description: t("editor.worldCultureHelp"), icon: Table2, run: (instance) => insertWorldBlock(instance, "culture", t("editor.worldCulture"), t("editor.worldCulturePrompt")) },
     { id: "codeBlock", label: t("editor.codeBlock"), description: t("editor.commandCodeHelp"), icon: Code, run: (instance) => { instance.chain().focus().toggleCodeBlock().run(); } },
     { id: "horizontalRule", label: t("editor.horizontalRule"), description: t("editor.commandRuleHelp"), icon: SeparatorHorizontal, run: (instance) => { instance.chain().focus().setHorizontalRule().run(); } },
   ], [t]);
 
   const filteredItems = useMemo(() => {
     const query = match?.query.trim().toLocaleLowerCase() ?? "";
-    return query ? items.filter((item) => `${item.label} ${item.description}`.toLocaleLowerCase().includes(query)) : items;
+    const matching = query ? items.filter((item) => `${item.label} ${item.description}`.toLocaleLowerCase().includes(query)) : items;
+    const order: SlashCategory[] = ["world", "structure", "basic"];
+    return [...matching].sort((a, b) => order.indexOf(categoryOf(a)) - order.indexOf(categoryOf(b)));
   }, [items, match?.query]);
 
   const updateMatch = useCallback(() => {
@@ -118,15 +136,17 @@ export function EditorSlashMenu({ editor }: { editor: Editor }) {
 
   if (!match) return null;
   return createPortal(
-    <div role="listbox" aria-label={t("editor.commands")} aria-activedescendant={filteredItems[selectedIndex] ? `editor-command-${filteredItems[selectedIndex].id}` : undefined} className="ws-popover-enter fixed z-[100] w-72 overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-1.5 shadow-2xl" style={{ top: match.top, left: Math.max(12, match.left) }}>
+    <div role="listbox" aria-label={t("editor.commands")} aria-activedescendant={filteredItems[selectedIndex] ? `editor-command-${filteredItems[selectedIndex].id}` : undefined} className="ws-overlay-surface ws-popover-enter fixed z-[100] w-72 overflow-hidden p-1.5" style={{ top: match.top, left: Math.max(12, match.left) }}>
       <p className="px-3 py-2 text-[.68rem] font-bold uppercase tracking-[.16em] text-[var(--text-faint)]">{t("editor.commands")}</p>
       <div ref={listRef} className="max-h-64 overflow-y-auto">
         {filteredItems.length ? filteredItems.map((item, index) => {
           const Icon = item.icon;
-          return <button id={`editor-command-${item.id}`} key={item.id} data-command-index={index} type="button" role="option" aria-selected={index === selectedIndex} onMouseDown={(event) => { event.preventDefault(); choose(item); }} onPointerMove={() => setSelectedIndex(index)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-muted)]"}`}>
+          const category = categoryOf(item);
+          const showCategory = index === 0 || categoryOf(filteredItems[index - 1]) !== category;
+          return <Fragment key={item.id}>{showCategory ? <p className="px-3 pb-1 pt-2 text-[.6rem] font-bold uppercase tracking-[.14em] text-[var(--text-faint)]">{t(`editor.commandGroup${category === "world" ? "World" : category === "structure" ? "Structure" : "Basic"}`)}</p> : null}<button id={`editor-command-${item.id}`} data-command-index={index} type="button" role="option" aria-selected={index === selectedIndex} onMouseDown={(event) => { event.preventDefault(); choose(item); }} onPointerMove={() => setSelectedIndex(index)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-muted)]"}`}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--accent)]"><Icon size={16} /></span>
             <span className="min-w-0"><b className="block text-sm">{item.label}</b><span className="block truncate text-xs text-[var(--text-faint)]">{item.description}</span></span>
-          </button>;
+          </button></Fragment>;
         }) : <p className="px-3 py-6 text-center text-sm text-[var(--text-muted)]">{t("editor.noCommands")}</p>}
       </div>
       <p className="border-t border-[var(--border)] px-3 pt-2 text-[.65rem] text-[var(--text-faint)]">{t("editor.commandHint")}</p>

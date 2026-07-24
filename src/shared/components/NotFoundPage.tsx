@@ -8,7 +8,7 @@ export function NotFoundPage() {
   const { t } = useI18n();
 
   return (
-    <MotionPage className="ws-surface mx-auto max-w-3xl rounded-[2rem] px-6 py-14 text-center sm:px-10 sm:py-20">
+    <MotionPage className="ws-compact-surface mx-auto max-w-3xl px-6 py-14 text-center sm:px-10 sm:py-20">
       <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--accent-soft)] text-[var(--accent)]">
         <Compass size={28} strokeWidth={1.6} />
       </span>
@@ -21,7 +21,7 @@ export function NotFoundPage() {
       </p>
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         <Link
-          to="/dashboard"
+          to="/manuscript"
           className="ws-button-primary flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold"
         >
           <ArrowLeft size={16} />

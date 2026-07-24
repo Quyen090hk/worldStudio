@@ -5,6 +5,7 @@ import { useGraphSettingsStore } from "../graph/stores/useGraphSettingsStore";
 import { useRelationshipStore } from "../graph/stores/useRelationshipStore";
 import { useMapStore } from "../map/stores/useMapStore";
 import { useTimelineStore } from "../timeline/stores/useTimelineStore";
+import { useManuscriptStore } from "../manuscript/stores/useManuscriptStore";
 import { useWorldRegistryStore } from "./stores/useWorldRegistryStore";
 import { useWorldStore } from "./stores/useWorldStore";
 
@@ -14,6 +15,7 @@ const stores = [
   useEntryStore,
   useRelationshipStore,
   useTimelineStore,
+  useManuscriptStore,
   useMapStore,
   useCanvasStore,
   useAssetStore,

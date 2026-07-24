@@ -59,7 +59,7 @@ export function RouteErrorBoundary({ children }: { children: ReactNode }) {
         </button>
         <button
           type="button"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/manuscript")}
           className="ws-button-secondary flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold"
         >
           <Home size={16} />

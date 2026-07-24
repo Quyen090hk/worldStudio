@@ -4,7 +4,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "../shared/components/AppLayout";
 import { NotFoundPage } from "../shared/components/NotFoundPage";
 import { useI18n } from "../shared/i18n";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
+const ManuscriptPage = lazy(() => import("../features/manuscript/ManuscriptPage").then((module) => ({ default: module.ManuscriptPage })));
 
 const EntriesPage = lazy(() =>
   import("../features/entries/EntriesPage").then((module) => ({
@@ -77,16 +77,17 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/manuscript" replace />} />
 
         <Route
-          path="dashboard"
+          path="manuscript"
           element={
             <RouteSuspense message={t("common.preparingPage")}>
-              <DashboardPage />
+              <ManuscriptPage />
             </RouteSuspense>
           }
         />
+        <Route path="dashboard" element={<Navigate to="/manuscript" replace />} />
         <Route
           path="entries"
           element={

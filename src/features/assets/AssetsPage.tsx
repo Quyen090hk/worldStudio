@@ -152,7 +152,7 @@ function AssetEditor({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      className="ws-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -163,7 +163,7 @@ function AssetEditor({
         aria-modal="true"
         aria-labelledby="asset-editor-title"
         onKeyDown={trapFocus}
-        className="ws-surface-raised ws-panel-padding w-full max-w-lg rounded-[2rem]"
+        className="ws-dialog-surface ws-popover-enter ws-panel-padding w-full max-w-lg"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -193,7 +193,7 @@ function AssetEditor({
             ref={inputRef}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="ws-input mt-2 w-full rounded-[1rem] px-4 py-3 text-sm"
+            className="ws-input mt-2 w-full px-4 py-3 text-sm"
           />
         </label>
 
@@ -205,7 +205,7 @@ function AssetEditor({
             value={tags}
             onChange={(event) => setTags(event.target.value)}
             placeholder={t("assets.tagsPlaceholder")}
-            className="ws-input mt-2 w-full rounded-[1rem] px-4 py-3 text-sm"
+            className="ws-input mt-2 w-full px-4 py-3 text-sm"
           />
         </label>
 
@@ -489,7 +489,7 @@ export function AssetsPage() {
                       type="button"
                       onClick={() => removeAsset(asset)}
                       disabled={deletingId === asset.id}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-red-500 hover:bg-red-500/10"
+                      className="ws-danger-button flex h-9 w-9 items-center justify-center rounded-full border-0"
                       aria-label={t("assets.deleteNamed", { name: asset.name })}
                       title={t("assets.deleteNamed", { name: asset.name })}
                     >
@@ -502,7 +502,7 @@ export function AssetsPage() {
           })}
         </section>
       ) : (
-        <section className="border-y border-dashed border-[var(--border)] px-6 py-14 text-center">
+        <section className="ws-empty-state border-y border-dashed border-[var(--border)]">
           <h3 className="text-base font-semibold text-[var(--text)]">
             {assets.length ? t("assets.noMatches") : t("assets.empty")}
           </h3>

@@ -316,19 +316,19 @@ export function TimelinePage() {
         </div>
       </div>
 
-      <section className="relative h-[72dvh] min-h-[30rem] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
+      <section className="ws-viewport h-[72dvh] min-h-[30rem] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
         <div className="absolute left-3 right-3 top-3 z-30 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setControlsOpen((open) => !open)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] text-[var(--text-muted)] shadow-lg"
+            className="ws-floating-control flex h-9 w-9 items-center justify-center"
             aria-label={t("timeline.controls")}
             title={t("timeline.controls")}
             aria-expanded={controlsOpen}
           >
             <CalendarRange size={15} />
           </button>
-          <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] px-3 text-[var(--text-muted)] shadow-lg sm:max-w-60">
+          <label className="ws-floating-control flex h-9 min-w-0 flex-1 items-center gap-2 px-3 sm:max-w-60">
             <Search size={14} />
             <input
               value={query}
@@ -349,13 +349,13 @@ export function TimelinePage() {
             ) : null}
           </label>
           <details className="group relative">
-            <summary className="ws-button-primary flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg">
+            <summary className="ws-button-primary flex h-9 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs font-semibold">
               <Plus size={14} />
               {t("timeline.add")}
             </summary>
-            <div className="ws-popover-enter absolute right-0 top-[calc(100%+.4rem)] z-40 w-44 origin-top-right rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-1.5 shadow-2xl">
-              <button type="button" onClick={(event) => { setComposerOpen(true); setEraComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--surface-muted)]">{t("timeline.recordEvent")}</button>
-              <button type="button" onClick={(event) => { setEraComposerOpen(true); setComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--surface-muted)]">{t("timeline.defineEra")}</button>
+            <div className="ws-dropdown-surface ws-popover-enter absolute right-0 top-[calc(100%+.4rem)] z-40 w-44 origin-top-right p-1.5">
+              <button type="button" onClick={(event) => { setComposerOpen(true); setEraComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="ws-dropdown-item w-full px-3 py-2 text-left text-xs">{t("timeline.recordEvent")}</button>
+              <button type="button" onClick={(event) => { setEraComposerOpen(true); setComposerOpen(false); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className="ws-dropdown-item w-full px-3 py-2 text-left text-xs">{t("timeline.defineEra")}</button>
             </div>
           </details>
         </div>
@@ -516,7 +516,7 @@ export function TimelinePage() {
             ))}
 
             {!filteredItems.length ? (
-              <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
+              <div className="ws-empty-state flex min-h-[18rem] flex-col items-center justify-center">
                 <CalendarRange className="text-[var(--text-faint)]" size={28} />
                 <p className="mt-4 text-sm font-semibold">
                   {t("timeline.unwritten")}
@@ -527,7 +527,7 @@ export function TimelinePage() {
                 <button
                   type="button"
                   onClick={() => setComposerOpen(true)}
-                  className="ws-button-primary mt-4 rounded-md px-4 py-2 text-xs"
+                  className="ws-button-primary mt-4 rounded-full px-4 py-2 text-xs font-semibold"
                 >
                   {t("timeline.recordFirst")}
                 </button>
@@ -536,7 +536,7 @@ export function TimelinePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-solid)] text-[var(--text-muted)] shadow-lg">
+        <div className="ws-floating-control absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 overflow-hidden">
           <button
             type="button"
             onClick={fitTimeline}

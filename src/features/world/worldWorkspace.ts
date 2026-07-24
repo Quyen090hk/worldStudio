@@ -1,5 +1,5 @@
 import { useGraphSettingsStore } from "../graph/stores/useGraphSettingsStore";
-import { WORKSPACE_BACKUP_VERSION, createWorkspaceSnapshot, restoreWorkspaceBackup, restoreWorkspaceSnapshot, type WorkspaceBackup } from "../settings/workspaceBackup";
+import { WORKSPACE_BACKUP_VERSION, createWorkspaceSnapshot, remapWorkspaceBackupWorld, restoreWorkspaceBackup, restoreWorkspaceSnapshot, type WorkspaceBackup } from "../settings/workspaceBackup";
 import { useWorldRegistryStore, type WorldRecord } from "./stores/useWorldRegistryStore";
 import { useWorldStore } from "./stores/useWorldStore";
 import { deleteWorldWorkspace, loadWorldWorkspace, saveWorldWorkspace } from "./workspaceStorage";
@@ -11,6 +11,7 @@ import {
   isMapImageReferencedByStoredWorld,
 } from "./worldResourceReferences";
 import { DEFAULT_TIMELINE_LANES, DEFAULT_WORLD_YEAR_FORMAT } from "../timeline/timelineModel";
+import { useManuscriptStore } from "../manuscript/stores/useManuscriptStore";
 
 function id(prefix: string) {
   return `${prefix}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
@@ -32,6 +33,7 @@ function blankBackup(world: WorldRecord): WorkspaceBackup {
     data: {
       world: { name: world.name, description: world.description, createdAt: world.createdAt, updatedAt: world.updatedAt },
       entries: [], revisions: [], relationships: [],
+      manuscripts: { items: [], nodes: [], activeManuscriptByWorld: {}, activeNodeByManuscript: {} },
       timeline: {
         items: [],
         eras: [],
@@ -57,16 +59,62 @@ function blankBackup(world: WorldRecord): WorkspaceBackup {
   };
 }
 
-async function restoreStoredWorkspace(workspace: WorkspaceBackup) {
-  if (workspace.storage === "snapshot") {
-    restoreWorkspaceSnapshot(workspace);
+async function restoreStoredWorkspace(
+  workspace: WorkspaceBackup,
+  worldId: string,
+  options: { mergePortableManuscripts?: boolean } = {},
+) {
+  // Manuscripts belong to the writing project, not to an individual reference
+  // world. World snapshots still carry them for portable backups, but switching
+  // worlds must never replace a manuscript that is already open locally.
+  const manuscriptState = useManuscriptStore.getState();
+  const existingManuscripts = {
+    manuscripts: manuscriptState.manuscripts,
+    nodes: manuscriptState.nodes,
+    activeManuscriptByWorld: manuscriptState.activeManuscriptByWorld,
+    activeNodeByManuscript: manuscriptState.activeNodeByManuscript,
+  };
+  const localWorkspace = remapWorkspaceBackupWorld(workspace, worldId);
+  const portableManuscripts = localWorkspace.data.manuscripts;
+  if (localWorkspace.storage === "snapshot") {
+    restoreWorkspaceSnapshot(localWorkspace);
+  } else {
+    const containsPortableFiles =
+      localWorkspace.data.atlas.images.length > 0 ||
+      localWorkspace.data.assetLibrary.files.length > 0;
+    if (containsPortableFiles) await restoreWorkspaceBackup(localWorkspace);
+    else restoreWorkspaceSnapshot(localWorkspace);
+  }
+  if (!options.mergePortableManuscripts) {
+    useManuscriptStore.setState(existingManuscripts);
     return;
   }
-  const containsPortableFiles =
-    workspace.data.atlas.images.length > 0 ||
-    workspace.data.assetLibrary.files.length > 0;
-  if (containsPortableFiles) await restoreWorkspaceBackup(workspace);
-  else restoreWorkspaceSnapshot(workspace);
+
+  const manuscriptIds = new Set(existingManuscripts.manuscripts.map((item) => item.id));
+  const manuscripts = [
+    ...existingManuscripts.manuscripts,
+    ...portableManuscripts.items.filter((item) => !manuscriptIds.has(item.id)),
+  ];
+  const nodeIds = new Set(existingManuscripts.nodes.map((item) => item.id));
+  const nodes = [
+    ...existingManuscripts.nodes,
+    ...portableManuscripts.nodes.filter((item) => !nodeIds.has(item.id)),
+  ];
+  const preferredManuscriptId =
+    portableManuscripts.activeManuscriptByWorld[worldId] ??
+    portableManuscripts.items[0]?.id;
+  useManuscriptStore.setState({
+    manuscripts,
+    nodes,
+    activeManuscriptByWorld: {
+      ...existingManuscripts.activeManuscriptByWorld,
+      ...(preferredManuscriptId ? { [worldId]: preferredManuscriptId } : {}),
+    },
+    activeNodeByManuscript: {
+      ...existingManuscripts.activeNodeByManuscript,
+      ...portableManuscripts.activeNodeByManuscript,
+    },
+  });
 }
 
 export async function initializeWorldRegistry() {
@@ -96,7 +144,7 @@ export async function switchWorld(targetId: string) {
   const backup = await loadWorldWorkspace(targetId);
   if (!backup) throw new Error("World workspace not found");
   await saveActiveWorld();
-  await restoreStoredWorkspace(backup);
+  await restoreStoredWorkspace(backup, targetId);
   registry.setActive(targetId);
   registry.upsert({ ...registry.worlds.find((world) => world.id === targetId)!, updatedAt: new Date().toISOString() });
 }
@@ -116,7 +164,7 @@ export async function createWorldFromBackup(backup: WorkspaceBackup) {
   await saveActiveWorld();
   const profile = backup.data.world;
   const world = record(id("world"), profile.name.trim(), profile.description.trim());
-  await restoreStoredWorkspace(backup);
+  await restoreStoredWorkspace(backup, world.id, { mergePortableManuscripts: true });
   useWorldRegistryStore.getState().upsert(world);
   useWorldRegistryStore.getState().setActive(world.id);
   await saveWorldWorkspace(world.id, await createWorkspaceSnapshot());
@@ -132,7 +180,7 @@ export async function duplicateWorld(worldId: string, copySuffix = "Copy") {
   const workspace = structuredClone(source);
   workspace.exportedAt = new Date().toISOString();
   workspace.data.world = { name: copy.name, description: copy.description, createdAt: copy.createdAt, updatedAt: copy.updatedAt };
-  await saveWorldWorkspace(copy.id, workspace);
+  await saveWorldWorkspace(copy.id, remapWorkspaceBackupWorld(workspace, copy.id));
   useWorldRegistryStore.getState().upsert(copy);
   return copy.id;
 }
@@ -153,7 +201,7 @@ export async function deleteWorld(worldId: string) {
     if (target) {
       const backup = await loadWorldWorkspace(target.id);
       if (!backup) return false;
-      await restoreStoredWorkspace(backup);
+      await restoreStoredWorkspace(backup, target.id);
       registry.setActive(target.id);
     } else {
       registry.setActive("");

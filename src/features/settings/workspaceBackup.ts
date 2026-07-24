@@ -54,6 +54,8 @@ import type {
 import { DEFAULT_TIMELINE_LANES, DEFAULT_WORLD_YEAR_FORMAT } from "../timeline/timelineModel";
 import { useTimelineStore } from "../timeline/stores/useTimelineStore";
 import { useWorldStore } from "../world/stores/useWorldStore";
+import { useManuscriptStore } from "../manuscript/stores/useManuscriptStore";
+import type { Manuscript, ManuscriptNode } from "../manuscript/types";
 import type { WorldProfile } from "../world/types";
 import {
   MAX_WORLD_DESCRIPTION_LENGTH,
@@ -85,6 +87,12 @@ export type WorkspaceBackupData = {
   entries: Entry[];
   revisions: EntryRevision[];
   relationships: EntryRelationship[];
+  manuscripts: {
+    items: Manuscript[];
+    nodes: ManuscriptNode[];
+    activeManuscriptByWorld: Record<string, string>;
+    activeNodeByManuscript: Record<string, string>;
+  };
   timeline: {
     items: TimelineItem[];
     eras: TimelineEra[];
@@ -146,6 +154,17 @@ const ENTRY_TYPES: EntryType[] = [
   "Item",
   "Event",
 ];
+const MANUSCRIPT_STATUSES = ["planning", "drafting", "revising", "complete"];
+const MANUSCRIPT_NODE_KINDS = ["volume", "chapter", "scene"];
+const MANUSCRIPT_NODE_STATUSES = ["idea", "outline", "draft", "revised", "final"];
+
+function isManuscript(value: unknown): value is Manuscript {
+  return isRecord(value) && typeof value.id === "string" && typeof value.worldId === "string" && typeof value.title === "string" && typeof value.synopsis === "string" && MANUSCRIPT_STATUSES.includes(String(value.status)) && (value.targetWordCount === null || (isFiniteNumber(value.targetWordCount) && value.targetWordCount >= 0)) && typeof value.createdAt === "string" && typeof value.updatedAt === "string";
+}
+
+function isManuscriptNode(value: unknown): value is ManuscriptNode {
+  return isRecord(value) && typeof value.id === "string" && typeof value.manuscriptId === "string" && (value.parentId === null || typeof value.parentId === "string") && MANUSCRIPT_NODE_KINDS.includes(String(value.kind)) && typeof value.title === "string" && typeof value.synopsis === "string" && typeof value.content === "string" && isFiniteNumber(value.order) && value.order >= 0 && MANUSCRIPT_NODE_STATUSES.includes(String(value.status)) && (value.povEntryId === null || typeof value.povEntryId === "string") && isStringArray(value.characterEntryIds) && isStringArray(value.locationEntryIds) && isStringArray(value.timelineItemIds) && typeof value.createdAt === "string" && typeof value.updatedAt === "string";
+}
 const RELATIONSHIP_DIRECTIONS: RelationshipDirection[] = [
   "directed",
   "mutual",
@@ -528,6 +547,8 @@ function validateReferences(
   assertUniqueIds(data.entries, "Entries");
   assertUniqueIds(data.revisions, "Entry revisions");
   assertUniqueIds(data.relationships, "Relationships");
+  assertUniqueIds(data.manuscripts.items, "Manuscripts");
+  assertUniqueIds(data.manuscripts.nodes, "Manuscript nodes");
   assertUniqueIds(data.timeline.items, "Timeline items");
   assertUniqueIds(data.timeline.eras, "Timeline eras");
   assertUniqueIds(data.timeline.lanes, "Timeline lanes");
@@ -540,6 +561,10 @@ function validateReferences(
   assertUniqueIds(data.canvas.connections, "Canvas connections");
 
   const entryIds = new Set(data.entries.map((entry) => entry.id));
+  const entriesById = new Map(data.entries.map((entry) => [entry.id, entry]));
+  const manuscriptIds = new Set(data.manuscripts.items.map((manuscript) => manuscript.id));
+  const manuscriptNodesById = new Map(data.manuscripts.nodes.map((node) => [node.id, node]));
+  const timelineItemIds = new Set(data.timeline.items.map((item) => item.id));
   const timelineLaneIds = new Set(data.timeline.lanes.map((lane) => lane.id));
   const mapIds = new Set(data.atlas.maps.map((map) => map.id));
   const layersById = new Map(
@@ -571,6 +596,24 @@ function validateReferences(
       "invalid-data",
       "The backup contains orphaned entry references",
     );
+  }
+  const invalidManuscriptTree = data.manuscripts.nodes.some((node) => {
+    if (!manuscriptIds.has(node.manuscriptId)) return true;
+    if (node.parentId === null) return node.kind === "scene";
+    const parent = manuscriptNodesById.get(node.parentId);
+    if (!parent || parent.manuscriptId !== node.manuscriptId) return true;
+    return node.kind === "volume" || (node.kind === "chapter" && parent.kind !== "volume") || (node.kind === "scene" && parent.kind !== "chapter");
+  });
+  const invalidManuscriptReferences = data.manuscripts.nodes.some((node) =>
+    (node.povEntryId !== null && entriesById.get(node.povEntryId)?.type !== "Character") ||
+    node.characterEntryIds.some((id) => entriesById.get(id)?.type !== "Character") ||
+    node.locationEntryIds.some((id) => entriesById.get(id)?.type !== "Location") ||
+    node.timelineItemIds.some((id) => !timelineItemIds.has(id))
+  );
+  const invalidActiveManuscripts = Object.entries(data.manuscripts.activeManuscriptByWorld).some(([worldId, manuscriptId]) => !worldId || typeof manuscriptId !== "string" || !manuscriptIds.has(manuscriptId));
+  const invalidActiveNodes = Object.entries(data.manuscripts.activeNodeByManuscript).some(([manuscriptId, nodeId]) => typeof nodeId !== "string" || !manuscriptIds.has(manuscriptId) || manuscriptNodesById.get(nodeId)?.manuscriptId !== manuscriptId);
+  if (invalidManuscriptTree || invalidManuscriptReferences || invalidActiveManuscripts || invalidActiveNodes) {
+    throw new WorkspaceBackupError("invalid-data", "The backup contains invalid manuscript references");
   }
   if (data.atlas.layers.some((layer) => !mapIds.has(layer.mapId))) {
     throw new WorkspaceBackupError(
@@ -735,6 +778,9 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
         version: WORKSPACE_BACKUP_VERSION,
         data: {
           ...migratedValue.data,
+          manuscripts: isRecord(migratedValue.data.manuscripts)
+            ? migratedValue.data.manuscripts
+            : { items: [], nodes: [], activeManuscriptByWorld: {}, activeNodeByManuscript: {} },
           timeline: {
             ...migratedValue.data.timeline,
             items: Array.isArray(migratedValue.data.timeline.items)
@@ -770,6 +816,13 @@ function validateWorkspaceBackupObject(value: unknown): WorkspaceBackup {
     !data.revisions.every(isEntryRevision) ||
     !Array.isArray(data.relationships) ||
     !data.relationships.every(isRelationship) ||
+    !isRecord(data.manuscripts) ||
+    !Array.isArray(data.manuscripts.items) ||
+    !data.manuscripts.items.every(isManuscript) ||
+    !Array.isArray(data.manuscripts.nodes) ||
+    !data.manuscripts.nodes.every(isManuscriptNode) ||
+    !isRecord(data.manuscripts.activeManuscriptByWorld) ||
+    !isRecord(data.manuscripts.activeNodeByManuscript) ||
     !isRecord(data.timeline) ||
     !Array.isArray(data.timeline.items) ||
     !data.timeline.items.every(isTimelineItem) ||
@@ -826,6 +879,18 @@ export function parseWorkspaceBackup(serialized: string) {
   return validateWorkspaceBackupObject(value);
 }
 
+/** Rebinds portable manuscript ownership when a workspace receives a new local world id. */
+export function remapWorkspaceBackupWorld(backup: WorkspaceBackup, worldId: string): WorkspaceBackup {
+  const remapped = structuredClone(backup);
+  const manuscriptIds = new Set(remapped.data.manuscripts.items.map((manuscript) => manuscript.id));
+  const preferred = Object.values(remapped.data.manuscripts.activeManuscriptByWorld).find((manuscriptId) => manuscriptIds.has(manuscriptId));
+  remapped.data.manuscripts.items = remapped.data.manuscripts.items.map((manuscript) => ({ ...manuscript, worldId }));
+  remapped.data.manuscripts.activeManuscriptByWorld = preferred || remapped.data.manuscripts.items[0]
+    ? { [worldId]: preferred ?? remapped.data.manuscripts.items[0].id }
+    : {};
+  return validateWorkspaceBackupObject(remapped);
+}
+
 function blobToDataUrl(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -855,6 +920,32 @@ export function sanitizeWorkspaceData(
   options: { preserveExternalAssetFiles?: boolean } = {},
 ): WorkspaceBackupData {
   const entryIds = new Set(data.entries.map((entry) => entry.id));
+  const characterIds = new Set(data.entries.filter((entry) => entry.type === "Character").map((entry) => entry.id));
+  const locationIds = new Set(data.entries.filter((entry) => entry.type === "Location").map((entry) => entry.id));
+  const timelineItems = data.timeline.items.filter((item) => item.entryId === null || entryIds.has(item.entryId));
+  const timelineItemIds = new Set(timelineItems.map((item) => item.id));
+  const manuscriptIds = new Set(data.manuscripts.items.map((manuscript) => manuscript.id));
+  let manuscriptNodes = data.manuscripts.nodes.filter((node) => manuscriptIds.has(node.manuscriptId));
+  for (let previousLength = -1; previousLength !== manuscriptNodes.length;) {
+    previousLength = manuscriptNodes.length;
+    const nodesById = new Map(manuscriptNodes.map((node) => [node.id, node]));
+    manuscriptNodes = manuscriptNodes.filter((node) => {
+      if (node.parentId === null) return node.kind !== "scene";
+      const parent = nodesById.get(node.parentId);
+      if (!parent || parent.manuscriptId !== node.manuscriptId) return false;
+      return (node.kind === "chapter" && parent.kind === "volume") || (node.kind === "scene" && parent.kind === "chapter");
+    });
+  }
+  manuscriptNodes = manuscriptNodes.map((node) => ({
+    ...node,
+    povEntryId: node.povEntryId && characterIds.has(node.povEntryId) ? node.povEntryId : null,
+    characterEntryIds: node.characterEntryIds.filter((id) => characterIds.has(id)),
+    locationEntryIds: node.locationEntryIds.filter((id) => locationIds.has(id)),
+    timelineItemIds: node.timelineItemIds.filter((id) => timelineItemIds.has(id)),
+  }));
+  const manuscriptNodeIds = new Set(manuscriptNodes.map((node) => node.id));
+  const activeManuscriptByWorld = Object.fromEntries(Object.entries(data.manuscripts.activeManuscriptByWorld).filter(([worldId, manuscriptId]) => worldId && manuscriptIds.has(manuscriptId)));
+  const activeNodeByManuscript = Object.fromEntries(Object.entries(data.manuscripts.activeNodeByManuscript).filter(([manuscriptId, nodeId]) => manuscriptIds.has(manuscriptId) && manuscriptNodeIds.has(nodeId) && manuscriptNodes.some((node) => node.id === nodeId && node.manuscriptId === manuscriptId)));
   const mapIds = new Set(data.atlas.maps.map((map) => map.id));
   const layers = data.atlas.layers.filter((layer) => mapIds.has(layer.mapId));
   const layersById = new Map(layers.map((layer) => [layer.id, layer]));
@@ -888,9 +979,15 @@ export function sanitizeWorkspaceData(
         entryIds.has(relationship.sourceEntryId) &&
         entryIds.has(relationship.targetEntryId),
     ),
+    manuscripts: {
+      items: data.manuscripts.items,
+      nodes: manuscriptNodes,
+      activeManuscriptByWorld,
+      activeNodeByManuscript,
+    },
     timeline: {
       ...data.timeline,
-      items: data.timeline.items.filter((item) => item.entryId === null || entryIds.has(item.entryId)),
+      items: timelineItems,
     },
     atlas: {
       ...data.atlas,
@@ -930,6 +1027,7 @@ async function createWorkspacePackage(includeBinaryFiles: boolean): Promise<Work
   const mapState = useMapStore.getState();
   const assetState = useAssetStore.getState();
   const canvasState = useCanvasStore.getState();
+  const manuscriptState = useManuscriptStore.getState();
   const images: WorkspaceMapImage[] = [];
   const assetItems: AssetRecord[] = [...assetState.assets];
   const assetFiles: WorkspaceAssetFile[] = [];
@@ -960,6 +1058,12 @@ async function createWorkspacePackage(includeBinaryFiles: boolean): Promise<Work
     entries: entryState.entries,
     revisions: entryState.revisions,
     relationships: relationshipState.relationships,
+    manuscripts: {
+      items: manuscriptState.manuscripts,
+      nodes: manuscriptState.nodes,
+      activeManuscriptByWorld: manuscriptState.activeManuscriptByWorld,
+      activeNodeByManuscript: manuscriptState.activeNodeByManuscript,
+    },
     timeline: {
       items: timelineState.items,
       eras: timelineState.eras,
@@ -1099,6 +1203,12 @@ function applyWorkspaceData(data: WorkspaceBackupData) {
     editingEntryId: null,
   });
   useRelationshipStore.setState({ relationships: data.relationships });
+  useManuscriptStore.setState({
+    manuscripts: data.manuscripts.items,
+    nodes: data.manuscripts.nodes,
+    activeManuscriptByWorld: data.manuscripts.activeManuscriptByWorld,
+    activeNodeByManuscript: data.manuscripts.activeNodeByManuscript,
+  });
   useTimelineStore.setState({
     items: data.timeline.items,
     eras: data.timeline.eras,
@@ -1142,6 +1252,12 @@ export async function restoreWorkspaceBackup(backup: WorkspaceBackup) {
     entries: useEntryStore.getState().entries,
     revisions: useEntryStore.getState().revisions,
     relationships: useRelationshipStore.getState().relationships,
+    manuscripts: {
+      items: useManuscriptStore.getState().manuscripts,
+      nodes: useManuscriptStore.getState().nodes,
+      activeManuscriptByWorld: useManuscriptStore.getState().activeManuscriptByWorld,
+      activeNodeByManuscript: useManuscriptStore.getState().activeNodeByManuscript,
+    },
     timeline: {
       items: useTimelineStore.getState().items,
       eras: useTimelineStore.getState().eras,

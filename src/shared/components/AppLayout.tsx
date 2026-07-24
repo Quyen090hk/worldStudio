@@ -10,6 +10,7 @@ import { moduleForPath } from "../navigation/modules";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { Topbar } from "./Topbar";
 import { UndoToast } from "./UndoToast";
+import { IdleFrontispiece } from "./IdleFrontispiece";
 
 export function AppLayout() {
   const { t } = useI18n();
@@ -64,6 +65,7 @@ export function AppLayout() {
 
       <EntryDrawer />
       <UndoToast />
+      <IdleFrontispiece />
     </div>
   );
 }

@@ -122,7 +122,7 @@ export function AssetPicker({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-2 backdrop-blur-sm sm:p-4"
+      className="ws-backdrop-enter fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-2 backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -133,7 +133,7 @@ export function AssetPicker({
         aria-modal="true"
         aria-labelledby="asset-picker-title"
         aria-describedby="asset-picker-help"
-        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[1.25rem] border border-[var(--border-strong)] bg-[var(--surface-solid)] shadow-2xl sm:max-h-[82vh] sm:rounded-[1.5rem]"
+        className="ws-dialog-surface ws-popover-enter flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden sm:max-h-[82vh]"
       >
         <header className="flex items-center gap-3 border-b border-[var(--border)] p-4">
           <ImagePlus size={18} className="shrink-0 text-[var(--accent)]" />
@@ -158,7 +158,7 @@ export function AssetPicker({
           </button>
         </div>
 
-        {error ? <p role="alert" className="mx-4 mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-300">{error}</p> : null}
+        {error ? <p role="alert" className="ws-status mx-4 mt-3 bg-red-500/10 text-red-600 dark:text-red-300">{error}</p> : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
           {images.length ? (

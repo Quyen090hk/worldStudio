@@ -16,7 +16,7 @@ export function EditorAssetPicker({
   const { t } = useI18n();
 
   return (
-    <section className="ws-popover-enter mx-auto mb-5 w-full max-w-3xl rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-3 shadow-lg">
+    <section className="ws-overlay-surface ws-popover-enter mx-auto mb-5 w-full max-w-3xl p-3">
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
           <p className="text-sm font-semibold text-[var(--text)]">{t("editor.insertImage")}</p>
@@ -47,7 +47,7 @@ export function EditorAssetPicker({
           ))}
         </div>
       ) : (
-        <p className="mt-3 rounded-xl border border-dashed border-[var(--border)] p-5 text-center text-sm text-[var(--text-faint)]">{t("editor.noImages")}</p>
+        <p className="ws-subtle-state mt-3 border-dashed p-5 text-center text-sm text-[var(--text-faint)]">{t("editor.noImages")}</p>
       )}
     </section>
   );

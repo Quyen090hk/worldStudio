@@ -27,8 +27,10 @@ export type EntryDocumentMetrics = {
 const blockNodeTypes = new Set([
   "paragraph", "heading", "blockquote", "bulletList", "orderedList", "taskList",
   "codeBlock", "horizontalRule", "assetImage", "table",
+  "worldBlock",
 ]);
 const markTypes = new Set(["bold", "italic", "strike", "code", "underline", "textHighlight", "link"]);
+const worldBlockTypes = new Set(["canon", "voice", "sensory", "causality", "mystery", "faction", "artifact", "culture"]);
 
 const allowedBlockPattern = /<(h[1-3]|p|blockquote|pre|ul|ol|table)([^>]*)>([\s\S]*?)<\/\1>/giu;
 
@@ -226,6 +228,17 @@ export function sanitizeEntryDocument(value: unknown) {
       const content = cleanBlocks(node.content, depth + 1);
       return { type: "blockquote", attrs: { callout }, content: content.length ? content : [paragraphNode("")] };
     }
+    if (node.type === "worldBlock" && context === "block") {
+      const kind = worldBlockTypes.has(String(node.attrs?.kind)) ? String(node.attrs?.kind) : "canon";
+      const label = cleanText(node.attrs?.label).slice(0, 80);
+      const prompt = cleanText(node.attrs?.prompt).slice(0, 240);
+      const content = cleanBlocks(node.content, depth + 1);
+      return {
+        type: "worldBlock",
+        attrs: { kind, label, prompt },
+        content: content.length ? content : [paragraphNode("")],
+      };
+    }
     if (node.type === "bulletList" || node.type === "orderedList") {
       const items = Array.isArray(node.content) ? node.content.map((item) => cleanNode(item, depth + 1, "listItem")).filter((item): item is EntryDocumentNode => item?.type === "listItem") : [];
       const rawStart = Number(node.attrs?.start ?? 1);
@@ -305,6 +318,11 @@ function documentToHtml(node: EntryDocumentNode): string {
   if (node.type === "blockquote") {
     const callout = node.attrs?.callout === "note" || node.attrs?.callout === "warning" ? ` data-callout="${node.attrs.callout}"` : "";
     return `<blockquote${callout}>${children()}</blockquote>`;
+  }
+  if (node.type === "worldBlock") {
+    const kind = worldBlockTypes.has(String(node.attrs?.kind)) ? String(node.attrs?.kind) : "canon";
+    const label = escapeHtml(String(node.attrs?.label ?? ""));
+    return `<section data-world-block="${kind}"${label ? ` data-world-block-label="${label}"` : ""}>${children()}</section>`;
   }
   if (node.type === "bulletList") return `<ul>${children()}</ul>`;
   if (node.type === "orderedList") return `<ol>${children()}</ol>`;
@@ -450,6 +468,57 @@ export function entryContentToHtml(value: unknown): string {
 
 export function entryContentToEditorInput(value: string): string | EntryDocumentNode {
   return parseEntryDocument(value)?.document ?? entryContentToHtml(value);
+}
+
+function inlineNodeToMarkdown(node: EntryDocumentNode): string {
+  if (node.type === "hardBreak") return "  \n";
+  if (node.type !== "text") return (node.content ?? []).map(inlineNodeToMarkdown).join("");
+  let value = node.text ?? "";
+  for (const mark of node.marks ?? []) {
+    if (mark.type === "bold") value = `**${value}**`;
+    else if (mark.type === "italic") value = `*${value}*`;
+    else if (mark.type === "strike") value = `~~${value}~~`;
+    else if (mark.type === "code") value = `\`${value.replaceAll("`", "\\`")}\``;
+    else if (mark.type === "link") {
+      const href = safeHref(String(mark.attrs?.href ?? ""));
+      if (href) value = `[${value}](${href})`;
+    }
+  }
+  return value;
+}
+
+function nodeToMarkdown(node: EntryDocumentNode, depth = 0): string {
+  const inline = () => (node.content ?? []).map(inlineNodeToMarkdown).join("");
+  const blocks = () => (node.content ?? []).map((child) => nodeToMarkdown(child, depth)).filter(Boolean).join("\n\n");
+  if (node.type === "doc") return blocks();
+  if (node.type === "paragraph") return inline();
+  if (node.type === "heading") return `${"#".repeat(Math.min(3, Math.max(1, Number(node.attrs?.level ?? 2))))} ${inline()}`;
+  if (node.type === "horizontalRule") return "---";
+  if (node.type === "codeBlock") return `\`\`\`\n${inline()}\n\`\`\``;
+  if (node.type === "blockquote") return blocks().split("\n").map((line) => `> ${line}`).join("\n");
+  if (node.type === "worldBlock") {
+    const label = String(node.attrs?.label ?? node.attrs?.kind ?? "World note");
+    return `> **${label}**\n>\n${blocks().split("\n").map((line) => `> ${line}`).join("\n")}`;
+  }
+  if (node.type === "bulletList" || node.type === "orderedList" || node.type === "taskList") {
+    return (node.content ?? []).map((child, index) => {
+      const body = (child.content ?? []).map((item) => nodeToMarkdown(item, depth + 1)).join("\n");
+      const marker = node.type === "orderedList" ? `${index + Number(node.attrs?.start ?? 1)}.` : node.type === "taskList" ? `- [${child.attrs?.checked === true ? "x" : " "}]` : "-";
+      return `${"  ".repeat(depth)}${marker} ${body.replaceAll("\n", `\n${"  ".repeat(depth + 1)}`)}`;
+    }).join("\n");
+  }
+  if (node.type === "table") {
+    return (node.content ?? []).map((row) => `| ${(row.content ?? []).map((cell) => (cell.content ?? []).map((item) => nodeToMarkdown(item)).join(" ").replaceAll("|", "\\|")).join(" | ")} |`).join("\n");
+  }
+  if (node.type === "assetImage") return `![${String(node.attrs?.alt ?? "")}](${`world-studio-asset://${String(node.attrs?.assetId ?? "")}`})`;
+  return blocks() || inline();
+}
+
+/** Creates a portable, human-readable mirror. The structured JSON remains the lossless source. */
+export function entryContentToMarkdown(value: unknown) {
+  const document = parseEntryDocument(value)?.document;
+  if (!document) return stripTags(entryContentToHtml(value));
+  return `${nodeToMarkdown(document).trim()}\n`;
 }
 
 export function importedContentToDocument(value: string) {

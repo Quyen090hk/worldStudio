@@ -18,7 +18,7 @@ export function EditorBubbleMenu({ editor }: { editor: Editor }) {
   const button = (title: string, active: boolean, action: () => void, icon: React.ReactNode) => (
     <EditorToolbarButton title={title} active={active} onClick={action}>{icon}</EditorToolbarButton>
   );
-  return <BubbleMenu editor={editor} updateDelay={120} options={{ placement: "top", offset: 8 }} className="ws-popover-enter flex items-center gap-0.5 rounded-xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-1 shadow-2xl">
+  return <BubbleMenu editor={editor} updateDelay={120} options={{ placement: "top", offset: 8 }} className="ws-overlay-surface ws-popover-enter flex items-center gap-0.5 p-1">
     {editingLink ? <form className="flex items-center gap-1 p-0.5" onSubmit={(event) => { event.preventDefault(); applyLink(); }}>
       <Link2 size={15} className="ml-2 text-[var(--text-faint)]" />
       <input autoFocus value={href} onChange={(event) => setHref(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { setEditingLink(false); editor.commands.focus(); } }} placeholder={t("editor.linkPlaceholder")} aria-label={t("editor.linkAddress")} className="h-8 w-56 bg-transparent px-2 text-xs outline-none" />

@@ -68,7 +68,7 @@ export function EditorFindReplace({
   }
 
   return (
-    <section aria-label={t("editor.findInDocument")} className="ws-popover-enter mx-auto mb-5 flex w-full max-w-3xl flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-2 shadow-lg">
+    <section aria-label={t("editor.findInDocument")} className="ws-overlay-surface ws-popover-enter mx-auto mb-5 flex w-full max-w-3xl flex-wrap items-center gap-2 p-2">
       <Search size={16} className="ml-1 shrink-0 text-[var(--text-faint)]" />
       <input
         ref={inputRef}

@@ -112,16 +112,27 @@ export const useTimelineStore = create<TimelineStore>()(
       name: "world-studio.timeline.v1",
       storage: createJSONStorage(() => indexedDbStateStorage),
       version: 3,
-      // This release intentionally starts the redesigned timeline from a clean
-      // state. Returning the new data shape also prevents Zustand from treating
-      // an older snapshot as a failed migration during hydration.
-      migrate: () => ({
-        items: [],
-        eras: [],
-        lanes: DEFAULT_TIMELINE_LANES.map((lane) => ({ ...lane })),
-        yearFormat: { ...DEFAULT_WORLD_YEAR_FORMAT },
-        viewport: { centerYear: 0, yearsPerScreen: 500 },
-      }),
+      migrate: (persisted) => {
+        const state = persisted && typeof persisted === "object"
+          ? persisted as Partial<TimelineStore>
+          : {};
+        return {
+          items: Array.isArray(state.items) ? state.items : [],
+          eras: Array.isArray(state.eras) ? state.eras : [],
+          lanes: Array.isArray(state.lanes) && state.lanes.length > 0
+            ? state.lanes
+            : DEFAULT_TIMELINE_LANES.map((lane) => ({ ...lane })),
+          yearFormat: state.yearFormat && typeof state.yearFormat === "object"
+            ? { ...DEFAULT_WORLD_YEAR_FORMAT, ...state.yearFormat }
+            : { ...DEFAULT_WORLD_YEAR_FORMAT },
+          viewport: state.viewport && typeof state.viewport === "object"
+            ? {
+              centerYear: Number.isFinite(state.viewport.centerYear) ? state.viewport.centerYear : 0,
+              yearsPerScreen: Number.isFinite(state.viewport.yearsPerScreen) ? state.viewport.yearsPerScreen : 500,
+            }
+            : { centerYear: 0, yearsPerScreen: 500 },
+        };
+      },
     },
   ),
 );

@@ -106,4 +106,52 @@ describe("entry document codec", () => {
       content: [{ type: "paragraph", content: [{ type: "text", text: "Lore" }] }],
     })).toEqual({ nodes: 3, text: 4, depth: 2, withinLimits: true });
   });
+
+  it("preserves worldbuilding blocks in the structured document and HTML fallback", () => {
+    const stored = createEntryDocument({
+      type: "doc",
+      content: [{
+        type: "worldBlock",
+        attrs: { kind: "sensory", label: "地点感官" },
+        content: [{ type: "paragraph", content: [{ type: "text", text: "潮声穿过石墙。" }] }],
+      }],
+    });
+
+    const parsed = parseEntryDocument(stored);
+    expect(parsed?.document.content?.[0]).toMatchObject({
+      type: "worldBlock",
+      attrs: { kind: "sensory", label: "地点感官" },
+    });
+    expect(parsed?.html).toContain('data-world-block="sensory"');
+    expect(parsed?.html).toContain("潮声穿过石墙。");
+  });
+
+  it("keeps authoring prompts out of the readable HTML", () => {
+    const stored = createEntryDocument({
+      type: "doc",
+      content: [{
+        type: "worldBlock",
+        attrs: { kind: "mystery", label: "未解谜团", prompt: "这只应显示在空编辑块中" },
+        content: [{ type: "paragraph" }],
+      }],
+    });
+
+    const parsed = parseEntryDocument(stored);
+    expect(parsed?.document.content?.[0].attrs?.prompt).toBe("这只应显示在空编辑块中");
+    expect(parsed?.html).not.toContain("这只应显示在空编辑块中");
+  });
+
+  it("accepts the extended worldbuilding block catalog and repairs unknown kinds", () => {
+    const valid = sanitizeEntryDocument({
+      type: "doc",
+      content: [{ type: "worldBlock", attrs: { kind: "culture", label: "文化习俗" }, content: [{ type: "paragraph" }] }],
+    });
+    const repaired = sanitizeEntryDocument({
+      type: "doc",
+      content: [{ type: "worldBlock", attrs: { kind: "unknown", label: "Unknown" }, content: [{ type: "paragraph" }] }],
+    });
+
+    expect(valid.document.content?.[0].attrs?.kind).toBe("culture");
+    expect(repaired.document.content?.[0].attrs?.kind).toBe("canon");
+  });
 });

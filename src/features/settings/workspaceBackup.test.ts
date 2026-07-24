@@ -35,6 +35,7 @@ function createValidBackup(): WorkspaceBackup {
       ],
       revisions: [],
       relationships: [],
+      manuscripts: { items: [], nodes: [], activeManuscriptByWorld: {}, activeNodeByManuscript: {} },
       timeline: {
         items: [],
         eras: [],

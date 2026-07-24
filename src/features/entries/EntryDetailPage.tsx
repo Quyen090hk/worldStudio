@@ -335,7 +335,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           {t("entry.back")}
         </button>
 
-        <section className="ws-surface rounded-[2rem] p-6 sm:p-8">
+        <section className="ws-compact-surface p-6 sm:p-8">
           <p className="ws-eyebrow">{t("entry.missingRecord")}</p>
 
           <h2 className="ws-display mt-4 text-4xl font-semibold text-[var(--text)]">
@@ -377,7 +377,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           <button
             type="button"
             onClick={handleDelete}
-            className="flex h-10 items-center gap-2 rounded-full border border-red-400/25 bg-red-500/10 px-4 text-sm font-semibold text-red-500 transition hover:bg-red-500/15"
+            className="ws-danger-button flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold"
           >
             <Trash2 size={16} strokeWidth={1.75} />
             {t("common.delete")}
@@ -514,7 +514,7 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
           </div>
 
           {historyOpen && !isEditingContent ? (
-            <section className="mb-6 rounded-[1.5rem] border border-[var(--border-strong)] bg-[var(--surface-muted)] p-4">
+            <section className="ws-subtle-state mb-6 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-[var(--text)]">{t("entry.versionHistory")}</p>
@@ -561,11 +561,12 @@ function EntryDetailPageContent({ entryId }: { entryId: string | undefined }) {
               onChange={handleContentChange}
               placeholder={t("entry.writePlaceholder")}
               referenceEntries={referenceEntries}
+              entryType={entry.type}
             />
           ) : entryContent ? (
             <RichTextReadView value={entryContent} />
           ) : (
-            <div className="border-y border-dashed border-[var(--border)] px-6 py-10 text-center">
+            <div className="border-y border-dashed border-[var(--border)] px-6 py-8 text-center">
               <h3 className="text-base font-semibold text-[var(--text)]">
                 {t("common.noContent")}
               </h3>

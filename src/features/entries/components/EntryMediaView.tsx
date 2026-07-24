@@ -12,9 +12,9 @@ export function EntryHeroMedia({ entry }: { entry: Entry }) {
   const bannerId = entry.media?.bannerAssetId;
   const primaryId = entry.media?.primaryAssetId;
   if (!bannerId && !primaryId) return null;
-  return <div className="mb-7 overflow-hidden rounded-[1.5rem] border border-[var(--border)]">
+  return <div className="mb-7 overflow-hidden rounded-[var(--radius-surface)] border border-[var(--border)]">
     {bannerId ? <AssetThumbnail assetId={bannerId} alt="" className="aspect-[21/7] w-full" /> : null}
-    {primaryId ? <div className={`${bannerId ? "-mt-14 ml-6 mb-5" : "p-5"} relative w-fit`}><AssetThumbnail assetId={primaryId} alt={entry.title} className={`${entry.type === "Character" ? "h-32 w-24" : "h-24 w-24"} rounded-xl border-4 border-[var(--surface-solid)] shadow-lg`} /></div> : null}
+    {primaryId ? <div className={`${bannerId ? "-mt-14 ml-6 mb-5" : "p-5"} relative w-fit`}><AssetThumbnail assetId={primaryId} alt={entry.title} className={`${entry.type === "Character" ? "h-32 w-24" : "h-24 w-24"} rounded-[var(--radius-control)] border-4 border-[var(--surface-solid)] shadow-[var(--shadow-soft)]`} /></div> : null}
   </div>;
 }
 

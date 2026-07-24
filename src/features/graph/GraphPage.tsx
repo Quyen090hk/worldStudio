@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MotionPage } from "../../shared/components/MotionPage";
+import { SelectMenu } from "../../shared/components/SelectMenu";
 import { useI18n } from "../../shared/i18n";
 import { useTheme, type ResolvedTheme } from "../../shared/theme/ThemeContext";
 import { useEntryStore } from "../entries/stores/useEntryStore";
@@ -573,7 +574,7 @@ export function GraphPage() {
           {visibleEntries.map((entry) => <button key={entry.id} type="button" onClick={() => { setSelectedId(entry.id); setSelectedRelationshipId(null); }} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-[var(--surface-raised)]"><span className="min-w-0 truncate font-semibold">{entry.title}</span><span className="shrink-0 text-xs text-[var(--text-faint)]">{t(`type.${entry.type}`)}</span></button>)}
         </div>
       </details>
-      <section className="relative h-[72dvh] min-h-[30rem] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
+      <section className="ws-viewport h-[72dvh] min-h-[30rem] lg:h-[calc(100vh-8.5rem)] lg:min-h-[620px]">
         <div
           className="pointer-events-none absolute inset-0 opacity-35"
           style={{
@@ -605,14 +606,14 @@ export function GraphPage() {
           <button
             type="button"
             onClick={() => setPanelOpen(!panelOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] text-[var(--text-muted)] shadow-lg backdrop-blur hover:bg-[var(--surface-raised)]"
+            className="ws-floating-control flex h-9 w-9 items-center justify-center"
             aria-label={t("graph.toggleControls")}
             title={t("graph.toggleControls")}
             aria-expanded={panelOpen}
           >
             <Settings2 size={16} />
           </button>
-          <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] px-3 text-[var(--text-muted)] shadow-lg backdrop-blur sm:max-w-56">
+          <label className="ws-floating-control flex h-9 min-w-0 flex-1 items-center gap-2 px-3 sm:max-w-56">
             <Search size={14} />
             <input
               value={query}
@@ -689,7 +690,7 @@ export function GraphPage() {
           />
         ) : null}
 
-        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-solid)_94%,transparent)] text-[var(--text-muted)] shadow-lg backdrop-blur">
+        <div className="ws-floating-control absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center overflow-hidden">
           <button
             type="button"
             onClick={() => {
@@ -769,17 +770,14 @@ function GraphControls(props: ControlsProps) {
           </div>
           {props.mode === "local" ? (
             <>
-              <select
+              <SelectMenu
                 value={props.focusId ?? ""}
-                onChange={(event) => props.setFocusId(event.target.value)}
-                className="ws-input ws-field w-full text-xs outline-none"
-              >
-                {props.entries.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.title}
-                  </option>
-                ))}
-              </select>
+                onChange={props.setFocusId}
+                ariaLabel={t("graph.local")}
+                className="h-10 w-full"
+                buttonClassName="text-xs"
+                options={props.entries.map((entry) => ({ value: entry.id, label: entry.title }))}
+              />
               <Range
                 label={t("graph.depth")}
                 value={props.depth}
@@ -1191,56 +1189,41 @@ function NodePanel(props: NodePanelProps) {
           {t("graph.addLink")}
         </summary>
         <div className="mt-3 space-y-2">
-          <select
+          <SelectMenu
             value={props.targetId}
-            onChange={(event) => props.setTargetId(event.target.value)}
-            className="ws-input ws-field w-full text-xs"
-          >
-            <option value="">{t("graph.chooseNote")}</option>
-            {props.entries
+            onChange={props.setTargetId}
+            ariaLabel={t("graph.chooseNote")}
+            className="h-10 w-full"
+            buttonClassName="text-xs"
+            options={[{ value: "", label: t("graph.chooseNote") }, ...props.entries
               .filter((entry) => entry.id !== props.entry.id)
-              .map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.title}
-                </option>
-              ))}
-          </select>
-          <select
+              .map((entry) => ({ value: entry.id, label: entry.title }))]}
+          />
+          <SelectMenu
             value={props.relationType}
-            onChange={(event) =>
-              props.setRelationType(event.target.value as RelationshipType)
-            }
-            className="ws-input ws-field w-full text-xs"
-          >
-            {RELATIONSHIP_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {t(`relation.${type}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => props.setRelationType(value as RelationshipType)}
+            ariaLabel={t("graph.addLink")}
+            className="h-10 w-full"
+            buttonClassName="text-xs"
+            options={RELATIONSHIP_TYPES.map((type) => ({ value: type, label: t(`relation.${type}`) }))}
+          />
           <div className="grid grid-cols-2 gap-2">
-            <select
+            <SelectMenu
               value={props.direction}
-              onChange={(event) =>
-                props.setDirection(event.target.value as RelationshipDirection)
-              }
-              className="ws-input ws-field text-xs"
-            >
-              <option value="directed">{t("graph.directed")}</option>
-              <option value="mutual">{t("graph.mutual")}</option>
-            </select>
-            <select
+              onChange={(value) => props.setDirection(value as RelationshipDirection)}
+              ariaLabel={t("graph.addLink")}
+              className="h-10"
+              buttonClassName="text-xs"
+              options={[{ value: "directed", label: t("graph.directed") }, { value: "mutual", label: t("graph.mutual") }]}
+            />
+            <SelectMenu
               value={props.status}
-              onChange={(event) =>
-                props.setStatus(event.target.value as RelationshipStatus)
-              }
-              className="ws-input ws-field text-xs"
-            >
-              <option value="current">{t("graph.current")}</option>
-              <option value="former">{t("graph.former")}</option>
-              <option value="rumored">{t("graph.rumored")}</option>
-              <option value="secret">{t("graph.secret")}</option>
-            </select>
+              onChange={(value) => props.setStatus(value as RelationshipStatus)}
+              ariaLabel={t("graph.addLink")}
+              className="h-10"
+              buttonClassName="text-xs"
+              options={["current", "former", "rumored", "secret"].map((value) => ({ value: value as RelationshipStatus, label: t(`graph.${value}`) }))}
+            />
           </div>
           <button
             type="button"

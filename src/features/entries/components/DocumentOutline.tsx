@@ -58,7 +58,7 @@ export function DocumentOutline({ editor }: { editor: Editor }) {
   if (headings.length < 2) return null;
 
   return (
-    <aside className="sticky top-20 hidden max-h-[calc(100vh-7rem)] self-start overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 xl:block">
+    <aside className="ws-subtle-state sticky top-20 hidden max-h-[calc(100vh-7rem)] self-start overflow-y-auto p-3 xl:block">
       <div className="flex items-center gap-2 px-2 py-1 text-[.68rem] font-bold uppercase tracking-[.16em] text-[var(--text-faint)]">
         <ListTree size={14} />
         {t("editor.outline")}

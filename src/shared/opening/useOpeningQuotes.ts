@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
 import {
   addCustomOpeningQuote,
@@ -31,6 +31,16 @@ export function useOpeningQuotes() {
   const index = indices[locale] ?? initial.index;
   const favorites = favoritesByLocale[locale] ?? readFavorites(locale);
   const safeIndex = ((index % collection.length) + collection.length) % collection.length;
+
+  useEffect(() => {
+    const syncSelection = (event: Event) => {
+      const detail = (event as CustomEvent<{ locale?: string; index?: number }>).detail;
+      if (detail?.locale !== locale || !Number.isInteger(detail.index)) return;
+      setIndices((current) => ({ ...current, [locale]: detail.index! }));
+    };
+    window.addEventListener("world-studio-opening-quote-selected", syncSelection);
+    return () => window.removeEventListener("world-studio-opening-quote-selected", syncSelection);
+  }, [locale]);
 
   const choose = useCallback((nextIndex: number) => {
     const selected = selectOpeningQuote(locale, nextIndex);
